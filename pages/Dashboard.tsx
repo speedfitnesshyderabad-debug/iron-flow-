@@ -7,6 +7,14 @@ import {
 } from 'recharts';
 import { QuickRenewModal } from '../components/QuickRenewModal';
 
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
 const Dashboard: React.FC = () => {
   const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast } = useAppContext();
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
