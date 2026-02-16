@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { PlanType, SubscriptionStatus, Plan, UserRole } from '../types';
+import { PaymentModal } from '../components/PaymentModal';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -18,6 +19,8 @@ const MembershipStore: React.FC = () => {
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<Plan | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<'UPI' | 'CARD' | 'NETBANKING'>('UPI');
   const [assignedTrainerId, setAssignedTrainerId] = useState<string>('');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<Plan | null>(null);
 
   if (!currentUser) return null;
 
@@ -38,12 +41,21 @@ const MembershipStore: React.FC = () => {
       showToast("Base Gym Membership required before buying Add-ons.", "error");
       return;
     }
-    setSelectedPlanForCheckout(plan);
-    setSelectedMethod('UPI');
-    setAssignedTrainerId('');
+    
+    // Validate trainer selection for PT before payment
+    if (plan.type === PlanType.PT) {
+      setSelectedPlanForCheckout(plan);
+      setSelectedMethod('UPI');
+      setAssignedTrainerId('');
+      return;
+    }
+    
+    // For non-PT plans, open Razorpay payment modal directly
+    setPendingPlan(plan);
+    setIsPaymentModalOpen(true);
   };
-
-  const handleFinalPayment = () => {
+  
+  const handleProceedToPayment = () => {
     if (!selectedPlanForCheckout) return;
     
     // Validate trainer selection for PT
@@ -51,15 +63,30 @@ const MembershipStore: React.FC = () => {
       showToast("Please select a trainer for your Personal Training sessions.", "error");
       return;
     }
-
-    setIsProcessing(true);
     
-    setTimeout(() => {
-      purchaseSubscription(currentUser.id, selectedPlanForCheckout.id, selectedMethod === 'CARD' ? 'CARD' : 'ONLINE', assignedTrainerId || undefined);
-      setIsProcessing(false);
-      setSelectedPlanForCheckout(null);
-      showToast(`Payment successful! Welcome to the program.`, 'success');
-    }, 2000);
+    setPendingPlan(selectedPlanForCheckout);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = (paymentId: string) => {
+    if (!pendingPlan) return;
+    
+    purchaseSubscription(
+      currentUser.id, 
+      pendingPlan.id, 
+      'ONLINE', 
+      assignedTrainerId || undefined
+    );
+    
+    setIsPaymentModalOpen(false);
+    setSelectedPlanForCheckout(null);
+    setPendingPlan(null);
+    setAssignedTrainerId('');
+    showToast(`Payment successful! ID: ${paymentId}`, 'success');
+  };
+  
+  const handlePaymentError = (error: any) => {
+    showToast(error?.message || 'Payment failed. Please try again.', 'error');
   };
 
   const getProviderBranding = () => {
@@ -213,7 +240,7 @@ const MembershipStore: React.FC = () => {
               </div>
 
               <button 
-                onClick={handleFinalPayment}
+                onClick={handleProceedToPayment}
                 disabled={isProcessing}
                 style={{ backgroundColor: branding.color }}
                 className="w-full py-5 text-white rounded-2xl font-black text-sm uppercase tracking-[0.1em] shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95"
@@ -231,6 +258,21 @@ const MembershipStore: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Razorpay Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setPendingPlan(null);
+        }}
+        amount={pendingPlan?.price || 0}
+        description={pendingPlan ? `Purchase ${pendingPlan.name} - ${pendingPlan.type.replace('_', ' ')}` : 'Plan Purchase'}
+        customerName={currentUser.name}
+        customerEmail={currentUser.email}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+      />
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

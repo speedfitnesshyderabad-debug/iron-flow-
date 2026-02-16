@@ -7,10 +7,10 @@ import { UserRole } from '../types';
 const Login: React.FC = () => {
   const { users, setCurrentUser } = useAppContext();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); 
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  
+
   // View states: 'login' | 'forgot' | 'success'
   const [view, setView] = useState<'login' | 'forgot' | 'success'>('login');
   const [forgotEmail, setForgotEmail] = useState('');
@@ -19,18 +19,37 @@ const Login: React.FC = () => {
   // FOR DEMO PURPOSES: Universal password fallback
   const DEMO_SECRET_KEY = 'ironflow2025';
 
+  // Debug: Log users array
+  React.useEffect(() => {
+    console.log('🔍 Login Page - Users loaded:', users.length);
+    console.log('Users:', users);
+    if (users.length === 0) {
+      console.warn('⚠️ No users found! Database might not be loaded yet.');
+    }
+  }, [users]);
+
   const handleManualLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
     setError('');
 
+    console.log('🔐 Login attempt:', email);
+    console.log('📊 Available users:', users.length);
+
     setTimeout(() => {
+      if (users.length === 0) {
+        setError(`Database not loaded yet. Found ${users.length} users. Please wait and try again.`);
+        setIsAuthenticating(false);
+        return;
+      }
+
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
+
       if (user) {
+        console.log('✅ User found:', user.name);
         // Authenticate using individual password OR demo key fallback
         const isValidPassword = (user.password && password === user.password) || (password === DEMO_SECRET_KEY);
-        
+
         if (isValidPassword) {
           setCurrentUser(user);
           // Redirect logic happens automatically in AppRoutes via Dashboard component
@@ -39,7 +58,9 @@ const Login: React.FC = () => {
           setIsAuthenticating(false);
         }
       } else {
-        setError('System Error: Account not recognized.');
+        console.error('❌ No user found with email:', email);
+        console.log('Available emails:', users.map(u => u.email));
+        setError(`System Error: Account not recognized. (${users.length} users loaded)`);
         setIsAuthenticating(false);
       }
     }, 1500);
@@ -48,7 +69,7 @@ const Login: React.FC = () => {
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSendingReset(true);
-    
+
     // Simulate API delay
     setTimeout(() => {
       setIsSendingReset(false);
@@ -57,10 +78,21 @@ const Login: React.FC = () => {
   };
 
   const quickLogin = (role: UserRole) => {
+    console.log('⚡ Quick login attempt for role:', role);
+    console.log('📊 Available users:', users.length);
+
     setIsAuthenticating(true);
     const user = users.find(u => u.role === role);
+
     setTimeout(() => {
-      if (user) setCurrentUser(user);
+      if (user) {
+        console.log('✅ Quick login successful:', user.name);
+        setCurrentUser(user);
+      } else {
+        console.error('❌ No user found with role:', role);
+        console.log('Available roles:', users.map(u => u.role));
+        setError(`No user found for role ${role}. (${users.length} users loaded)`);
+      }
       setIsAuthenticating(false);
     }, 1000);
   };
@@ -74,32 +106,32 @@ const Login: React.FC = () => {
       </div>
 
       <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 relative z-10">
-        
+
         {/* Branding Side (Hidden on Mobile) */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative">
-           <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-8">
-                 <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl">
-                    <i className="fas fa-dumbbell text-2xl"></i>
-                 </div>
-                 <span className="font-black text-2xl tracking-tighter uppercase">IronFlow</span>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl">
+                <i className="fas fa-dumbbell text-2xl"></i>
               </div>
-              <h1 className="text-5xl font-black leading-tight mb-6 uppercase">Master Your Fitness Empire.</h1>
-              <p className="text-blue-100 font-medium leading-relaxed">Enterprise-grade multi-branch infrastructure for the future of physical wellness.</p>
-           </div>
-           
-           <div className="relative z-10 flex items-center gap-4 pt-12 border-t border-white/10">
-              <div className="flex -space-x-3">
-                 {[1,2,3,4].map(i => (
-                   <img key={i} className="w-8 h-8 rounded-full border-2 border-blue-600" src={`https://i.pravatar.cc/100?u=${i}`} alt="" />
-                 ))}
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Deployed in 50+ Cities</p>
-           </div>
+              <span className="font-black text-2xl tracking-tighter uppercase">IronFlow</span>
+            </div>
+            <h1 className="text-5xl font-black leading-tight mb-6 uppercase">Master Your Fitness Empire.</h1>
+            <p className="text-blue-100 font-medium leading-relaxed">Enterprise-grade multi-branch infrastructure for the future of physical wellness.</p>
+          </div>
 
-           <div className="absolute bottom-0 right-0 opacity-10 scale-150 rotate-12">
-              <i className="fas fa-bolt text-[300px]"></i>
-           </div>
+          <div className="relative z-10 flex items-center gap-4 pt-12 border-t border-white/10">
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map(i => (
+                <img key={i} className="w-8 h-8 rounded-full border-2 border-blue-600" src={`https://i.pravatar.cc/100?u=${i}`} alt="" />
+              ))}
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-200">Deployed in 50+ Cities</p>
+          </div>
+
+          <div className="absolute bottom-0 right-0 opacity-10 scale-150 rotate-12">
+            <i className="fas fa-bolt text-[300px]"></i>
+          </div>
         </div>
 
         {/* Form Side */}
@@ -115,8 +147,8 @@ const Login: React.FC = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Work Email</label>
                   <div className="relative">
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all pl-12"
                       placeholder="identity@ironflow.in"
                       value={email}
@@ -133,8 +165,8 @@ const Login: React.FC = () => {
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Security Token</label>
                   </div>
                   <div className="relative">
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all pl-12"
                       placeholder="••••••••"
                       value={password}
@@ -145,14 +177,14 @@ const Login: React.FC = () => {
                     <i className="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                   </div>
                   <div className="flex justify-between items-center pt-2">
-                    <Link 
+                    <Link
                       to="/register"
                       className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors"
                     >
                       New Athlete? Join Now
                     </Link>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setView('forgot')}
                       className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
                     >
@@ -168,7 +200,7 @@ const Login: React.FC = () => {
                   </div>
                 )}
 
-                <button 
+                <button
                   disabled={isAuthenticating}
                   className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3"
                 >
@@ -186,7 +218,7 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto scrollbar-hide pr-1">
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.SUPER_ADMIN)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-blue-500 transition-all group disabled:opacity-30"
@@ -194,7 +226,7 @@ const Login: React.FC = () => {
                     <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-0.5">Owner</p>
                     <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Super Admin</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.BRANCH_ADMIN)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-indigo-500 transition-all group disabled:opacity-30"
@@ -202,7 +234,7 @@ const Login: React.FC = () => {
                     <p className="text-[8px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">Branch Admin</p>
                     <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Priya Patel</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.MANAGER)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-cyan-500 transition-all group disabled:opacity-30"
@@ -210,7 +242,7 @@ const Login: React.FC = () => {
                     <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-0.5">Manager</p>
                     <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Sanjay Dutt</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.TRAINER)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-violet-500 transition-all group disabled:opacity-30"
@@ -218,7 +250,7 @@ const Login: React.FC = () => {
                     <p className="text-[8px] font-black text-violet-500 uppercase tracking-widest mb-0.5">Trainer</p>
                     <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Vikram Singh</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.RECEPTIONIST)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-emerald-500 transition-all group disabled:opacity-30"
@@ -226,7 +258,7 @@ const Login: React.FC = () => {
                     <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-0.5">Front Desk</p>
                     <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Neha Kapoor</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.MEMBER)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-orange-500 transition-all group disabled:opacity-30"
@@ -234,7 +266,7 @@ const Login: React.FC = () => {
                     <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-0.5">Athlete</p>
                     <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Rahul Verma</p>
                   </button>
-                  <button 
+                  <button
                     onClick={() => quickLogin(UserRole.STAFF)}
                     disabled={isAuthenticating}
                     className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-slate-500 transition-all group disabled:opacity-30"
@@ -258,8 +290,8 @@ const Login: React.FC = () => {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Verified Email</label>
                   <div className="relative">
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all pl-12"
                       placeholder="account@ironflow.in"
                       value={forgotEmail}
@@ -271,7 +303,7 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="space-y-4 pt-2">
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSendingReset}
                     className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3"
@@ -285,8 +317,8 @@ const Login: React.FC = () => {
                       'Request Recovery Link'
                     )}
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setView('login')}
                     className="w-full py-3 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors"
                   >
@@ -306,7 +338,7 @@ const Login: React.FC = () => {
               <p className="text-slate-400 font-medium mb-10 leading-relaxed px-6">
                 Recovery instructions dispatched to <span className="text-blue-400 font-black">{forgotEmail}</span>. Please check your inbox and spam.
               </p>
-              <button 
+              <button
                 onClick={() => setView('login')}
                 className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl active:scale-[0.98]"
               >

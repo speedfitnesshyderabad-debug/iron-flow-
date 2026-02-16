@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, User, Attendance, Shift } from '../types';
+import { ImageUploadModal } from '../components/ImageUploadModal';
 
 const Staff: React.FC = () => {
   const { users, branches, currentUser, addUser, updateUser, deleteUser, attendance } = useAppContext();
@@ -18,8 +19,10 @@ const Staff: React.FC = () => {
     shifts: [{ start: '09:00', end: '13:00' }] as Shift[],
     hourlyRate: 500,
     commissionPercentage: 10,
-    emergencyContact: ''
+    emergencyContact: '',
+    avatar: ''
   });
+  const [isImageModalOpen, setImageModalOpen] = useState(false);
 
   const staffMembers = users.filter(u => 
     u.role !== UserRole.MEMBER && 
@@ -35,7 +38,8 @@ const Staff: React.FC = () => {
       shifts: [{ start: '09:00', end: '13:00' }],
       hourlyRate: 500,
       commissionPercentage: 10,
-      emergencyContact: ''
+      emergencyContact: '',
+      avatar: ''
     });
     setAddModalOpen(true);
   };
@@ -50,9 +54,14 @@ const Staff: React.FC = () => {
       shifts: staff.shifts && staff.shifts.length > 0 ? staff.shifts : [{ start: '09:00', end: '13:00' }],
       hourlyRate: staff.hourlyRate || 500,
       commissionPercentage: staff.commissionPercentage || 0,
-      emergencyContact: staff.emergencyContact || ''
+      emergencyContact: staff.emergencyContact || '',
+      avatar: staff.avatar || ''
     });
     setEditModalOpen(true);
+  };
+
+  const handleImageUpload = (url: string) => {
+    setFormData({ ...formData, avatar: url });
   };
 
   const handleOpenLogs = (staff: User) => {
@@ -72,7 +81,7 @@ const Staff: React.FC = () => {
       hourlyRate: formData.hourlyRate,
       commissionPercentage: formData.commissionPercentage,
       emergencyContact: formData.emergencyContact,
-      avatar: `https://i.pravatar.cc/150?u=${Date.now()}`
+      avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`
     };
     addUser(newStaff);
     setAddModalOpen(false);
@@ -318,6 +327,24 @@ const Staff: React.FC = () => {
             </div>
             
             <form onSubmit={isEditModalOpen ? handleUpdateStaff : handleAddStaff} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-hide">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <img 
+                    src={formData.avatar || selectedStaff?.avatar || 'https://i.pravatar.cc/150?u=default'} 
+                    alt="Profile" 
+                    className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImageModalOpen(true)}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <i className="fas fa-camera text-xs"></i>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 font-medium">Click camera to change photo</p>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
                 <input required className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
@@ -425,6 +452,13 @@ const Staff: React.FC = () => {
           </div>
         </div>
       )}
+      <ImageUploadModal
+        isOpen={isImageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        onUpload={handleImageUpload}
+        title="Update Staff Photo"
+      />
+
       <style>{`
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .scrollbar-hide::-webkit-scrollbar { display: none; }

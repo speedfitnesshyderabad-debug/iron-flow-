@@ -21,6 +21,9 @@ import Communications from './pages/Communications';
 import Inventory from './pages/Inventory';
 import TaxCenter from './pages/TaxCenter';
 import MyEarnings from './pages/MyEarnings';
+import WalkInManagement from './pages/WalkInManagement';
+import Debug from './pages/Debug';
+import BranchQR from './pages/BranchQR';
 
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
@@ -28,6 +31,7 @@ const AppRoutes: React.FC = () => {
   if (!currentUser) {
     return (
       <Routes>
+        <Route path="/debug" element={<Debug />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
@@ -39,8 +43,10 @@ const AppRoutes: React.FC = () => {
     <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/walk-ins" element={<WalkInManagement />} />
         <Route path="/members" element={<Members />} />
         <Route path="/branches" element={<Branches />} />
+        <Route path="/branch-qr" element={<BranchQR />} />
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/staff" element={<Staff />} />
         <Route path="/inventory" element={<Inventory />} />

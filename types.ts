@@ -69,6 +69,9 @@ export interface Branch {
   smsApiKey?: string;
   smsSenderId?: string;
   equipment?: string;
+  latitude?: number;
+  longitude?: number;
+  geofenceRadius?: number;
 }
 
 export interface Shift {
@@ -124,12 +127,13 @@ export interface Sale {
   invoiceNo: string;
   date: string;
   amount: number;
+  discount?: number; // Added discount field
   memberId: string;
   planId?: string;
   itemId?: string;
   staffId: string;
   branchId: string;
-  paymentMethod: 'CASH' | 'CARD' | 'ONLINE';
+  paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS';
   trainerId?: string; 
 }
 
@@ -179,4 +183,74 @@ export interface BodyMetric {
   date: string;
   weight: number;
   bmi?: number;
+}
+
+export interface ClassSession {
+  id: string;
+  templateId?: string;
+  trainerId: string;
+  date: string;
+  timeSlot: string;
+  title: string;
+  capacity: number;
+  branchId: string;
+}
+
+export interface ClassTemplate {
+  id: string;
+  title: string;
+  trainerId: string;
+  dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  timeSlot: string;
+  capacity: number;
+  branchId: string;
+}
+
+export interface Expense {
+  id: string;
+  branchId: string;
+  category: 'RENT' | 'UTILITIES' | 'SALARY' | 'EQUIPMENT' | 'MARKETING' | 'OTHER';
+  amount: number;
+  date: string;
+  description: string;
+  recordedBy: string;
+}
+
+export interface WalkIn {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  purpose: 'MEMBERSHIP_INQUIRY' | 'TOUR' | 'DAY_PASS' | 'PT_CONSULTATION' | 'CLASS_INQUIRY' | 'OTHER';
+  source: 'WALK_IN' | 'REFERRAL' | 'SOCIAL_MEDIA' | 'GOOGLE' | 'JUSTDIAL' | 'OTHER';
+  status: 'NEW' | 'FOLLOW_UP' | 'CONVERTED' | 'NOT_INTERESTED';
+  notes?: string;
+  assignedTo?: string;
+  followUpDate?: string;
+  convertedToMemberId?: string;
+  branchId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionCode {
+  code: string;
+  branchId: string;
+  status: 'VALID' | 'USED';
+  generatedBy: string;
+  createdAt: string;
+}
+
+export interface ClassCompletionCode {
+  id: string;
+  bookingId: string;
+  trainerId: string;
+  memberId: string;
+  code: string;
+  status: 'VALID' | 'USED' | 'EXPIRED';
+  classDate: string;
+  classType: 'PT' | 'GROUP';
+  branchId: string;
+  createdAt: string;
+  usedAt?: string;
 }

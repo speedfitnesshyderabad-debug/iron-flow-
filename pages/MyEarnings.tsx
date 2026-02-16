@@ -16,7 +16,9 @@ const MyEarnings: React.FC = () => {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  const years = [2024, 2025];
+  // Dynamic years: 2 years back to 2 years forward from current year
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const currentBranch = useMemo(() => 
     branches.find(b => b.id === currentUser?.branchId) || branches[0], 
