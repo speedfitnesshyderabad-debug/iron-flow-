@@ -74,6 +74,7 @@ export interface Branch {
   geofenceRadius?: number;
   holidays?: string[]; // Array of ISO date strings 'YYYY-MM-DD'
   termsAndConditions?: string;
+  isHidden?: boolean;
 }
 
 export interface Shift {

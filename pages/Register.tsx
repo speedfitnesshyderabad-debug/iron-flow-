@@ -6,11 +6,11 @@ import { useAppContext } from '../AppContext';
 const Register: React.FC = () => {
   const { branches, plans, enrollMember, showToast } = useAppContext();
   const navigate = useNavigate();
-  
+
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -41,7 +41,7 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       showToast("Security Tokens do not match.", "error");
       return;
@@ -53,7 +53,7 @@ const Register: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       await enrollMember({
         name: formData.name,
@@ -63,7 +63,7 @@ const Register: React.FC = () => {
         emergencyContact: formData.emergencyContact,
         address: formData.address
       }, formData.planId, undefined, formData.password);
-      
+
       showToast("Athlete Account Created! Redirecting to Login...", "success");
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
@@ -105,11 +105,11 @@ const Register: React.FC = () => {
               <div className="space-y-4 animate-[slideUp_0.3s_ease-out]">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center mb-6">Where will you be training?</p>
                 <div className="grid grid-cols-1 gap-4">
-                  {branches.map(branch => (
+                  {branches.filter(b => !b.isHidden).map(branch => (
                     <button
                       key={branch.id}
                       type="button"
-                      onClick={() => setFormData({...formData, branchId: branch.id, planId: ''})}
+                      onClick={() => setFormData({ ...formData, branchId: branch.id, planId: '' })}
                       className={`p-6 rounded-3xl border-2 text-left transition-all ${formData.branchId === branch.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-800/50 hover:border-slate-700'}`}
                     >
                       <h4 className={`font-black text-lg ${formData.branchId === branch.id ? 'text-white' : 'text-slate-300'}`}>{branch.name}</h4>
@@ -138,7 +138,7 @@ const Register: React.FC = () => {
                     <button
                       key={plan.id}
                       type="button"
-                      onClick={() => setFormData({...formData, planId: plan.id})}
+                      onClick={() => setFormData({ ...formData, planId: plan.id })}
                       className={`p-6 rounded-3xl border-2 text-left transition-all relative overflow-hidden ${formData.planId === plan.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 bg-slate-800/50 hover:border-slate-700'}`}
                     >
                       <div className="flex justify-between items-start">
@@ -183,58 +183,58 @@ const Register: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
-                    <input required className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Arjun Sharma" />
+                    <input required className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Arjun Sharma" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contact Phone</label>
-                    <input required type="tel" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+91 XXXXX XXXXX" />
+                    <input required type="tel" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
-                  <input required type="email" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="athlete@ironflow.in" />
+                  <input required type="email" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="athlete@ironflow.in" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">Choose Security Token</label>
-                      <div className="relative">
-                        <input 
-                          required 
-                          type={showPassword ? "text" : "password"} 
-                          className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" 
-                          value={formData.password} 
-                          onChange={e => setFormData({...formData, password: e.target.value})} 
-                          placeholder="Min. 6 chars" 
-                        />
-                        <button 
-                          type="button" 
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-                        >
-                          <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                        </button>
-                      </div>
-                   </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">Confirm Token</label>
-                      <input 
-                        required 
-                        type={showPassword ? "text" : "password"} 
-                        className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" 
-                        value={formData.confirmPassword} 
-                        onChange={e => setFormData({...formData, confirmPassword: e.target.value})} 
-                        placeholder="Re-enter token" 
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">Choose Security Token</label>
+                    <div className="relative">
+                      <input
+                        required
+                        type={showPassword ? "text" : "password"}
+                        className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Min. 6 chars"
                       />
-                   </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                      >
+                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">Confirm Token</label>
+                    <input
+                      required
+                      type={showPassword ? "text" : "password"}
+                      className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all"
+                      value={formData.confirmPassword}
+                      onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder="Re-enter token"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
                   <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                     <i className="fas fa-life-ring"></i> Emergency Contact
                   </label>
-                  <input required className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-red-500 transition-all" value={formData.emergencyContact} onChange={e => setFormData({...formData, emergencyContact: e.target.value})} placeholder="Name & Phone" />
+                  <input required className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-red-500 transition-all" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} placeholder="Name & Phone" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">

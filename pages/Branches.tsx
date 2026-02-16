@@ -321,6 +321,19 @@ const Branches: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="isHidden"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={formData.isHidden || false}
+                    onChange={e => setFormData({ ...formData, isHidden: e.target.checked })}
+                  />
+                  <label htmlFor="isHidden" className="text-xs font-bold text-slate-500 select-none cursor-pointer">
+                    Hide from Registration Page <span className="text-slate-400 font-normal italic">(Private Branch)</span>
+                  </label>
+                </div>
+
                 <div className="space-y-3 pt-2 border-t border-slate-100">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
