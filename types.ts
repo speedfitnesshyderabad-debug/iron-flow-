@@ -72,6 +72,8 @@ export interface Branch {
   latitude?: number;
   longitude?: number;
   geofenceRadius?: number;
+  holidays?: string[]; // Array of ISO date strings 'YYYY-MM-DD'
+  termsAndConditions?: string;
 }
 
 export interface Shift {
@@ -90,11 +92,12 @@ export interface User {
   memberId?: string;
   phone?: string;
   address?: string;
-  emergencyContact?: string; 
+  emergencyContact?: string;
   hasAcceptedTerms?: boolean;
-  shifts?: Shift[]; 
-  hourlyRate?: number; 
-  commissionPercentage?: number; 
+  shifts?: Shift[];
+  weekOffs?: string[]; // Array of days e.g. ['Sunday']
+  hourlyRate?: number;
+  commissionPercentage?: number;
 }
 
 export interface Plan {
@@ -108,7 +111,7 @@ export interface Plan {
   isMultiBranch?: boolean;
   maxSessions?: number;
   sessionDurationMinutes?: number;
-  groupCapacity?: number; 
+  groupCapacity?: number;
 }
 
 export interface Subscription {
@@ -119,7 +122,7 @@ export interface Subscription {
   endDate: string;
   status: SubscriptionStatus;
   branchId: string;
-  trainerId?: string; 
+  trainerId?: string;
 }
 
 export interface Sale {
@@ -134,7 +137,7 @@ export interface Sale {
   staffId: string;
   branchId: string;
   paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS';
-  trainerId?: string; 
+  trainerId?: string;
 }
 
 export interface Attendance {

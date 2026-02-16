@@ -138,6 +138,7 @@ const CheckIn: React.FC = () => {
         return;
       }
 
+      // Check for TODAY'S open session
       const openAttendance = attendance.find(a =>
         a.userId === currentUser.id &&
         a.date === today &&
@@ -145,6 +146,7 @@ const CheckIn: React.FC = () => {
       );
 
       if (openAttendance) {
+        // Normal Checkout
         updateAttendance(openAttendance.id, { timeOut: new Date().toLocaleTimeString() });
         setScanResult({
           success: true,
@@ -153,6 +155,25 @@ const CheckIn: React.FC = () => {
           isCheckOut: true
         });
       } else {
+        // Check for FORGOTTEN CHECKOUTS from PREVIOUS DAYS
+        const forgottenShift = attendance.find(a =>
+          a.userId === currentUser.id &&
+          a.date < today && // Date is in the past
+          !a.timeOut // And never checked out
+        );
+
+        if (forgottenShift) {
+          // Auto-close the forgotten shift with penalty
+          const penaltyNote = "⚠️ Auto-closed: Forgot Checkout. ₹100 Penalty Applied.";
+          updateAttendance(forgottenShift.id, {
+            timeOut: '23:59:59', // Close at end of day or shift end
+            notes: penaltyNote
+          });
+
+          showToast("⚠️ Previous shift auto-closed. ₹100 penalty applied.", "error");
+        }
+
+        // Create NEW Check-in
         recordAttendance({
           id: `att-${Date.now()}`,
           userId: currentUser.id,

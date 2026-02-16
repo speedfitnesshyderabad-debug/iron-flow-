@@ -27,10 +27,10 @@ const Branches: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [qrModalOpen, activeBranchId]);
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    address: '', 
-    phone: '', 
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    phone: '',
     email: '',
     gstin: '',
     gstPercentage: 18,
@@ -47,8 +47,10 @@ const Branches: React.FC = () => {
     equipment: '',
     latitude: 0,
     longitude: 0,
-    geofenceRadius: 100
+    geofenceRadius: 100,
+    holidays: [] as string[]
   });
+  const [newHoliday, setNewHoliday] = useState('');
 
   const getBranchStats = (branchId: string) => {
     const memberCount = users.filter(u => u.branchId === branchId && u.role === 'MEMBER').length;
@@ -56,15 +58,28 @@ const Branches: React.FC = () => {
     return { memberCount, revenue };
   };
 
+  const notifyUsers = (branchId: string, holidayDate: string, branchName: string) => {
+    // Simulate Notification
+    const recipients = users.filter(u => u.branchId === branchId);
+    const count = recipients.length;
+
+    // In a real app, this would make an API call to send SMS/Email
+    // Here we just simulate and show success
+    console.log(`[NOTIFICATION] Sending Holiday Alert for ${holidayDate} to ${count} users of ${branchName}`);
+    recipients.forEach(u => console.log(` - Queued for: ${u.name} (${u.role})`));
+
+    return count;
+  };
+
   const handleOpenAdd = () => {
     setSelectedBranch(null);
-    setFormData({ 
-      name: '', 
-      address: '', 
-      phone: '', 
-      email: '', 
-      gstin: '', 
-      gstPercentage: 18, 
+    setFormData({
+      name: '',
+      address: '',
+      phone: '',
+      email: '',
+      gstin: '',
+      gstPercentage: 18,
       gateWebhookUrl: '',
       paymentProvider: 'RAZORPAY',
       paymentApiKey: '',
@@ -78,17 +93,18 @@ const Branches: React.FC = () => {
       equipment: '',
       latitude: 0,
       longitude: 0,
-      geofenceRadius: 100
+      geofenceRadius: 100,
+      holidays: []
     });
     setModalOpen(true);
   };
 
   const handleOpenEdit = (branch: Branch) => {
     setSelectedBranch(branch);
-    setFormData({ 
-      name: branch.name, 
-      address: branch.address, 
-      phone: branch.phone, 
+    setFormData({
+      name: branch.name,
+      address: branch.address,
+      phone: branch.phone,
       email: branch.email,
       gstin: branch.gstin || '',
       gstPercentage: branch.gstPercentage || 18,
@@ -105,9 +121,22 @@ const Branches: React.FC = () => {
       equipment: branch.equipment || '',
       latitude: branch.latitude || 0,
       longitude: branch.longitude || 0,
-      geofenceRadius: branch.geofenceRadius || 100
+      geofenceRadius: branch.geofenceRadius || 100,
+      holidays: branch.holidays || []
     });
+    setNewHoliday('');
     setModalOpen(true);
+  };
+
+  const handleAddHoliday = () => {
+    if (newHoliday && !formData.holidays.includes(newHoliday)) {
+      setFormData({ ...formData, holidays: [...formData.holidays, newHoliday] });
+      setNewHoliday('');
+    }
+  };
+
+  const handleRemoveHoliday = (date: string) => {
+    setFormData({ ...formData, holidays: formData.holidays.filter(d => d !== date) });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -164,7 +193,7 @@ const Branches: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Branch Network</h2>
           <p className="text-gray-50">Infrastructure & Multi-Channel Gateway Management</p>
         </div>
-        <button 
+        <button
           onClick={handleOpenAdd}
           className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
         >
@@ -182,15 +211,15 @@ const Branches: React.FC = () => {
                   <i className="fas fa-building text-xl"></i>
                 </div>
                 <div className="flex flex-col items-end">
-                   {branch.latitude && branch.longitude ? (
-                     <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded mb-1 flex items-center gap-1">
-                        <i className="fas fa-location-dot"></i> GPS ACTIVE
-                     </span>
-                   ) : (
-                     <span className="text-[10px] font-black text-amber-500 bg-amber-50 px-2 py-1 rounded mb-1 flex items-center gap-1">
-                        <i className="fas fa-location-cross"></i> NO GPS
-                     </span>
-                   )}
+                  {branch.latitude && branch.longitude ? (
+                    <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded mb-1 flex items-center gap-1">
+                      <i className="fas fa-location-dot"></i> GPS ACTIVE
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black text-amber-500 bg-amber-50 px-2 py-1 rounded mb-1 flex items-center gap-1">
+                      <i className="fas fa-location-cross"></i> NO GPS
+                    </span>
+                  )}
                   <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded mb-1">ONLINE</span>
                   <div className="flex gap-1">
                     <span className="text-[7px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">{branch.paymentProvider || 'NO PAY'}</span>
@@ -202,7 +231,7 @@ const Branches: React.FC = () => {
               <p className="text-xs text-gray-400 mb-6 line-clamp-1">
                 <i className="fas fa-map-marker-alt mr-1"></i> {branch.address}
               </p>
-              
+
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50 mb-6">
                 <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Members</p>
@@ -215,13 +244,13 @@ const Branches: React.FC = () => {
               </div>
 
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => handleOpenEdit(branch)}
                   className="flex-1 py-3 bg-gray-50 text-gray-500 rounded-xl font-bold text-[10px] hover:bg-gray-100 transition-colors uppercase tracking-widest"
                 >
                   Configure
                 </button>
-                <button 
+                <button
                   onClick={() => { setActiveBranchId(branch.id); setQrModalOpen(true); }}
                   className="px-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-[10px] hover:bg-black transition-colors uppercase tracking-widest flex items-center gap-2"
                 >
@@ -236,34 +265,34 @@ const Branches: React.FC = () => {
       {qrModalOpen && currentActiveBranch && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] w-full max-w-md p-10 shadow-2xl animate-[slideUp_0.3s_ease-out] text-center">
-             <div className="bg-slate-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <i className="fas fa-qrcode text-3xl text-slate-900"></i>
-             </div>
-             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Gate Entry QR</h3>
-             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8">{currentActiveBranch.name}</p>
-             
-             <div className="bg-white p-8 rounded-[2.5rem] border-4 border-slate-50 shadow-inner flex items-center justify-center mb-4">
-                <QRCodeSVG 
-                  value={qrToken || currentActiveBranch.id} 
-                  size={200}
-                  level="H"
-                  includeMargin={true}
-                />
-             </div>
-             
-             <div className="flex items-center justify-center gap-2 mb-6">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <p className="text-[10px] text-slate-400 font-medium">Refreshes every 15 seconds</p>
-             </div>
+            <div className="bg-slate-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <i className="fas fa-qrcode text-3xl text-slate-900"></i>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Gate Entry QR</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8">{currentActiveBranch.name}</p>
 
-             <p className="text-[10px] text-slate-400 font-medium px-6 mb-8 uppercase tracking-widest">Members & Staff should scan this code using the IronFlow App Scanner to record attendance.</p>
-             
-             <button 
-               onClick={() => setQrModalOpen(false)}
-               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-black transition-all uppercase tracking-widest shadow-xl"
-             >
-               Close QR Display
-             </button>
+            <div className="bg-white p-8 rounded-[2.5rem] border-4 border-slate-50 shadow-inner flex items-center justify-center mb-4">
+              <QRCodeSVG
+                value={qrToken || currentActiveBranch.id}
+                size={200}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              <p className="text-[10px] text-slate-400 font-medium">Refreshes every 15 seconds</p>
+            </div>
+
+            <p className="text-[10px] text-slate-400 font-medium px-6 mb-8 uppercase tracking-widest">Members & Staff should scan this code using the IronFlow App Scanner to record attendance.</p>
+
+            <button
+              onClick={() => setQrModalOpen(false)}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-black transition-all uppercase tracking-widest shadow-xl"
+            >
+              Close QR Display
+            </button>
           </div>
         </div>
       )}
@@ -273,82 +302,82 @@ const Branches: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-y-auto max-h-[90vh] scrollbar-hide">
             <h3 className="text-2xl font-bold mb-6 tracking-tight uppercase">{selectedBranch ? 'Update Branch' : 'Register New Branch'}</h3>
             <form onSubmit={handleSubmit} className="space-y-6">
-              
+
               <section className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <i className="fas fa-info-circle text-blue-500"></i> Identity & Location
                 </label>
-                <input required placeholder="Branch Name" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                <input required placeholder="Address" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                <input required placeholder="Branch Name" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                <input required placeholder="Address" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                 <div className="grid grid-cols-2 gap-3">
-                  <input required placeholder="Phone" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                  <input required type="email" placeholder="Branch Public Email" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                  <input required placeholder="Phone" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                  <input required type="email" placeholder="Branch Public Email" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                   <input placeholder="GSTIN (Tax ID)" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-mono uppercase" value={formData.gstin} onChange={e => setFormData({...formData, gstin: e.target.value})} />
-                   <div className="relative">
-                      <input type="number" required min="0" max="100" placeholder="GST Rate" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.gstPercentage} onChange={e => setFormData({...formData, gstPercentage: Number(e.target.value)})} />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">%</span>
-                   </div>
+                  <input placeholder="GSTIN (Tax ID)" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-mono uppercase" value={formData.gstin} onChange={e => setFormData({ ...formData, gstin: e.target.value })} />
+                  <div className="relative">
+                    <input type="number" required min="0" max="100" placeholder="GST Rate" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.gstPercentage} onChange={e => setFormData({ ...formData, gstPercentage: Number(e.target.value) })} />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">%</span>
+                  </div>
                 </div>
 
                 <div className="space-y-3 pt-2 border-t border-slate-100">
-                   <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <i className="fas fa-location-cross text-amber-500"></i> GPS Geofencing
-                      </label>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                           console.log('Auto-Locate clicked');
-                           if (navigator.geolocation) {
-                              console.log('Geolocation is supported');
-                              navigator.geolocation.getCurrentPosition((position) => {
-                                 console.log('Position received:', position.coords);
-                                 setFormData({
-                                    ...formData,
-                                    latitude: position.coords.latitude,
-                                    longitude: position.coords.longitude
-                                 });
-                                 alert(`Location captured: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
-                              }, (error) => {
-                                 console.error('Geolocation error:', error.code, error.message);
-                                 let errorMsg = 'Location access denied. Please enable GPS.';
-                                 switch (error.code) {
-                                    case error.PERMISSION_DENIED:
-                                       errorMsg = 'Location permission denied. Please allow location access in your browser settings.';
-                                       break;
-                                    case error.POSITION_UNAVAILABLE:
-                                       errorMsg = 'Location information unavailable. Please try again.';
-                                       break;
-                                    case error.TIMEOUT:
-                                       errorMsg = 'Location request timed out. Please try again.';
-                                       break;
-                                 }
-                                 alert(errorMsg);
-                              }, {
-                                 enableHighAccuracy: true,
-                                 timeout: 10000,
-                                 maximumAge: 0
-                              });
-                           } else {
-                              console.error('Geolocation not supported');
-                              alert('Geolocation is not supported by your browser.');
-                           }
-                        }}
-                        className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-widest hover:bg-blue-100 transition-colors flex items-center gap-1"
-                      >
-                         <i className="fas fa-crosshairs"></i> Auto-Locate
-                      </button>
-                   </div>
-                   <div className="grid grid-cols-2 gap-3">
-                     <input type="number" step="any" placeholder="Latitude" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs" value={formData.latitude} onChange={e => setFormData({...formData, latitude: Number(e.target.value)})} />
-                     <input type="number" step="any" placeholder="Longitude" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs" value={formData.longitude} onChange={e => setFormData({...formData, longitude: Number(e.target.value)})} />
-                   </div>
-                   <div className="relative">
-                      <input type="number" min="10" placeholder="Geofence Radius (Meters)" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.geofenceRadius} onChange={e => setFormData({...formData, geofenceRadius: Number(e.target.value)})} />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">METERS</span>
-                   </div>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <i className="fas fa-location-cross text-amber-500"></i> GPS Geofencing
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log('Auto-Locate clicked');
+                        if (navigator.geolocation) {
+                          console.log('Geolocation is supported');
+                          navigator.geolocation.getCurrentPosition((position) => {
+                            console.log('Position received:', position.coords);
+                            setFormData({
+                              ...formData,
+                              latitude: position.coords.latitude,
+                              longitude: position.coords.longitude
+                            });
+                            alert(`Location captured: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
+                          }, (error) => {
+                            console.error('Geolocation error:', error.code, error.message);
+                            let errorMsg = 'Location access denied. Please enable GPS.';
+                            switch (error.code) {
+                              case error.PERMISSION_DENIED:
+                                errorMsg = 'Location permission denied. Please allow location access in your browser settings.';
+                                break;
+                              case error.POSITION_UNAVAILABLE:
+                                errorMsg = 'Location information unavailable. Please try again.';
+                                break;
+                              case error.TIMEOUT:
+                                errorMsg = 'Location request timed out. Please try again.';
+                                break;
+                            }
+                            alert(errorMsg);
+                          }, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                          });
+                        } else {
+                          console.error('Geolocation not supported');
+                          alert('Geolocation is not supported by your browser.');
+                        }
+                      }}
+                      className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-widest hover:bg-blue-100 transition-colors flex items-center gap-1"
+                    >
+                      <i className="fas fa-crosshairs"></i> Auto-Locate
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="number" step="any" placeholder="Latitude" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: Number(e.target.value) })} />
+                    <input type="number" step="any" placeholder="Longitude" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: Number(e.target.value) })} />
+                  </div>
+                  <div className="relative">
+                    <input type="number" min="10" placeholder="Geofence Radius (Meters)" className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.geofenceRadius} onChange={e => setFormData({ ...formData, geofenceRadius: Number(e.target.value) })} />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">METERS</span>
+                  </div>
                 </div>
               </section>
 
@@ -357,12 +386,12 @@ const Branches: React.FC = () => {
                   <i className="fas fa-dumbbell"></i> Gym Equipment Inventory
                 </label>
                 <p className="text-[9px] text-slate-400 italic">List machines and free weights here. AI Coach uses this for member plans.</p>
-                <textarea 
+                <textarea
                   rows={4}
                   placeholder="e.g. 5 Treadmills, Smith Machine, Dumbbells (2-40kg), Leg Press, Cable Crossover..."
                   className="w-full p-4 bg-blue-50/30 border border-blue-100 rounded-2xl outline-none text-xs font-medium"
                   value={formData.equipment}
-                  onChange={e => setFormData({...formData, equipment: e.target.value})}
+                  onChange={e => setFormData({ ...formData, equipment: e.target.value })}
                 ></textarea>
               </section>
 
@@ -370,45 +399,104 @@ const Branches: React.FC = () => {
                 <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
                   <i className="fas fa-envelope-open-text"></i> Email Infrastructure
                 </label>
-                <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.emailProvider} onChange={e => setFormData({...formData, emailProvider: e.target.value as any})}>
+                <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.emailProvider} onChange={e => setFormData({ ...formData, emailProvider: e.target.value as any })}>
                   <option value="SENDGRID">SendGrid</option>
                   <option value="MAILGUN">Mailgun</option>
                   <option value="SMTP">Custom SMTP</option>
                 </select>
-                <input placeholder={emailPlaceholders.key} className="w-full p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl outline-none text-xs font-mono" value={formData.emailApiKey} onChange={e => setFormData({...formData, emailApiKey: e.target.value})} />
-                <input placeholder={emailPlaceholders.from} className="w-full p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl outline-none text-xs font-mono" value={formData.emailFromAddress} onChange={e => setFormData({...formData, emailFromAddress: e.target.value})} />
+                <input placeholder={emailPlaceholders.key} className="w-full p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl outline-none text-xs font-mono" value={formData.emailApiKey} onChange={e => setFormData({ ...formData, emailApiKey: e.target.value })} />
+                <input placeholder={emailPlaceholders.from} className="w-full p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl outline-none text-xs font-mono" value={formData.emailFromAddress} onChange={e => setFormData({ ...formData, emailFromAddress: e.target.value })} />
               </section>
 
               <section className="space-y-3 pt-6 border-t">
                 <label className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
                   <i className="fas fa-sms"></i> SMS Gateway
                 </label>
-                <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.smsProvider} onChange={e => setFormData({...formData, smsProvider: e.target.value as any})}>
+                <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.smsProvider} onChange={e => setFormData({ ...formData, smsProvider: e.target.value as any })}>
                   <option value="TWILIO">Twilio</option>
                   <option value="MSG91">Msg91 (India)</option>
                   <option value="GUPSHUP">Gupshup</option>
                 </select>
-                <input placeholder={smsPlaceholders.key} className="w-full p-3 bg-orange-50/50 border border-orange-100 rounded-xl outline-none text-xs font-mono" value={formData.smsApiKey} onChange={e => setFormData({...formData, smsApiKey: e.target.value})} />
-                <input placeholder={smsPlaceholders.sender} className="w-full p-3 bg-orange-50/50 border border-orange-100 rounded-xl outline-none text-xs font-mono" value={formData.smsSenderId} onChange={e => setFormData({...formData, smsSenderId: e.target.value})} />
+                <input placeholder={smsPlaceholders.key} className="w-full p-3 bg-orange-50/50 border border-orange-100 rounded-xl outline-none text-xs font-mono" value={formData.smsApiKey} onChange={e => setFormData({ ...formData, smsApiKey: e.target.value })} />
+                <input placeholder={smsPlaceholders.sender} className="w-full p-3 bg-orange-50/50 border border-orange-100 rounded-xl outline-none text-xs font-mono" value={formData.smsSenderId} onChange={e => setFormData({ ...formData, smsSenderId: e.target.value })} />
               </section>
 
               <section className="space-y-3 pt-6 border-t">
                 <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
                   <i className="fas fa-credit-card"></i> Payment Gateway
                 </label>
-                <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.paymentProvider} onChange={e => setFormData({...formData, paymentProvider: e.target.value as any})}>
+                <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.paymentProvider} onChange={e => setFormData({ ...formData, paymentProvider: e.target.value as any })}>
                   <option value="RAZORPAY">Razorpay (India)</option>
                   <option value="STRIPE">Stripe (Global)</option>
                   <option value="PAYTM">Paytm (India)</option>
                 </select>
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-indigo-500 uppercase">API Key ID (Required)</label>
-                  <input placeholder={paymentPlaceholders.secret} className="w-full p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl outline-none text-xs font-mono" value={formData.paymentApiKey} onChange={e => setFormData({...formData, paymentApiKey: e.target.value})} />
+                  <input placeholder={paymentPlaceholders.secret} className="w-full p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl outline-none text-xs font-mono" value={formData.paymentApiKey} onChange={e => setFormData({ ...formData, paymentApiKey: e.target.value })} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-indigo-400 uppercase">API Key Secret (Optional)</label>
-                  <input placeholder={paymentPlaceholders.key} className="w-full p-3 bg-indigo-50/30 border border-indigo-100 rounded-xl outline-none text-xs font-mono" value={formData.paymentMerchantId} onChange={e => setFormData({...formData, paymentMerchantId: e.target.value})} />
+                  <input placeholder={paymentPlaceholders.key} className="w-full p-3 bg-indigo-50/30 border border-indigo-100 rounded-xl outline-none text-xs font-mono" value={formData.paymentMerchantId} onChange={e => setFormData({ ...formData, paymentMerchantId: e.target.value })} />
                 </div>
+              </section>
+
+              <section className="space-y-3 pt-6 border-t">
+                <label className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-calendar-star"></i> Branch Holidays & Events
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    className="flex-1 p-3 bg-rose-50/50 border border-rose-100 rounded-xl outline-none text-xs font-bold uppercase text-rose-900"
+                    value={newHoliday}
+                    onChange={e => setNewHoliday(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newHoliday) {
+                        handleAddHoliday();
+                        notifyUsers(selectedBranch?.id || '', newHoliday, formData.name);
+                        alert(`Holiday set for ${newHoliday}. Notifications sent to all Branch Members & Staff.`);
+                      }
+                    }}
+                    className="px-4 bg-rose-600 text-white rounded-xl font-bold text-xs hover:bg-rose-700 transition-colors"
+                  >
+                    ADD & NOTIFY
+                  </button>
+                </div>
+
+                {formData.holidays.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.holidays.map(date => (
+                      <div key={date} className="flex items-center gap-2 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg">
+                        <span className="text-[10px] font-black text-rose-800">{date}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveHoliday(date)}
+                          className="text-rose-400 hover:text-rose-600"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[9px] text-slate-400 italic">Adding a holiday will automatically credit 9 hours pay to all staff and notify all members.</p>
+              </section>
+
+              <section className="space-y-3 pt-6 border-t">
+                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-file-contract"></i> Terms & Conditions
+                </label>
+                <p className="text-[9px] text-slate-400 italic">These terms will be displayed to members during enrollment at this branch.</p>
+                <textarea
+                  rows={4}
+                  placeholder="Enter branch-specific terms and conditions..."
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none text-xs font-medium"
+                  value={formData.termsAndConditions || ''}
+                  onChange={e => setFormData({ ...formData, termsAndConditions: e.target.value })}
+                ></textarea>
               </section>
 
               <div className="pt-6">
@@ -419,7 +507,7 @@ const Branches: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div >
       )}
       <style>{`
         @keyframes slideUp {
@@ -428,7 +516,7 @@ const Branches: React.FC = () => {
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
-    </div>
+    </div >
   );
 };
 

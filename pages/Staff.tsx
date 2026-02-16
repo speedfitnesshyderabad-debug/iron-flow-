@@ -18,6 +18,7 @@ const Staff: React.FC = () => {
     role: UserRole.TRAINER,
     branchId: branches[0]?.id || '',
     shifts: [{ start: '09:00', end: '13:00' }] as Shift[],
+    weekOffs: [] as string[],
     hourlyRate: 500,
     commissionPercentage: 10,
     emergencyContact: '',
@@ -38,6 +39,7 @@ const Staff: React.FC = () => {
       role: UserRole.TRAINER,
       branchId: currentUser?.branchId || branches[0]?.id || '',
       shifts: [{ start: '09:00', end: '13:00' }],
+      weekOffs: [],
       hourlyRate: 500,
       commissionPercentage: 10,
       emergencyContact: '',
@@ -55,6 +57,7 @@ const Staff: React.FC = () => {
       role: staff.role,
       branchId: staff.branchId || branches[0]?.id || '',
       shifts: staff.shifts && staff.shifts.length > 0 ? staff.shifts : [{ start: '09:00', end: '13:00' }],
+      weekOffs: staff.weekOffs || [],
       hourlyRate: staff.hourlyRate || 500,
       commissionPercentage: staff.commissionPercentage || 0,
       emergencyContact: staff.emergencyContact || '',
@@ -82,6 +85,7 @@ const Staff: React.FC = () => {
       role: formData.role,
       branchId: formData.branchId,
       shifts: formData.shifts,
+      weekOffs: formData.weekOffs,
       hourlyRate: formData.hourlyRate,
       commissionPercentage: formData.commissionPercentage,
       emergencyContact: formData.emergencyContact,
@@ -130,21 +134,73 @@ const Staff: React.FC = () => {
     setFormData({ ...formData, shifts: newShifts });
   };
 
-  const calculateHours = (timeIn: string, timeOut?: string) => {
+  const calculateHours = (timeIn: string, timeOut?: string, date?: string, staffId?: string) => {
+    // 🌟 PAID WEEK OFF LOGIC (9 HOURS CREDIT)
+    if (staffId && date && timeIn === 'WEEK_OFF') {
+      return '9.0 hrs'; // Automatic credit
+    }
+
+    // 🌟 BRANCH HOLIDAY LOGIC (9 HOURS CREDIT)
+    if (staffId && date) {
+      const staff = users.find(u => u.id === staffId);
+      if (staff && staff.branchId) {
+        const branch = branches.find(b => b.id === staff.branchId);
+        if (branch && branch.holidays && branch.holidays.includes(date) && (!timeOut || timeIn === 'HOLIDAY')) {
+          return '9.0 hrs'; // Paid Leave
+        }
+      }
+    }
+
     if (!timeOut) return 'Active';
-    const start = new Date(`2000-01-01 ${timeIn}`);
+
+    let start = new Date(`2000-01-01 ${timeIn}`);
     const end = new Date(`2000-01-01 ${timeOut}`);
+
+    // SMART ROUNDING LOGIC (Option B) - Multi-Shift Support
+    if (staffId && date) {
+      const staff = users.find(u => u.id === staffId);
+      if (staff && staff.shifts && staff.shifts.length > 0) {
+
+        // Find the shift that this check-in belongs to (closest start time)
+        let matchedShift = staff.shifts[0];
+        let minDiff = Number.MAX_VALUE;
+
+        staff.shifts.forEach(shift => {
+          if (!shift.start) return;
+          const shiftStart = new Date(`2000-01-01 ${shift.start}`);
+          const diff = Math.abs(start.getTime() - shiftStart.getTime());
+
+          // If check-in is within 2 hours of shift start (before or after), match it
+          if (diff < minDiff && diff < (2 * 60 * 60 * 1000)) {
+            minDiff = diff;
+            matchedShift = shift;
+          }
+        });
+
+        if (matchedShift && matchedShift.start) {
+          const shiftStart = new Date(`2000-01-01 ${matchedShift.start}`);
+          // If arrived early (Actual < Schedule), use Schedule
+          // Only if checking in within 1 hour before shift (prevents very early mixups)
+          if (start < shiftStart && (shiftStart.getTime() - start.getTime() < 60 * 60 * 1000)) {
+            start = shiftStart;
+          }
+        }
+      }
+    }
+
     const diff = (end.getTime() - start.getTime()) / 1000 / 60 / 60;
-    return `${diff.toFixed(1)} hrs`;
+    return `${Math.max(0, diff).toFixed(1)} hrs`;
   };
 
   const formatTime = (time?: string) => {
     if (!time) return 'N/A';
-    const [hrs, mins] = time.split(':');
-    const h = parseInt(hrs);
-    const suffix = h >= 12 ? 'PM' : 'AM';
-    const displayH = h % 12 || 12;
-    return `${displayH}:${mins} ${suffix}`;
+    try {
+      const [hrs, mins] = time.split(':');
+      const h = parseInt(hrs);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      const displayH = h % 12 || 12;
+      return `${displayH}:${mins} ${suffix}`;
+    } catch (e) { return time; }
   };
 
   return (
@@ -299,15 +355,20 @@ const Staff: React.FC = () => {
                     <div>
                       <p className="text-xs font-black text-slate-900 uppercase tracking-widest">{a.date}</p>
                       <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold mt-2">
-                        <span className="flex items-center gap-1.5"><i className="fas fa-sign-in-alt text-emerald-500"></i> {a.timeIn}</span>
-                        {a.timeOut && <span className="flex items-center gap-1.5"><i className="fas fa-sign-out-alt text-red-500"></i> {a.timeOut}</span>}
+                        <span className="flex items-center gap-1.5"><i className="fas fa-sign-in-alt text-emerald-500"></i> {formatTime(a.timeIn)}</span>
+                        {a.timeOut && <span className="flex items-center gap-1.5"><i className="fas fa-sign-out-alt text-red-500"></i> {formatTime(a.timeOut)}</span>}
                       </div>
+                      {a.notes && a.notes.includes('Penalty') && (
+                        <span className="inline-block mt-2 text-[9px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded uppercase tracking-widest">
+                          <i className="fas fa-exclamation-circle mr-1"></i> {a.notes}
+                        </span>
+                      )}
                     </div>
                     <div className="text-right">
                       {a.timeOut ? (
                         <div className="flex flex-col items-end">
                           <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest mb-1">COMPLETED</span>
-                          <span className="text-[10px] font-black text-slate-900">{calculateHours(a.timeIn, a.timeOut)}</span>
+                          <span className="text-[10px] font-black text-slate-900">{calculateHours(a.timeIn, a.timeOut, a.date, selectedStaff.id)}</span>
                         </div>
                       ) : (
                         <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">On Shift</span>
