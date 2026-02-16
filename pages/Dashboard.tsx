@@ -1,3 +1,10 @@
+import React, { useState } from 'react';
+import { useAppContext } from '../AppContext';
+import { UserRole, PlanType, SubscriptionStatus } from '../types';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, Legend
+} from 'recharts';
 import { QuickRenewModal } from '../components/QuickRenewModal';
 
 const Dashboard: React.FC = () => {
