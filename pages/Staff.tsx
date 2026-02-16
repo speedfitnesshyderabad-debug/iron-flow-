@@ -14,6 +14,7 @@ const Staff: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: UserRole.TRAINER,
     branchId: branches[0]?.id || '',
     shifts: [{ start: '09:00', end: '13:00' }] as Shift[],
@@ -24,8 +25,8 @@ const Staff: React.FC = () => {
   });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
 
-  const staffMembers = users.filter(u => 
-    u.role !== UserRole.MEMBER && 
+  const staffMembers = users.filter(u =>
+    u.role !== UserRole.MEMBER &&
     (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId)
   );
 
@@ -33,6 +34,7 @@ const Staff: React.FC = () => {
     setFormData({
       name: '',
       email: '',
+      password: '', // Default empty
       role: UserRole.TRAINER,
       branchId: currentUser?.branchId || branches[0]?.id || '',
       shifts: [{ start: '09:00', end: '13:00' }],
@@ -49,6 +51,7 @@ const Staff: React.FC = () => {
     setFormData({
       name: staff.name,
       email: staff.email,
+      password: '', // Don't show existing password
       role: staff.role,
       branchId: staff.branchId || branches[0]?.id || '',
       shifts: staff.shifts && staff.shifts.length > 0 ? staff.shifts : [{ start: '09:00', end: '13:00' }],
@@ -75,6 +78,7 @@ const Staff: React.FC = () => {
       id: `staff-${Date.now()}`,
       name: formData.name,
       email: formData.email,
+      password: formData.password || 'ironflow2025', // Use provided password or default
       role: formData.role,
       branchId: formData.branchId,
       shifts: formData.shifts,
@@ -90,7 +94,11 @@ const Staff: React.FC = () => {
   const handleUpdateStaff = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedStaff) {
-      updateUser(selectedStaff.id, formData);
+      // Only update password if provided
+      const updates: any = { ...formData };
+      if (!updates.password) delete updates.password;
+
+      updateUser(selectedStaff.id, updates);
       setEditModalOpen(false);
       setSelectedStaff(null);
     }
@@ -146,7 +154,7 @@ const Staff: React.FC = () => {
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Staff Directory</h2>
           <p className="text-gray-500 font-medium text-sm">Monitor multiple shifts and team attendance logs</p>
         </div>
-        <button 
+        <button
           onClick={handleOpenAdd}
           className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 md:py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-100"
         >
@@ -196,56 +204,56 @@ const Staff: React.FC = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
-                           <span className="text-sm font-black text-emerald-600">₹{staff.hourlyRate || 500}<span className="text-[8px] opacity-60">/hr</span></span>
-                           {(staff.role === UserRole.TRAINER || staff.role === UserRole.MANAGER) && (
-                             <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.commissionPercentage || 0}% Comm.</span>
-                           )}
+                          <span className="text-sm font-black text-emerald-600">₹{staff.hourlyRate || 500}<span className="text-[8px] opacity-60">/hr</span></span>
+                          {(staff.role === UserRole.TRAINER || staff.role === UserRole.MANAGER) && (
+                            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.commissionPercentage || 0}% Comm.</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col gap-1.5">
-                           {isCheckedIn ? (
-                             <span className="flex items-center gap-1.5 text-green-600 font-black text-[9px] uppercase tracking-widest">
-                               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                               ON DUTY
-                             </span>
-                           ) : (
-                             <span className="text-slate-400 text-[9px] font-black uppercase tracking-widest">OFFLINE</span>
-                           )}
-                           <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest opacity-60 truncate max-w-[120px]">{branch?.name || 'Global'}</span>
+                          {isCheckedIn ? (
+                            <span className="flex items-center gap-1.5 text-green-600 font-black text-[9px] uppercase tracking-widest">
+                              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+                              ON DUTY
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-[9px] font-black uppercase tracking-widest">OFFLINE</span>
+                          )}
+                          <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest opacity-60 truncate max-w-[120px]">{branch?.name || 'Global'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                         {staff.emergencyContact ? (
-                           <div className="flex items-center gap-2 group/sos cursor-help">
-                             <div className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center transition-all group-hover/sos:bg-red-600 group-hover/sos:text-white shrink-0">
-                                <i className="fas fa-truck-medical text-xs"></i>
-                             </div>
-                             <span className="text-[10px] font-black text-slate-500 whitespace-nowrap">
-                               {staff.emergencyContact}
-                             </span>
-                           </div>
-                         ) : (
-                           <span className="text-[10px] text-slate-300 italic font-bold">N/A</span>
-                         )}
+                        {staff.emergencyContact ? (
+                          <div className="flex items-center gap-2 group/sos cursor-help">
+                            <div className="bg-red-50 text-red-600 w-8 h-8 rounded-lg flex items-center justify-center transition-all group-hover/sos:bg-red-600 group-hover/sos:text-white shrink-0">
+                              <i className="fas fa-truck-medical text-xs"></i>
+                            </div>
+                            <span className="text-[10px] font-black text-slate-500 whitespace-nowrap">
+                              {staff.emergencyContact}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-300 italic font-bold">N/A</span>
+                        )}
                       </td>
                       <td className="px-6 py-5 text-right pr-8">
                         <div className="flex justify-end gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
+                          <button
                             onClick={() => handleOpenLogs(staff)}
                             className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                             title="Attendance Logs"
                           >
                             <i className="fas fa-clock-rotate-left"></i>
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleOpenEdit(staff)}
                             className="p-2.5 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                             title="Edit Profile"
                           >
                             <i className="fas fa-user-pen"></i>
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteStaff(staff.id)}
                             className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all"
                             title="Delete Account"
@@ -266,50 +274,50 @@ const Staff: React.FC = () => {
       {/* Logs Modal */}
       {isLogsModalOpen && selectedStaff && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-           <div className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
-              <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
-                 <div className="flex items-center gap-4">
-                    <img src={selectedStaff.avatar} className="w-12 h-12 rounded-2xl border-2 border-white/20 shadow-xl" alt="" />
+          <div className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+            <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <img src={selectedStaff.avatar} className="w-12 h-12 rounded-2xl border-2 border-white/20 shadow-xl" alt="" />
+                <div>
+                  <h3 className="font-black text-xl uppercase tracking-tight">{selectedStaff.name}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Employee Attendance Logs</p>
+                </div>
+              </div>
+              <button onClick={() => setLogsModalOpen(false)} className="bg-white/10 p-2.5 rounded-xl hover:bg-white/20 transition-colors">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="p-8 max-h-[60vh] overflow-y-auto space-y-4 bg-slate-50/50">
+              {attendance.filter(a => a.userId === selectedStaff.id).length === 0 ? (
+                <div className="text-center py-20 flex flex-col items-center gap-4">
+                  <i className="fas fa-calendar-xmark text-4xl text-slate-200"></i>
+                  <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No duty logs recorded yet</p>
+                </div>
+              ) : (
+                [...attendance].filter(a => a.userId === selectedStaff.id).reverse().map(a => (
+                  <div key={a.id} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-3xl shadow-sm">
                     <div>
-                       <h3 className="font-black text-xl uppercase tracking-tight">{selectedStaff.name}</h3>
-                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Employee Attendance Logs</p>
+                      <p className="text-xs font-black text-slate-900 uppercase tracking-widest">{a.date}</p>
+                      <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold mt-2">
+                        <span className="flex items-center gap-1.5"><i className="fas fa-sign-in-alt text-emerald-500"></i> {a.timeIn}</span>
+                        {a.timeOut && <span className="flex items-center gap-1.5"><i className="fas fa-sign-out-alt text-red-500"></i> {a.timeOut}</span>}
+                      </div>
                     </div>
-                 </div>
-                 <button onClick={() => setLogsModalOpen(false)} className="bg-white/10 p-2.5 rounded-xl hover:bg-white/20 transition-colors">
-                   <i className="fas fa-times"></i>
-                 </button>
-              </div>
-              <div className="p-8 max-h-[60vh] overflow-y-auto space-y-4 bg-slate-50/50">
-                 {attendance.filter(a => a.userId === selectedStaff.id).length === 0 ? (
-                    <div className="text-center py-20 flex flex-col items-center gap-4">
-                       <i className="fas fa-calendar-xmark text-4xl text-slate-200"></i>
-                       <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No duty logs recorded yet</p>
+                    <div className="text-right">
+                      {a.timeOut ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest mb-1">COMPLETED</span>
+                          <span className="text-[10px] font-black text-slate-900">{calculateHours(a.timeIn, a.timeOut)}</span>
+                        </div>
+                      ) : (
+                        <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">On Shift</span>
+                      )}
                     </div>
-                 ) : (
-                    [...attendance].filter(a => a.userId === selectedStaff.id).reverse().map(a => (
-                       <div key={a.id} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-3xl shadow-sm">
-                          <div>
-                             <p className="text-xs font-black text-slate-900 uppercase tracking-widest">{a.date}</p>
-                             <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold mt-2">
-                                <span className="flex items-center gap-1.5"><i className="fas fa-sign-in-alt text-emerald-500"></i> {a.timeIn}</span>
-                                {a.timeOut && <span className="flex items-center gap-1.5"><i className="fas fa-sign-out-alt text-red-500"></i> {a.timeOut}</span>}
-                             </div>
-                          </div>
-                          <div className="text-right">
-                             {a.timeOut ? (
-                                <div className="flex flex-col items-end">
-                                   <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest mb-1">COMPLETED</span>
-                                   <span className="text-[10px] font-black text-slate-900">{calculateHours(a.timeIn, a.timeOut)}</span>
-                                </div>
-                             ) : (
-                                <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">On Shift</span>
-                             )}
-                          </div>
-                       </div>
-                    ))
-                 )}
-              </div>
-           </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -318,20 +326,20 @@ const Staff: React.FC = () => {
           <div className="bg-white rounded-[3rem] w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <div className={`p-8 text-white flex justify-between items-center ${isEditModalOpen ? 'bg-indigo-600 shadow-indigo-100 shadow-xl' : 'bg-blue-600 shadow-blue-100 shadow-xl'}`}>
               <div>
-                 <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{isEditModalOpen ? 'Update Profile' : 'Staff Onboarding'}</h3>
-                 <p className="text-[10px] text-white/60 font-black uppercase tracking-widest">Management Credentials</p>
+                <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{isEditModalOpen ? 'Update Profile' : 'Staff Onboarding'}</h3>
+                <p className="text-[10px] text-white/60 font-black uppercase tracking-widest">Management Credentials</p>
               </div>
               <button onClick={() => { setAddModalOpen(false); setEditModalOpen(false); }} className="bg-white/10 p-2.5 rounded-xl hover:bg-white/20 transition-colors">
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            
+
             <form onSubmit={isEditModalOpen ? handleUpdateStaff : handleAddStaff} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-hide">
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
-                  <img 
-                    src={formData.avatar || selectedStaff?.avatar || 'https://i.pravatar.cc/150?u=default'} 
-                    alt="Profile" 
+                  <img
+                    src={formData.avatar || selectedStaff?.avatar || 'https://i.pravatar.cc/150?u=default'}
+                    alt="Profile"
                     className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
                   />
                   <button
@@ -352,16 +360,28 @@ const Staff: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-red-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                   <i className="fas fa-life-ring"></i> Emergency Contact Number
+                  <i className="fas fa-life-ring"></i> Emergency Contact Number
                 </label>
                 <input required type="tel" className="w-full p-4 bg-red-50 border border-red-100 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 font-black text-sm text-red-700 placeholder:text-red-200" placeholder="+91 XXXXX XXXXX" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Work Email</label>
-                <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                  <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{isEditModalOpen ? 'Set New Password' : 'Password'}</label>
+                  <input
+                    type="password"
+                    placeholder={isEditModalOpen ? '(Leave blank to keep same)' : 'e.g. staff123'}
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
+                    value={formData.password || ''}
+                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Hourly Salary (₹)</label>
@@ -401,47 +421,47 @@ const Staff: React.FC = () => {
               </div>
 
               <div className="pt-6 border-t border-gray-100 space-y-4">
-                 <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Work Shifts (1-3 Max)</label>
-                    {formData.shifts.length < 3 && (
-                       <button type="button" onClick={addShiftInput} className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition-all">
-                          <i className="fas fa-plus mr-1"></i> Add Shift
-                       </button>
-                    )}
-                 </div>
-                 
-                 <div className="space-y-4">
-                    {formData.shifts.map((shift, index) => (
-                       <div key={index} className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100/50 space-y-3 relative group/shift animate-[slideUp_0.2s_ease-out]">
-                          <div className="flex justify-between items-center">
-                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Shift Slot #{index + 1}</span>
-                             {formData.shifts.length > 1 && (
-                                <button type="button" onClick={() => removeShiftInput(index)} className="text-red-400 hover:text-red-600 transition-colors text-xs">
-                                   <i className="fas fa-trash-can"></i>
-                                </button>
-                             )}
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Starts At</label>
-                                <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.start} onChange={e => handleShiftChange(index, 'start', e.target.value)} />
-                             </div>
-                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ends At</label>
-                                <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.end} onChange={e => handleShiftChange(index, 'end', e.target.value)} />
-                             </div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Work Shifts (1-3 Max)</label>
+                  {formData.shifts.length < 3 && (
+                    <button type="button" onClick={addShiftInput} className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition-all">
+                      <i className="fas fa-plus mr-1"></i> Add Shift
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {formData.shifts.map((shift, index) => (
+                    <div key={index} className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100/50 space-y-3 relative group/shift animate-[slideUp_0.2s_ease-out]">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Shift Slot #{index + 1}</span>
+                        {formData.shifts.length > 1 && (
+                          <button type="button" onClick={() => removeShiftInput(index)} className="text-red-400 hover:text-red-600 transition-colors text-xs">
+                            <i className="fas fa-trash-can"></i>
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Starts At</label>
+                          <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.start} onChange={e => handleShiftChange(index, 'start', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ends At</label>
+                          <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.end} onChange={e => handleShiftChange(index, 'end', e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-4">
                 <button type="submit" className={`w-full py-5 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all active:scale-95 ${isEditModalOpen ? 'bg-indigo-600 shadow-indigo-100 hover:bg-indigo-700' : 'bg-blue-600 shadow-blue-100 hover:bg-blue-700'}`}>
                   {isEditModalOpen ? 'COMMIT UPDATES' : 'DEPLOY STAFF ACCOUNT'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => { setAddModalOpen(false); setEditModalOpen(false); }}
                   className="w-full py-3 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors mt-2"
                 >

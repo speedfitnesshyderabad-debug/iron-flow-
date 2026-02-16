@@ -12,19 +12,25 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  
-  const [accountData, setAccountData] = useState({ 
-    name: currentUser?.name || '', 
+
+  const [accountData, setAccountData] = useState({
+    name: currentUser?.name || '',
     email: currentUser?.email || '',
     emergencyContact: currentUser?.emergencyContact || '',
     address: currentUser?.address || ''
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
   if (!currentUser) return null;
 
   const filteredNav = NAV_ITEMS.filter(item => item.roles.includes(currentUser.role));
   const userBranch = branches.find(b => b.id === currentUser.branchId);
-  
+
   // Primary items for the bottom bar (limited to 5)
   const mobileBottomNavItems = filteredNav.slice(0, 5);
 
@@ -34,20 +40,43 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     navigate('/login', { replace: true });
   };
 
-  const handleUpdateAccount = (e: React.FormEvent) => {
+  const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUser(currentUser.id, accountData);
+
+    // Handle Password Change
+    if (passwordData.newPassword) {
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        alert("New passwords do not match!");
+        return;
+      }
+
+      const currentActualPassword = currentUser.password || 'ironflow2025';
+      if (passwordData.currentPassword !== currentActualPassword) {
+        alert("Incorrect current password!");
+        return;
+      }
+
+      await updateUser(currentUser.id, {
+        ...accountData,
+        password: passwordData.newPassword
+      });
+      alert("Password updated successfully!");
+    } else {
+      await updateUser(currentUser.id, accountData);
+    }
+
     setIsAccountModalOpen(false);
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-gray-50 font-sans">
-      
+
       {/* Mobile Sidebar Backdrop */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] transition-opacity animate-[fadeIn_0.2s_ease-out]"
           onClick={closeMobileMenu}
         />
@@ -93,11 +122,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Sidebar Bottom Actions */}
         <div className="p-4 border-t border-slate-800 space-y-2">
-          <button 
+          <button
             onClick={() => {
-              setAccountData({ 
-                name: currentUser.name, 
-                email: currentUser.email, 
+              setAccountData({
+                name: currentUser.name,
+                email: currentUser.email,
                 emergencyContact: currentUser.emergencyContact || '',
                 address: currentUser.address || ''
               });
@@ -108,7 +137,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <i className="fas fa-cog text-lg"></i>
             {(isSidebarOpen || isMobileMenuOpen) && <span>SETTINGS</span>}
           </button>
-          <button 
+          <button
             onClick={handleLogout}
             className={`w-full flex items-center gap-4 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-bold text-sm ${(!isSidebarOpen && !isMobileMenuOpen) && 'justify-center px-0'}`}
           >
@@ -124,8 +153,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {/* Header Left: Navigation & Title */}
           <div className="flex items-center gap-3 md:gap-4 overflow-hidden min-w-0 flex-1">
             {/* Hamburger for Mobile */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(true)} 
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
               className="md:hidden text-slate-400 hover:text-slate-900 transition-colors p-2 hover:bg-slate-100 rounded-lg shrink-0"
             >
               <i className="fas fa-bars text-xl"></i>
@@ -135,7 +164,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <i className={`fas ${isSidebarOpen ? 'fa-indent' : 'fa-outdent'} text-xl`}></i>
             </button>
             <div className="bg-blue-600 p-1.5 rounded-lg md:hidden shrink-0">
-               <i className="fas fa-dumbbell text-white text-[10px]"></i>
+              <i className="fas fa-dumbbell text-white text-[10px]"></i>
             </div>
             <h1 className="text-sm md:text-lg font-black text-gray-800 tracking-tight truncate pr-2">
               {userBranch ? userBranch.name : 'IronFlow Global'}
@@ -150,8 +179,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 {currentUser.role.replace('_', ' ')}
               </span>
             </div>
-            <div 
-              className="relative group cursor-pointer shrink-0" 
+            <div
+              className="relative group cursor-pointer shrink-0"
               onClick={() => setIsAccountModalOpen(true)}
             >
               <img src={currentUser.avatar} alt="User" className="w-9 h-9 md:w-11 md:h-11 rounded-xl md:rounded-2xl border-2 border-white shadow-md object-cover transition-transform group-hover:scale-105" />
@@ -166,30 +195,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Bottom Quick-Nav for Mobile */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 py-3 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] rounded-t-[2.5rem] safe-area-pb">
-           {mobileBottomNavItems.map(item => {
-             const isActive = location.pathname === item.path;
-             return (
-               <Link 
-                 key={item.path} 
-                 to={item.path} 
-                 className={`flex flex-col items-center gap-1 transition-all flex-1 min-w-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`}
-               >
-                 <span className={`text-[1.25rem] ${isActive ? 'scale-110' : ''}`}>{item.icon}</span>
-                 <span className={`text-[9px] font-black uppercase tracking-tight truncate w-full text-center px-1 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
-                   {item.label}
-                 </span>
-                 {isActive && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-0.5 animate-pulse"></span>}
-               </Link>
-             );
-           })}
-           {/* "More" Trigger for the Sidebar Drawer */}
-           <button 
-             onClick={() => setIsMobileMenuOpen(true)} 
-             className="flex flex-col items-center gap-1 transition-all flex-1 min-w-0 text-slate-500"
-           >
-              <i className="fas fa-ellipsis-h text-[1.25rem]"></i>
-              <span className="text-[9px] font-black uppercase tracking-tight opacity-70">More</span>
-           </button>
+          {mobileBottomNavItems.map(item => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center gap-1 transition-all flex-1 min-w-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`}
+              >
+                <span className={`text-[1.25rem] ${isActive ? 'scale-110' : ''}`}>{item.icon}</span>
+                <span className={`text-[9px] font-black uppercase tracking-tight truncate w-full text-center px-1 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                  {item.label}
+                </span>
+                {isActive && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-0.5 animate-pulse"></span>}
+              </Link>
+            );
+          })}
+          {/* "More" Trigger for the Sidebar Drawer */}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex flex-col items-center gap-1 transition-all flex-1 min-w-0 text-slate-500"
+          >
+            <i className="fas fa-ellipsis-h text-[1.25rem]"></i>
+            <span className="text-[9px] font-black uppercase tracking-tight opacity-70">More</span>
+          </button>
         </nav>
       </div>
 
@@ -211,11 +240,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
                 <div className="relative">
                   <i className="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-                  <input 
-                    required 
+                  <input
+                    required
                     className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                     value={accountData.name}
-                    onChange={e => setAccountData({...accountData, name: e.target.value})}
+                    onChange={e => setAccountData({ ...accountData, name: e.target.value })}
                   />
                 </div>
               </div>
@@ -224,10 +253,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Address</label>
                 <div className="relative">
                   <i className="fas fa-map-marker-alt absolute left-4 top-4 text-slate-300"></i>
-                  <textarea 
+                  <textarea
                     className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
                     value={accountData.address}
-                    onChange={e => setAccountData({...accountData, address: e.target.value})}
+                    onChange={e => setAccountData({ ...accountData, address: e.target.value })}
                     placeholder="Residential Address"
                     rows={2}
                   />
@@ -236,16 +265,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
-                   <i className="fas fa-life-ring"></i> Emergency Contact
+                  <i className="fas fa-life-ring"></i> Emergency Contact
                 </label>
                 <div className="relative">
                   <i className="fas fa-phone-medical absolute left-4 top-1/2 -translate-y-1/2 text-red-200"></i>
-                  <input 
-                    required 
+                  <input
+                    required
                     type="tel"
                     className="w-full p-4 pl-12 bg-red-50 border border-red-100 text-red-700 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 font-black"
                     value={accountData.emergencyContact}
-                    onChange={e => setAccountData({...accountData, emergencyContact: e.target.value})}
+                    onChange={e => setAccountData({ ...accountData, emergencyContact: e.target.value })}
                     placeholder="+91 XXXXX XXXXX"
                   />
                 </div>
@@ -255,24 +284,55 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</label>
                 <div className="relative">
                   <i className="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-                  <input 
-                    required 
+                  <input
+                    required
                     type="email"
                     className="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                     value={accountData.email}
-                    onChange={e => setAccountData({...accountData, email: e.target.value})}
+                    onChange={e => setAccountData({ ...accountData, email: e.target.value })}
                   />
                 </div>
               </div>
 
+              <div className="pt-6 border-t border-dashed border-gray-200">
+                <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 block">
+                  <i className="fas fa-lock mr-2"></i> Security & Password
+                </label>
+                <div className="space-y-3">
+                  <input
+                    type="password"
+                    placeholder="Current Password"
+                    className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
+                    value={passwordData.currentPassword}
+                    onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="password"
+                      placeholder="New Password"
+                      className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
+                      value={passwordData.newPassword}
+                      onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirm Password"
+                      className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
+                      value={passwordData.confirmPassword}
+                      onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-4 space-y-3 shrink-0">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
                 >
                   SAVE CHANGES
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={handleLogout}
                   className="w-full py-3 bg-red-50 text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all"
