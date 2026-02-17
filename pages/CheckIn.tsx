@@ -150,6 +150,9 @@ const CheckIn: React.FC = () => {
   };
 
   const handleCheckIn = (branchIdScanned: string) => {
+    console.log('[CheckIn] Scanned branch ID:', branchIdScanned);
+    console.log('[CheckIn] Available branches:', branches.map(b => ({ id: b.id, name: b.name })));
+
     if (!currentUser) {
       showToast("Please login to scan branch QR", "error");
       return;
@@ -157,7 +160,8 @@ const CheckIn: React.FC = () => {
 
     const branch = branches.find(b => b.id === branchIdScanned);
     if (!branch) {
-      setScanResult({ success: false, message: "Invalid Branch QR Code Scanned." });
+      console.error('[CheckIn] Branch not found for ID:', branchIdScanned);
+      setScanResult({ success: false, message: `Invalid Branch QR Code. Scanned ID: ${branchIdScanned}` });
       setTimeout(() => setScanResult(null), 3000);
       return;
     }
