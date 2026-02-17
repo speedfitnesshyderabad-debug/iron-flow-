@@ -17,18 +17,6 @@ const Login: React.FC = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
 
-  // FOR DEMO PURPOSES: Universal password fallback
-  const DEMO_SECRET_KEY = 'ironflow2025';
-
-  // Debug: Log users array
-  React.useEffect(() => {
-    console.log('🔍 Login Page - Users loaded:', users.length);
-    console.log('Users:', users);
-    if (users.length === 0) {
-      console.warn('⚠️ No users found! Database might not be loaded yet.');
-    }
-  }, [users]);
-
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
@@ -88,30 +76,6 @@ const Login: React.FC = () => {
     }, 1500);
   };
 
-  const quickLogin = async (role: UserRole) => {
-    console.log('⚡ Quick login attempt for role:', role);
-    console.log('📊 Available users:', users.length);
-
-    setIsAuthenticating(true);
-    const user = users.find(u => u.role === role);
-
-    setTimeout(async () => {
-      if (user) {
-        console.log('✅ Quick login successful:', user.name);
-        const sessionCreated = await createSession(user.id);
-        if (sessionCreated) {
-          setCurrentUser(user);
-        } else {
-          setError(`Maximum devices reached for ${user.name}.`);
-        }
-      } else {
-        console.error('❌ No user found with role:', role);
-        console.log('Available roles:', users.map(u => u.role));
-        setError(`No user found for role ${role}. (${users.length} users loaded)`);
-      }
-      setIsAuthenticating(false);
-    }, 1000);
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
