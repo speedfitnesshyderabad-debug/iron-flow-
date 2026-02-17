@@ -11,6 +11,8 @@ const CheckIn: React.FC = () => {
   const [manualQRInput, setManualQRInput] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   // Ref for scanner to avoid stale closures
   const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
@@ -32,6 +34,25 @@ const CheckIn: React.FC = () => {
   };
 
   useEffect(() => {
+    // Request Camera Permission Explicitly
+    const requestCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Permission granted
+        setHasCameraPermission(true);
+        setPermissionError(null);
+
+        // Stop the stream immediately, we just wanted to check permission
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err: any) {
+        console.error("Camera permission error:", err);
+        setHasCameraPermission(false);
+        setPermissionError("Camera access denied. Please allow camera usage in your browser settings to scan QR codes.");
+      }
+    };
+
+    requestCamera();
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -53,6 +74,8 @@ const CheckIn: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!hasCameraPermission) return; // Don't start scanner without permission
+
     const scanner = new Html5QrcodeScanner(
       "reader",
       { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -412,16 +435,34 @@ const CheckIn: React.FC = () => {
         </div>
 
         <div className="relative mb-10">
-          <div id="reader" className="overflow-hidden rounded-[2.5rem] border-4 border-slate-50 shadow-inner"></div>
-
-          {isGateOpen && (
-            <div className="absolute inset-0 bg-green-500/90 backdrop-blur-sm flex flex-col items-center justify-center text-white z-10 rounded-[2.5rem]">
-              <div className="bg-white text-green-600 w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-2xl scale-110">
-                <i className="fas fa-check text-3xl"></i>
+          {permissionError ? (
+            <div className="bg-red-50 border-2 border-red-200 p-8 rounded-[2.5rem] text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-600 shadow-md">
+                <i className="fas fa-video-slash text-2xl"></i>
               </div>
-              <p className="text-2xl font-black uppercase tracking-widest">SUCCESS</p>
-              <p className="text-sm font-bold opacity-80 uppercase tracking-tight mt-1">Attendance Recorded</p>
+              <h3 className="text-lg font-black text-red-800 uppercase tracking-tight mb-2">Camera Access Denied</h3>
+              <p className="text-sm text-red-600 mb-6 font-medium max-w-xs mx-auto">{permissionError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-colors shadow-lg"
+              >
+                Retry Permission
+              </button>
             </div>
+          ) : (
+            <>
+              <div id="reader" className="overflow-hidden rounded-[2.5rem] border-4 border-slate-50 shadow-inner"></div>
+
+              {isGateOpen && (
+                <div className="absolute inset-0 bg-green-500/90 backdrop-blur-sm flex flex-col items-center justify-center text-white z-10 rounded-[2.5rem]">
+                  <div className="bg-white text-green-600 w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-2xl scale-110">
+                    <i className="fas fa-check text-3xl"></i>
+                  </div>
+                  <p className="text-2xl font-black uppercase tracking-widest">SUCCESS</p>
+                  <p className="text-sm font-bold opacity-80 uppercase tracking-tight mt-1">Attendance Recorded</p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
