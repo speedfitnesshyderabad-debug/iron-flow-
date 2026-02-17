@@ -5,6 +5,7 @@ import { UserRole, SubscriptionStatus, User } from '../types';
 import { ImageUploadModal } from '../components/ImageUploadModal';
 import { PaymentModal } from '../components/PaymentModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
+import ActiveSessionsModal from '../components/ActiveSessionsModal';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -24,10 +25,11 @@ const Members: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Form States
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '' });
-  const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '' });
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '' });
+  const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1 });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isEnrollImageModalOpen, setEnrollImageModalOpen] = useState(false);
+  const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
   const [pendingEnrollment, setPendingEnrollment] = useState<any>(null);
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
@@ -98,7 +100,7 @@ const Members: React.FC = () => {
       emergencyContact: enrollData.emergencyContact,
       address: enrollData.address,
       avatar: enrollData.avatar
-    }, enrollData.planId, undefined, undefined, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate);
+    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate);
 
     if (paymentId) {
       showToast(`Payment successful! ID: ${paymentId}`, 'success');
@@ -107,7 +109,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '' });
+    setEnrollData({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -148,7 +150,8 @@ const Members: React.FC = () => {
       email: member.email,
       emergencyContact: member.emergencyContact || '',
       address: member.address || '',
-      avatar: member.avatar || ''
+      avatar: member.avatar || '',
+      maxDevices: member.maxDevices || 1
     });
     setActiveModal('manage');
   };
@@ -373,6 +376,23 @@ const Members: React.FC = () => {
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
                 <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
               </div>
+
+              <div className="space-y-2 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <i className="fas fa-key"></i> Set Login Password
+                </label>
+                <input
+                  required
+                  type="password"
+                  className="w-full p-3 bg-white border border-indigo-100 rounded-xl font-bold"
+                  placeholder="Enter password for login"
+                  minLength={6}
+                  value={enrollData.password}
+                  onChange={e => setEnrollData({ ...enrollData, password: e.target.value })}
+                />
+                <p className="text-[10px] text-indigo-600 font-medium">Member will use this password to login to their account (min 6 characters)</p>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
                 <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value })}>
@@ -523,6 +543,29 @@ const Members: React.FC = () => {
                 <i className="fas fa-info-circle mr-2"></i>
                 Safety contact information is visible to receptionist and managers in case of emergency.
               </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Max Devices</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    className="w-full p-4 bg-gray-50 border rounded-xl font-bold"
+                    value={manageData.maxDevices}
+                    onChange={e => setManageData({ ...manageData, maxDevices: parseInt(e.target.value) || 1 })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setActiveSessionsModalOpen(true)}
+                    className="px-4 bg-slate-800 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 whitespace-nowrap shadow-lg"
+                  >
+                    <i className="fas fa-laptop mr-2"></i>
+                    View Sessions
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 font-medium">Restricts simultaneous logins. Default is 1.</p>
+              </div>
               <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-indigo-100 active:scale-95 transition-all">COMMIT CHANGES</button>
             </form>
           </div>
@@ -578,6 +621,13 @@ const Members: React.FC = () => {
           plans={plans}
           onRenew={handleProcessRenew}
           requirePin={true} // Admin facing, so require PIN for cash/pos
+        />
+      )}
+
+      {selectedMember && isActiveSessionsModalOpen && (
+        <ActiveSessionsModal
+          user={selectedMember}
+          onClose={() => setActiveSessionsModalOpen(false)}
         />
       )}
 

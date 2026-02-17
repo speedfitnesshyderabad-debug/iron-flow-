@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { UserRole } from './types';
 import { AppProvider, useAppContext } from './AppContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -25,6 +26,16 @@ import WalkInManagement from './pages/WalkInManagement';
 import Debug from './pages/Debug';
 import BranchQR from './pages/BranchQR';
 
+const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
+  const { currentUser } = useAppContext();
+
+  if (!currentUser || !allowedRoles.includes(currentUser.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
 
@@ -48,10 +59,18 @@ const AppRoutes: React.FC = () => {
         <Route path="/branches" element={<Branches />} />
         <Route path="/branch-qr" element={<BranchQR />} />
         <Route path="/campaigns" element={<Campaigns />} />
-        <Route path="/staff" element={<Staff />} />
+        <Route path="/staff" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
+            <Staff />
+          </ProtectedRoute>
+        } />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/plans" element={<Plans />} />
-        <Route path="/sales" element={<Sales />} />
+        <Route path="/sales" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
+            <Sales />
+          </ProtectedRoute>
+        } />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/check-in" element={<CheckIn />} />
         <Route path="/portal" element={<MemberPortal />} />

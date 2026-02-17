@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense } from './types';
+import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession } from './types';
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
@@ -41,7 +41,7 @@ interface AppContextType {
   updateFeedbackStatus: (id: string, status: Feedback['status']) => Promise<void>;
   addInventory: (item: InventoryItem) => Promise<void>;
   updateInventory: (id: string, updates: Partial<InventoryItem>) => Promise<void>;
-  sellInventoryItem: (itemId: string, memberId: string, quantity: number) => Promise<void>;
+  sellInventoryItem: (itemId: string, memberId: string, quantity: number, paymentMethod: 'CASH' | 'POS' | 'CARD' | 'ONLINE', transactionCode?: string, razorpayPaymentId?: string) => Promise<void>;
   addMetric: (metric: BodyMetric) => Promise<void>;
   addOffer: (offer: Offer) => Promise<void>;
   deleteOffer: (id: string) => Promise<void>;
@@ -60,6 +60,11 @@ interface AppContextType {
   askGemini: (prompt: string, modelType?: 'flash' | 'pro') => Promise<string>;
   toast: { message: string; type: 'success' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'error') => void;
+  // Session Management
+  generateDeviceFingerprint: () => Promise<string>;
+  createSession: (userId: string) => Promise<boolean>;
+  revokeSession: (userId: string, fingerprint?: string) => Promise<void>;
+  getSessions: (userId: string) => Promise<ActiveSession[]>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -346,12 +351,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     else showToast('Failed to update inventory', 'error');
   };
 
-  const sellInventoryItem = async (itemId: string, memberId: string, quantity: number) => {
+  const sellInventoryItem = async (itemId: string, memberId: string, quantity: number, paymentMethod: 'CASH' | 'POS' | 'CARD' | 'ONLINE', transactionCode?: string, razorpayPaymentId?: string) => {
     const item = inventory.find(i => i.id === itemId);
     if (!item || item.stock < quantity) {
       showToast('Insufficient stock!', 'error');
       return;
     }
+
+    // Validate payment details based on method
+    if (paymentMethod === 'CASH' || paymentMethod === 'POS') {
+      if (!transactionCode) {
+        showToast('Transaction code is required for Cash/POS payments', 'error');
+        return;
+      }
+      // Verify transaction code
+      const isValid = await verifyTransactionCode(transactionCode);
+      if (!isValid) {
+        showToast('Invalid or already used transaction code', 'error');
+        return;
+      }
+    } else if (paymentMethod === 'CARD' || paymentMethod === 'ONLINE') {
+      if (!razorpayPaymentId) {
+        showToast('Razorpay Payment ID is required for Card/Online payments', 'error');
+        return;
+      }
+    }
+
     const branchId = item.branchId;
     const saleAmount = item.price * quantity;
     const newSale: Sale = {
@@ -363,7 +388,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       itemId,
       staffId: currentUser?.id || 'pos',
       branchId,
-      paymentMethod: 'CASH'
+      paymentMethod,
+      transactionCode: (paymentMethod === 'CASH' || paymentMethod === 'POS') ? transactionCode : undefined,
+      razorpayPaymentId: (paymentMethod === 'CARD' || paymentMethod === 'ONLINE') ? razorpayPaymentId : undefined
     };
 
     const { error: stockError } = await supabase.from('inventory').update({ stock: item.stock - quantity }).eq('id', itemId);
@@ -686,6 +713,138 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setGlobalLoading(false);
     }
   };
+  // --- Session Management ---
+
+  const generateDeviceFingerprint = async (): Promise<string> => {
+    // Simple browser-based fingerprint
+    const fingerprint = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+
+    // Create a hash of the fingerprint data
+    const str = JSON.stringify(fingerprint);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(16);
+  };
+
+  const getSessions = async (userId: string): Promise<ActiveSession[]> => {
+    const { data, error } = await supabase
+      .from('active_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_activity', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching sessions:', error);
+      return [];
+    }
+
+    // Map DB columns to frontend interface
+    return data.map((s: any) => ({
+      id: s.id,
+      userId: s.user_id,
+      deviceFingerprint: s.device_fingerprint,
+      deviceName: s.device_name || 'Unknown Device',
+      browserInfo: s.browser_info || 'Unknown Browser',
+      ipAddress: s.ip_address,
+      loginTime: s.login_time,
+      lastActivity: s.last_activity
+    }));
+  };
+
+  const createSession = async (userId: string): Promise<boolean> => {
+    try {
+      const user = users.find(u => u.id === userId);
+      // Super Admin and Branch Admin have unlimited devices (or high limit)
+      // Check specific user limit or role-based default
+      const limit = user?.maxDevices ?? (user?.role === UserRole.MEMBER || user?.role === UserRole.TRAINER ? 1 : 999);
+
+      const fingerprint = await generateDeviceFingerprint();
+
+      // Check existing sessions
+      const currentSessions = await getSessions(userId);
+
+      // Check if this device is already logged in (re-login)
+      const existingSession = currentSessions.find(s => s.deviceFingerprint === fingerprint);
+      if (existingSession) {
+        // Update last activity
+        await supabase
+          .from('active_sessions')
+          .update({ last_activity: new Date().toISOString() })
+          .eq('id', existingSession.id);
+        return true;
+      }
+
+      // Check limit
+      if (currentSessions.length >= limit) {
+        return false; // Limit exceeded
+      }
+
+      // Create new session
+      const browserName = (() => {
+        const agent = navigator.userAgent;
+        if (agent.includes("Chrome")) return "Chrome";
+        if (agent.includes("Firefox")) return "Firefox";
+        if (agent.includes("Safari")) return "Safari";
+        if (agent.includes("Edge")) return "Edge";
+        return "Unknown Browser";
+      })();
+
+      const osName = (() => {
+        const platform = navigator.platform;
+        if (platform.includes("Win")) return "Windows";
+        if (platform.includes("Mac")) return "MacOS";
+        if (platform.includes("Linux")) return "Linux";
+        if (platform.includes("iPhone") || platform.includes("iPad")) return "iOS";
+        if (platform.includes("Android")) return "Android";
+        return "Unknown OS";
+      })();
+
+      const newSession = {
+        id: `sess-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        user_id: userId,
+        device_fingerprint: fingerprint,
+        device_name: `${osName} Device`,
+        browser_info: browserName,
+        login_time: new Date().toISOString(),
+        last_activity: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from('active_sessions').insert(newSession);
+
+      if (error) {
+        console.error('Session creation failed:', error);
+        return true;
+      }
+
+      return true;
+    } catch (e) {
+      console.error('Session error:', e);
+      return false;
+    }
+  };
+
+  const revokeSession = async (userId: string, fingerprint?: string) => {
+    let query = supabase.from('active_sessions').delete().eq('user_id', userId);
+
+    if (fingerprint) {
+      query = query.eq('device_fingerprint', fingerprint);
+    } else {
+      const currentFingerprint = await generateDeviceFingerprint();
+      query = query.eq('device_fingerprint', currentFingerprint);
+    }
+
+    await query;
+  };
 
   return (
     <AppContext.Provider value={{
@@ -696,7 +855,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
-      addInventory, updateInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast
+      addInventory, updateInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
+      generateDeviceFingerprint, createSession, revokeSession, getSessions
     }}>
       {children}
       {toast && (

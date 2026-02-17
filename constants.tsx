@@ -11,7 +11,10 @@ export const BRANCHES = [
     email: 'mumbai@ironflow.in',
     gstin: '27AABCU1234F1Z1',
     gstPercentage: 18,
-    equipment: 'Cardio: 5 Treadmills, 2 Spin Bikes. Strength: Full Smith Machine, Dumbbells up to 40kg, Bench Press, Squat Rack, Cable Crossover. Plate Loaded: Leg Press, Lat Pulldown.'
+    equipment: 'Cardio: 5 Treadmills, 2 Spin Bikes. Strength: Full Smith Machine, Dumbbells up to 40kg, Bench Press, Squat Rack, Cable Crossover. Plate Loaded: Leg Press, Lat Pulldown.',
+    latitude: 19.0760,
+    longitude: 72.8777,
+    geofenceRadius: 100
   },
   {
     id: 'b2',
@@ -21,7 +24,10 @@ export const BRANCHES = [
     email: 'bangalore@ironflow.in',
     gstin: '29AABCU5678F1Z2',
     gstPercentage: 18,
-    equipment: 'Functional Training Zone: Kettlebells, Battle Ropes, TRX, Medicine Balls. Machines: Leg Extension, Chest Press, Seated Row. Cardio: 3 Treadmills, 1 Rower.'
+    equipment: 'Functional Training Zone: Kettlebells, Battle Ropes, TRX, Medicine Balls. Machines: Leg Extension, Chest Press, Seated Row. Cardio: 3 Treadmills, 1 Rower.',
+    latitude: 12.9716,
+    longitude: 77.5946,
+    geofenceRadius: 100
   },
 ];
 
@@ -94,7 +100,7 @@ export const NAV_ITEMS = [
   { label: 'Walk-Ins', path: '/walk-ins', icon: <i className="fas fa-walking"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
   { label: 'Campaigns', path: '/campaigns', icon: <i className="fas fa-bullhorn"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Members', path: '/members', icon: <i className="fas fa-users"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
-  { label: 'Staff', path: '/staff', icon: <i className="fas fa-user-tie"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
+  { label: 'Staff', path: '/staff', icon: <i className="fas fa-user-tie"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Inventory', path: '/inventory', icon: <i className="fas fa-box-open"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
   { label: 'Plans', path: '/plans', icon: <i className="fas fa-tags"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Store', path: '/store', icon: <i className="fas fa-shopping-cart"></i>, roles: [UserRole.MEMBER] },
@@ -104,6 +110,6 @@ export const NAV_ITEMS = [
   { label: 'Portal', path: '/portal', icon: <i className="fas fa-user-circle"></i>, roles: [UserRole.MEMBER] },
   { label: 'My Earnings', path: '/my-earnings', icon: <i className="fas fa-wallet"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.TRAINER, UserRole.RECEPTIONIST, UserRole.STAFF] },
   { label: 'Feedback', path: '/feedback', icon: <i className="fas fa-comment-dots"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
-  { label: 'Sales', path: '/sales', icon: <i className="fas fa-indian-rupee-sign"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
+  { label: 'Sales', path: '/sales', icon: <i className="fas fa-indian-rupee-sign"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Tax Center', path: '/tax', icon: <i className="fas fa-file-contract"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
 ];

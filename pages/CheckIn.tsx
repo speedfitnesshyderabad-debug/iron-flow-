@@ -8,6 +8,46 @@ const CheckIn: React.FC = () => {
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string; subType?: string; isCheckOut?: boolean; isCrossBranch?: boolean } | null>(null);
   const [isGateOpen, setIsGateOpen] = useState(false);
   const [isHardwareOnline] = useState(true);
+  const [manualQRInput, setManualQRInput] = useState('');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Helper: Calculate distance between two coordinates in meters (Haversine Formula)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+  };
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocationError(null);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setLocationError("Location access denied or unavailable. Please enable GPS.");
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
+    }
+  }, []);
 
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
@@ -166,6 +206,36 @@ const CheckIn: React.FC = () => {
       return;
     }
 
+    // 🌟 GPS VERIFICATION LOGIC
+    if (branch.latitude && branch.longitude) {
+      if (!userLocation) {
+        setScanResult({
+          success: false,
+          message: "Location not found. Please enable GPS to check in."
+        });
+        setTimeout(() => setScanResult(null), 4000);
+        return;
+      }
+
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        branch.latitude,
+        branch.longitude
+      );
+
+      const allowedRadius = branch.geofenceRadius || 100; // Default 100 meters
+
+      if (distance > allowedRadius) {
+        setScanResult({
+          success: false,
+          message: `You are ${Math.round(distance)}m away. Move closer to ${branch.name} to check in.`
+        });
+        setTimeout(() => setScanResult(null), 5000);
+        return;
+      }
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     // STAFF LOGIC (PUNCH IN / PUNCH OUT)
@@ -299,6 +369,14 @@ const CheckIn: React.FC = () => {
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">SCANNER ACTIVE</span>
         </div>
 
+        {/* GPS Status Indicator */}
+        <div className="absolute top-6 left-8 flex items-center gap-2">
+          <span className={`w-2.5 h-2.5 rounded-full ${userLocation ? 'bg-blue-500' : 'bg-amber-500 animate-pulse'}`}></span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            {locationError ? 'GPS ERROR' : userLocation ? 'GPS LOCKED' : 'LOCATING...'}
+          </span>
+        </div>
+
         <div className="text-center mb-10">
           <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-2">
             {currentUser?.role === UserRole.MEMBER ? 'Scan QR Code' : 'Scan Branch QR'}
@@ -409,6 +487,42 @@ const CheckIn: React.FC = () => {
               </div>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Manual QR Testing (for development/testing without camera) */}
+      <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-[2.5rem] shadow-lg">
+        <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-amber-900">
+          <i className="fas fa-wrench text-amber-600"></i> Manual QR Testing (Dev Mode)
+        </h3>
+        <p className="text-xs text-amber-800 mb-4 font-medium">
+          For testing without a camera, paste the QR code data below:
+        </p>
+        <div className="space-y-3">
+          <textarea
+            className="w-full p-3 rounded-xl border-2 border-amber-300 bg-white font-mono text-xs"
+            rows={3}
+            placeholder='Paste QR data here, e.g. {"type":"STATIC","branchId":"b1"}'
+            value={manualQRInput}
+            onChange={(e) => setManualQRInput(e.target.value)}
+          />
+          <button
+            onClick={() => {
+              if (manualQRInput.trim()) {
+                handleQRScan(manualQRInput.trim());
+                setManualQRInput('');
+              }
+            }}
+            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all"
+          >
+            <i className="fas fa-play mr-2"></i> Test QR Code
+          </button>
+          <div className="bg-white border border-amber-300 rounded-xl p-3">
+            <p className="text-[10px] font-bold text-amber-900 mb-2">Example QR Data:</p>
+            <code className="text-[9px] text-amber-700 block bg-amber-50 p-2 rounded">
+              {JSON.stringify({ type: 'STATIC', branchId: 'b1' })}
+            </code>
+          </div>
         </div>
       </div>
 

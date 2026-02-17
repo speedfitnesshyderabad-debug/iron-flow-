@@ -18,8 +18,8 @@ const Sales: React.FC = () => {
   const [generatedPIN, setGeneratedPIN] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const filteredSales = currentUser?.role === 'SUPER_ADMIN' 
-    ? sales 
+  const filteredSales = currentUser?.role === 'SUPER_ADMIN'
+    ? sales
     : sales.filter(s => s.branchId === currentUser?.branchId);
 
   const totalRev = filteredSales.reduce((acc, s) => acc + s.amount, 0);
@@ -44,38 +44,38 @@ const Sales: React.FC = () => {
         </div>
         <div className="flex items-center gap-4">
           {currentUser?.role === 'SUPER_ADMIN' && (
-             <select 
-               className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none"
-               value={selectedBranchForPIN}
-               onChange={e => setSelectedBranchForPIN(e.target.value)}
-             >
-               {branches.map(b => (
-                 <option key={b.id} value={b.id}>{b.name}</option>
-               ))}
-             </select>
+            <select
+              className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none"
+              value={selectedBranchForPIN}
+              onChange={e => setSelectedBranchForPIN(e.target.value)}
+            >
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
           )}
-          <button 
-             onClick={handleGeneratePIN}
-             disabled={isGenerating}
-             className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2"
+          <button
+            onClick={handleGeneratePIN}
+            disabled={isGenerating}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2"
           >
-             {isGenerating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-key"></i>}
-             GENERATE PIN
+            {isGenerating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-key"></i>}
+            GENERATE PIN
           </button>
           <div className="bg-white px-6 py-3 rounded-2xl border shadow-sm">
-             <p className="text-[10px] font-bold text-gray-400 uppercase">Total Period Revenue</p>
-             <p className="text-xl font-black text-green-600">{formatCurrency(totalRev)}</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Period Revenue</p>
+            <p className="text-xl font-black text-green-600">{formatCurrency(totalRev)}</p>
           </div>
         </div>
       </div>
-      
+
       {generatedPIN && (
-         <div className="bg-indigo-900 p-6 rounded-[2rem] text-center text-white relative overflow-hidden animate-[slideUp_0.4s_ease-out] shadow-2xl">
-            <p className="text-indigo-300 font-bold text-xs uppercase tracking-widest mb-2">One-Time Transaction PIN</p>
-            <div className="text-5xl font-black tracking-[0.2em] font-mono text-white mb-2">{generatedPIN}</div>
-            <p className="text-indigo-400 text-[10px] font-medium">Share this code with staff to authorize a Cash/Card transaction. Valid for one use only.</p>
-            <button onClick={() => setGeneratedPIN(null)} className="absolute top-4 right-4 text-indigo-400 hover:text-white"><i className="fas fa-times"></i></button>
-         </div>
+        <div className="bg-indigo-900 p-6 rounded-[2rem] text-center text-white relative overflow-hidden animate-[slideUp_0.4s_ease-out] shadow-2xl">
+          <p className="text-indigo-300 font-bold text-xs uppercase tracking-widest mb-2">One-Time Transaction PIN</p>
+          <div className="text-5xl font-black tracking-[0.2em] font-mono text-white mb-2">{generatedPIN}</div>
+          <p className="text-indigo-400 text-[10px] font-medium">Share this code with staff to authorize a Cash/Card transaction. Valid for one use only.</p>
+          <button onClick={() => setGeneratedPIN(null)} className="absolute top-4 right-4 text-indigo-400 hover:text-white"><i className="fas fa-times"></i></button>
+        </div>
       )}
 
       <div className="bg-white rounded-3xl border shadow-sm overflow-hidden">
@@ -110,19 +110,25 @@ const Sales: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-700">{plan?.name}</div>
                       <div className="text-[10px] text-blue-500 font-bold">{sale.paymentMethod}</div>
+                      {sale.transactionCode && (
+                        <div className="text-[9px] text-gray-400 font-mono mt-0.5">Code: {sale.transactionCode}</div>
+                      )}
+                      {sale.razorpayPaymentId && (
+                        <div className="text-[9px] text-gray-400 font-mono mt-0.5">{sale.razorpayPaymentId}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">{branch?.name}</td>
                     <td className="px-6 py-4 text-right">
                       <span className="font-black text-gray-900">{formatCurrency(sale.amount)}</span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                       <button 
+                      <button
                         onClick={() => setViewingSale(sale)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                         title="View Invoice"
-                       >
-                         <i className="fas fa-file-invoice"></i>
-                       </button>
+                      >
+                        <i className="fas fa-file-invoice"></i>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -133,7 +139,7 @@ const Sales: React.FC = () => {
       </div>
 
       {viewingSale && (
-        <InvoiceModal 
+        <InvoiceModal
           sale={viewingSale}
           branch={branches.find(b => b.id === viewingSale.branchId)!}
           member={users.find(u => u.id === viewingSale.memberId)!}

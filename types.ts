@@ -99,6 +99,7 @@ export interface User {
   weekOffs?: string[]; // Array of days e.g. ['Sunday']
   hourlyRate?: number;
   commissionPercentage?: number;
+  maxDevices?: number; // For multi-device restriction
 }
 
 export interface Plan {
@@ -139,6 +140,8 @@ export interface Sale {
   branchId: string;
   paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS';
   trainerId?: string;
+  transactionCode?: string; // For Cash/POS payments
+  razorpayPaymentId?: string; // For Card/Online payments
 }
 
 export interface Attendance {
@@ -257,4 +260,15 @@ export interface ClassCompletionCode {
   branchId: string;
   createdAt: string;
   usedAt?: string;
+}
+
+export interface ActiveSession {
+  id: string;
+  userId: string;
+  deviceFingerprint: string;
+  deviceName: string; // e.g., "Chrome on Windows"
+  browserInfo: string;
+  ipAddress?: string;
+  loginTime: string;
+  lastActivity: string;
 }

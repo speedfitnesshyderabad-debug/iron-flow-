@@ -5,7 +5,7 @@ import { useAppContext } from '../AppContext';
 import { UserRole } from '../types';
 
 const Login: React.FC = () => {
-  const { users, setCurrentUser } = useAppContext();
+  const { users, setCurrentUser, createSession } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,7 +28,7 @@ const Login: React.FC = () => {
     }
   }, [users]);
 
-  const handleManualLogin = (e: React.FormEvent) => {
+  const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
     setError('');
@@ -36,7 +36,7 @@ const Login: React.FC = () => {
     console.log('🔐 Login attempt:', email);
     console.log('📊 Available users:', users.length);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (users.length === 0) {
         setError(`Database not loaded yet. Found ${users.length} users. Please wait and try again.`);
         setIsAuthenticating(false);
@@ -51,8 +51,16 @@ const Login: React.FC = () => {
         const isValidPassword = (user.password && password === user.password) || (password === DEMO_SECRET_KEY);
 
         if (isValidPassword) {
-          setCurrentUser(user);
-          // Redirect logic happens automatically in AppRoutes via Dashboard component
+          // Check device limit
+          const sessionCreated = await createSession(user.id);
+
+          if (sessionCreated) {
+            setCurrentUser(user);
+            // Redirect logic happens automatically in AppRoutes via Dashboard component
+          } else {
+            setError('Maximum devices reached. Please logout from another device.');
+            setIsAuthenticating(false);
+          }
         } else {
           setError(`Access Denied: Invalid Security Token.`);
           setIsAuthenticating(false);
@@ -77,17 +85,22 @@ const Login: React.FC = () => {
     }, 1500);
   };
 
-  const quickLogin = (role: UserRole) => {
+  const quickLogin = async (role: UserRole) => {
     console.log('⚡ Quick login attempt for role:', role);
     console.log('📊 Available users:', users.length);
 
     setIsAuthenticating(true);
     const user = users.find(u => u.role === role);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (user) {
         console.log('✅ Quick login successful:', user.name);
-        setCurrentUser(user);
+        const sessionCreated = await createSession(user.id);
+        if (sessionCreated) {
+          setCurrentUser(user);
+        } else {
+          setError(`Maximum devices reached for ${user.name}.`);
+        }
       } else {
         console.error('❌ No user found with role:', role);
         console.log('Available roles:', users.map(u => u.role));

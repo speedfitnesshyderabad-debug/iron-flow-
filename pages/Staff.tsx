@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, User, Attendance, Shift } from '../types';
 import { ImageUploadModal } from '../components/ImageUploadModal';
+import ActiveSessionsModal from '../components/ActiveSessionsModal';
 
 const Staff: React.FC = () => {
   const { users, branches, currentUser, addUser, updateUser, deleteUser, attendance } = useAppContext();
@@ -22,9 +23,11 @@ const Staff: React.FC = () => {
     hourlyRate: 500,
     commissionPercentage: 10,
     emergencyContact: '',
-    avatar: ''
+    avatar: '',
+    maxDevices: 1
   });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
+  const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
 
   const staffMembers = users.filter(u =>
     u.role !== UserRole.MEMBER &&
@@ -43,7 +46,8 @@ const Staff: React.FC = () => {
       hourlyRate: 500,
       commissionPercentage: 10,
       emergencyContact: '',
-      avatar: ''
+      avatar: '',
+      maxDevices: 1
     });
     setAddModalOpen(true);
   };
@@ -61,7 +65,8 @@ const Staff: React.FC = () => {
       hourlyRate: staff.hourlyRate || 500,
       commissionPercentage: staff.commissionPercentage || 0,
       emergencyContact: staff.emergencyContact || '',
-      avatar: staff.avatar || ''
+      avatar: staff.avatar || '',
+      maxDevices: staff.maxDevices || 1
     });
     setEditModalOpen(true);
   };
@@ -481,6 +486,26 @@ const Staff: React.FC = () => {
                 </select>
               </div>
 
+              {(formData.role === UserRole.TRAINER || formData.role === UserRole.MANAGER || formData.role === UserRole.STAFF || formData.role === UserRole.RECEPTIONIST) && (
+                <div className="space-y-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-[fadeIn_0.3s_ease-out]">
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                      Max Login Devices
+                    </label>
+                    {isEditModalOpen && (
+                      <button type="button" onClick={() => setActiveSessionsModalOpen(true)} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest">
+                        <i className="fas fa-laptop mr-1"></i> Check Active
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input type="number" min="1" max="10" className="w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-400 font-black text-sm" value={formData.maxDevices} onChange={e => setFormData({ ...formData, maxDevices: parseInt(e.target.value) || 1 })} />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-300 text-[10px] uppercase">Devices</span>
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-bold ml-1 mt-1">Controls simultaneous active sessions for security.</p>
+                </div>
+              )}
+
               <div className="pt-6 border-t border-gray-100 space-y-4">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Work Shifts (1-3 Max)</label>
@@ -539,6 +564,13 @@ const Staff: React.FC = () => {
         onUpload={handleImageUpload}
         title="Update Staff Photo"
       />
+
+      {selectedStaff && isActiveSessionsModalOpen && (
+        <ActiveSessionsModal
+          user={selectedStaff}
+          onClose={() => setActiveSessionsModalOpen(false)}
+        />
+      )}
 
       <style>{`
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
