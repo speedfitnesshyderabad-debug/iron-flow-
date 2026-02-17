@@ -33,44 +33,73 @@ const CheckIn: React.FC = () => {
     return R * c; // Distance in meters
   };
 
-  useEffect(() => {
-    // Request Camera Permission Explicitly
-    const requestCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        // Permission granted
-        setHasCameraPermission(true);
-        setPermissionError(null);
+  const requestCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Permission granted
+      setHasCameraPermission(true);
+      setPermissionError(null);
 
-        // Stop the stream immediately, we just wanted to check permission
-        stream.getTracks().forEach(track => track.stop());
-      } catch (err: any) {
-        console.error("Camera permission error:", err);
-        setHasCameraPermission(false);
-        setPermissionError("Camera access denied. Please allow camera usage in your browser settings to scan QR codes.");
-      }
-    };
-
-    requestCamera();
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          setLocationError(null);
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setLocationError("Location access denied or unavailable. Please enable GPS.");
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      setLocationError("Geolocation is not supported by this browser.");
+      // Stop the stream immediately, we just wanted to check permission
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err: any) {
+      console.error("Camera permission error:", err);
+      setHasCameraPermission(false);
+      setPermissionError("Camera access denied. Please allow camera usage in your browser settings to scan QR codes.");
     }
+  };
+
+  const requestLocation = (highAccuracy = true) => {
+    if (!("geolocation" in navigator)) {
+      setLocationError("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setLocationError(null);
+    setUserLocation(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        setLocationError(null);
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+
+        // Handle specific errors
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError("Location access denied. Please enable GPS in your browser settings.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError("Location unavailable. Please check your GPS signal.");
+            break;
+          case error.TIMEOUT:
+            if (highAccuracy) {
+              console.log("High accuracy timed out, retrying with low accuracy...");
+              requestLocation(false); // Retry with low accuracy
+            } else {
+              setLocationError("Location request timed out. Please try again.");
+            }
+            break;
+          default:
+            setLocationError("An unknown error occurred while getting location.");
+        }
+      },
+      {
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 5000 : 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  useEffect(() => {
+    requestCamera();
+    requestLocation();
   }, []);
 
   useEffect(() => {
@@ -414,10 +443,19 @@ const CheckIn: React.FC = () => {
         </div>
 
         {/* GPS Status Indicator */}
-        <div className="absolute top-6 left-8 flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full ${userLocation ? 'bg-blue-500' : 'bg-amber-500 animate-pulse'}`}></span>
+        <div
+          className={`absolute top-6 left-8 flex items-center gap-2 ${locationError ? 'cursor-pointer hover:opacity-80' : ''}`}
+          onClick={() => {
+            if (locationError) {
+              setLocationError(null);
+              requestLocation();
+            }
+          }}
+          title={locationError || "GPS Status"}
+        >
+          <span className={`w-2.5 h-2.5 rounded-full ${locationError ? 'bg-red-500' : userLocation ? 'bg-blue-500' : 'bg-amber-500 animate-pulse'}`}></span>
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            {locationError ? 'GPS ERROR' : userLocation ? 'GPS LOCKED' : 'LOCATING...'}
+            {locationError ? 'RETRY GPS' : userLocation ? 'GPS LOCKED' : 'LOCATING...'}
           </span>
         </div>
 
