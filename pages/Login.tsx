@@ -65,15 +65,24 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSendingReset(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      setIsSendingReset(false);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: 'https://speedfitness.org/reset-password',
+      });
+
+      if (error) throw error;
+
       setView('success');
-    }, 1500);
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
 

@@ -18,6 +18,7 @@ import Bookings from './pages/Bookings';
 import MembershipStore from './pages/MembershipStore';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
 import Communications from './pages/Communications';
 import Inventory from './pages/Inventory';
 import TaxCenter from './pages/TaxCenter';
@@ -45,6 +46,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/debug" element={<Debug />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
