@@ -307,8 +307,15 @@ const CheckIn: React.FC = () => {
         return;
       }
       console.log('[CheckIn] ✅ GPS Debug: Within range.');
+      console.log('[CheckIn] ✅ GPS Debug: Within range.');
     } else {
-      console.log('[CheckIn] ⚠️ GPS Debug: Branch has no coordinates configured. GPS check skipped.');
+      console.warn('[CheckIn] ⛔ GPS Debug: Branch has no coordinates. Security Block.');
+      setScanResult({
+        success: false,
+        message: "Security Error: This branch has no GPS location configured. detailed verification is impossible."
+      });
+      setTimeout(() => setScanResult(null), 5000);
+      return;
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -462,7 +469,7 @@ const CheckIn: React.FC = () => {
         >
           <span className={`w-2.5 h-2.5 rounded-full ${locationError ? 'bg-red-500' : userLocation ? 'bg-blue-500' : 'bg-amber-500 animate-pulse'}`}></span>
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            {locationError ? 'RETRY GPS' : userLocation ? 'GPS LOCKED' : 'LOCATING...'}
+            {locationError ? 'RETRY GPS' : userLocation ? 'LOCATION ACTIVE' : 'LOCATING...'}
           </span>
         </div>
 
