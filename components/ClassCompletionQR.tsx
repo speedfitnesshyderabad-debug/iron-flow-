@@ -32,7 +32,7 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
       const dynamicData = {
         ...baseData,
         dynamicToken: `${timestamp}|${random}`,
-        expiresAt: timestamp + 30000 // 30 second validity
+        expiresAt: timestamp + 120000 // 2 minutes validity
       };
       setQrToken(JSON.stringify(dynamicData));
     };
@@ -58,8 +58,8 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
 
   const getClassTitle = (booking: Booking) => {
     if (booking.type === PlanType.GROUP) {
-      const session = classSchedules.find(s => 
-        s.date === booking.date && 
+      const session = classSchedules.find(s =>
+        s.date === booking.date &&
         s.timeSlot === booking.timeSlot &&
         s.trainerId === booking.trainerId
       );
@@ -71,7 +71,7 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
   const getCommissionInfo = (booking: Booking) => {
     const trainer = users.find(u => u.id === booking.trainerId);
     const commission = trainer?.commissionPercentage || 0;
-    
+
     if (booking.type === PlanType.PT) {
       return `${commission}% per session`;
     } else {
@@ -133,17 +133,15 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
         <div className="bg-slate-100 p-1 rounded-xl flex mb-6">
           <button
             onClick={() => { setActiveTab('GROUP'); setGeneratedCode(null); setSelectedBooking(null); }}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${
-              activeTab === 'GROUP' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'
-            }`}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${activeTab === 'GROUP' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'
+              }`}
           >
             <i className="fas fa-users mr-1"></i> Group Classes
           </button>
           <button
             onClick={() => { setActiveTab('PT'); setGeneratedCode(null); setSelectedBooking(null); }}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${
-              activeTab === 'PT' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'
-            }`}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${activeTab === 'PT' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'
+              }`}
           >
             <i className="fas fa-user mr-1"></i> PT Sessions
           </button>
@@ -159,7 +157,7 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
                 {pendingBookings.length} Pending
               </span>
             </div>
-            
+
             {pendingBookings.length === 0 ? (
               <div className="text-center py-12 bg-slate-50 rounded-2xl">
                 <i className="fas fa-check-circle text-4xl text-green-400 mb-3"></i>
@@ -197,19 +195,19 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
         ) : (
           <div className="text-center">
             <div className="bg-white p-6 rounded-3xl border-4 border-blue-100 shadow-inner inline-block mb-4">
-              <QRCodeSVG 
+              <QRCodeSVG
                 value={qrToken || generatedCode.code}
                 size={220}
                 level="H"
                 includeMargin={true}
               />
             </div>
-            
+
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               <p className="text-[10px] text-slate-400 font-medium">Refreshes every 15 seconds</p>
             </div>
-            
+
             <div className="space-y-2 mb-6">
               <p className="font-bold text-lg text-slate-900">{getMemberName(selectedBooking?.memberId || '')}</p>
               <p className="text-sm text-slate-500">{getClassTitle(selectedBooking!)} • {selectedBooking?.timeSlot}</p>

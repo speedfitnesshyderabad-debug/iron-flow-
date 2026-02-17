@@ -51,6 +51,21 @@ const CheckIn: React.FC = () => {
       // Try to parse as class completion code
       const parsedData = JSON.parse(decodedText);
 
+      // Validate Expiry for Dynamic QRs
+      if (parsedData.expiresAt) {
+        const now = Date.now();
+        const discrepancy = now - parsedData.expiresAt;
+        // Allow 5 minutes tolerance after expiry (to handle clock skew or slow scanning)
+        if (discrepancy > 300000) {
+          setScanResult({
+            success: false,
+            message: "QR Code Expired. Please regenerate."
+          });
+          setTimeout(() => setScanResult(null), 3000);
+          return;
+        }
+      }
+
       if (parsedData.type === 'CLASS_COMPLETION' && parsedData.bookingId) {
         // This is a class completion QR
         await handleClassCompletion(parsedData);

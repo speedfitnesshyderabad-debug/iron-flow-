@@ -1,9 +1,21 @@
 import React from 'react';
 import { useAppContext } from '../AppContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { UserRole } from '../types';
 
 const BranchQR: React.FC = () => {
-    const { branches } = useAppContext();
+    const { branches, currentUser } = useAppContext();
+
+    const visibleBranches = currentUser?.role === UserRole.SUPER_ADMIN
+        ? branches
+        : branches.filter(b => b.id === currentUser?.branchId);
+
+    const [timestamp, setTimestamp] = React.useState(Date.now());
+
+    React.useEffect(() => {
+        const interval = setInterval(() => setTimestamp(Date.now()), 15000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handlePrint = (branchId: string) => {
         const printWindow = window.open('', '_blank');
@@ -95,7 +107,7 @@ const BranchQR: React.FC = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
-                {branches.map((branch) => (
+                {visibleBranches.map((branch) => (
                     <div key={branch.id} className="bg-white p-8 rounded-[2.5rem] shadow-xl border-4 border-slate-100">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">{branch.name}</h2>
@@ -104,12 +116,13 @@ const BranchQR: React.FC = () => {
 
                         <div id={`qr-${branch.id}`} className="flex justify-center mb-6 bg-slate-50 p-8 rounded-[2rem]">
                             <QRCodeSVG
-                                value={branch.id}
+                                value={JSON.stringify({ id: branch.id, ts: timestamp })}
                                 size={280}
                                 level="H"
                                 includeMargin={true}
                             />
                         </div>
+
 
                         <div className="bg-slate-50 p-6 rounded-[2rem] mb-6">
                             <div className="grid grid-cols-2 gap-4 text-center">

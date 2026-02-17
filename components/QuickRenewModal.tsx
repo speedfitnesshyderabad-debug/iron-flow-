@@ -7,7 +7,9 @@ interface QuickRenewModalProps {
     member: User;
     currentPlan?: Plan;
     plans: Plan[];
-    onRenew: (planId: string, amount: number, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', discount: number) => void;
+    onRenew: (planId: string, amount: number, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', discount: number, transactionCode?: string) => void;
+    allowedPaymentMethods?: ('CASH' | 'CARD' | 'ONLINE' | 'POS')[];
+    requirePin?: boolean;
 }
 
 export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
@@ -16,11 +18,14 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     member,
     currentPlan,
     plans,
-    onRenew
+    onRenew,
+    allowedPaymentMethods = ['CASH', 'CARD', 'ONLINE', 'POS'],
+    requirePin = false
 }) => {
     const [selectedPlanId, setSelectedPlanId] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ONLINE' | 'POS'>('CASH');
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ONLINE' | 'POS'>(allowedPaymentMethods[0]);
     const [discount, setDiscount] = useState(0);
+    const [transactionCode, setTransactionCode] = useState('');
 
     useEffect(() => {
         if (isOpen && currentPlan) {
@@ -28,7 +33,12 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
         } else if (isOpen && plans.length > 0) {
             setSelectedPlanId(plans[0].id);
         }
-    }, [isOpen, currentPlan, plans]);
+        // Reset payment method to valid one when opening
+        if (isOpen && !allowedPaymentMethods.includes(paymentMethod)) {
+            setPaymentMethod(allowedPaymentMethods[0]);
+        }
+        setTransactionCode('');
+    }, [isOpen, currentPlan, plans, allowedPaymentMethods]);
 
     if (!isOpen) return null;
 
@@ -38,7 +48,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedPlan) {
-            onRenew(selectedPlan.id, finalAmount, paymentMethod, discount);
+            onRenew(selectedPlan.id, finalAmount, paymentMethod, discount, transactionCode);
         }
     };
 
@@ -115,14 +125,14 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Payment Method</label>
                             <div className="grid grid-cols-4 gap-2">
-                                {(['CASH', 'ONLINE', 'CARD', 'POS'] as const).map(method => (
+                                {allowedPaymentMethods.map(method => (
                                     <button
                                         key={method}
                                         type="button"
                                         onClick={() => setPaymentMethod(method)}
                                         className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${paymentMethod === method
-                                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 scale-105'
-                                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:scale-105'
+                                            ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 scale-105'
+                                            : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:scale-105'
                                             }`}
                                     >
                                         {method}
@@ -130,13 +140,30 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
                                 ))}
                             </div>
                         </div>
+
+                        {/* PIN Verification for Cash/POS */}
+                        {requirePin && (paymentMethod === 'CASH' || paymentMethod === 'POS') && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest pl-1 flex items-center gap-1">
+                                    <i className="fas fa-lock"></i> Staff PIN Required
+                                </label>
+                                <input
+                                    type="text"
+                                    value={transactionCode}
+                                    onChange={(e) => setTransactionCode(e.target.value)}
+                                    placeholder="Enter 6-digit PIN"
+                                    className="w-full p-4 bg-indigo-50 border-none rounded-2xl font-mono font-bold text-center text-lg tracking-[0.5em] text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-500/20 placeholder:tracking-normal placeholder:text-sm placeholder:font-sans"
+                                    maxLength={6}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <button
                         type="submit"
                         className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg hover:shadow-xl hover:shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-tight"
                     >
-                        Process Renewal
+                        {paymentMethod === 'ONLINE' || paymentMethod === 'CARD' ? 'Proceed to Payment' : 'Process Renewal'}
                     </button>
                 </form>
             </div>

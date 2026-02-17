@@ -65,7 +65,19 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
+  }, [currentUser]);
+
   const [branches, setBranches] = useState<Branch[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -109,8 +121,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { data: pData } = await supabase.from('plans').select('*');
       if (pData && pData.length > 0) setPlans(pData);
       else {
-          const { error } = await supabase.from('plans').insert(MOCK_PLANS);
-          if (!error) setPlans(MOCK_PLANS);
+        const { error } = await supabase.from('plans').insert(MOCK_PLANS);
+        if (!error) setPlans(MOCK_PLANS);
       }
 
       const { data: sData } = await supabase.from('subscriptions').select('*');
@@ -127,7 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: fData } = await supabase.from('feedback').select('*');
       if (fData) setFeedback(fData);
-      
+
       const { data: cData } = await supabase.from('communications').select('*');
       if (cData) setCommunications(cData);
 
@@ -141,7 +153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (oData && oData.length > 0) setOffers(oData);
       else {
         const { error } = await supabase.from('offers').insert(MOCK_OFFERS);
-        if(!error) setOffers(MOCK_OFFERS);
+        if (!error) setOffers(MOCK_OFFERS);
       }
 
       const { data: csData } = await supabase.from('class_schedules').select('*');
@@ -164,16 +176,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Real-time Subscriptions
     const channel = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
-         supabase.from('bookings').select('*').then(({ data }) => { if (data) setBookings(data); });
+        supabase.from('bookings').select('*').then(({ data }) => { if (data) setBookings(data); });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'class_schedules' }, () => {
-         supabase.from('class_schedules').select('*').then(({ data }) => { if (data) setClassSchedules(data); });
+        supabase.from('class_schedules').select('*').then(({ data }) => { if (data) setClassSchedules(data); });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => {
-         supabase.from('sales').select('*').then(({ data }) => { if (data) setSales(data); });
+        supabase.from('sales').select('*').then(({ data }) => { if (data) setSales(data); });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
-         supabase.from('expenses').select('*').then(({ data }) => { if (data) setExpenses(data); });
+        supabase.from('expenses').select('*').then(({ data }) => { if (data) setExpenses(data); });
       })
       .subscribe();
 
@@ -184,7 +196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
       if (!apiKey) return 'API Key not configured.';
-      
+
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: modelType === 'pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash',
@@ -353,7 +365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       branchId,
       paymentMethod: 'CASH'
     };
-    
+
     const { error: stockError } = await supabase.from('inventory').update({ stock: item.stock - quantity }).eq('id', itemId);
     if (stockError) {
       showToast('Failed to update stock', 'error');
@@ -404,59 +416,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteClassTemplate = async (id: string) => {
     const { error } = await supabase.from('class_templates').delete().eq('id', id);
     if (!error) {
-       showToast('Schedule removed');
-       // In a real app, you might want to also delete future unbooked sessions linked to this template
-       generateUpcomingClasses(); 
+      showToast('Schedule removed');
+      // In a real app, you might want to also delete future unbooked sessions linked to this template
+      generateUpcomingClasses();
     } else showToast('Failed to remove schedule', 'error');
   };
 
   const generateUpcomingClasses = async () => {
-     // Fetch templates
-     const { data: templates } = await supabase.from('class_templates').select('*');
-     if (!templates) return;
+    // Fetch templates
+    const { data: templates } = await supabase.from('class_templates').select('*');
+    if (!templates) return;
 
-     const newSessions: ClassSession[] = [];
-     const today = new Date();
-     const weeksToGenerate = 4;
+    const newSessions: ClassSession[] = [];
+    const today = new Date();
+    const weeksToGenerate = 4;
 
-     // Fetch existing sessions to avoid duplicates (simple check based on date/time/trainer)
-     // In a production app, use a more robust upsert logic or ID generation
-     const { data: existingSessions } = await supabase.from('class_schedules').select('*').gte('date', today.toISOString().split('T')[0]);
-     const existingKeys = new Set(existingSessions?.map(s => `${s.trainerId}-${s.date}-${s.timeSlot}`));
+    // Fetch existing sessions to avoid duplicates (simple check based on date/time/trainer)
+    // In a production app, use a more robust upsert logic or ID generation
+    const { data: existingSessions } = await supabase.from('class_schedules').select('*').gte('date', today.toISOString().split('T')[0]);
+    const existingKeys = new Set(existingSessions?.map(s => `${s.trainerId}-${s.date}-${s.timeSlot}`));
 
-     for (let i = 0; i < weeksToGenerate * 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-        const dateString = date.toISOString().split('T')[0];
+    for (let i = 0; i < weeksToGenerate * 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+      const dateString = date.toISOString().split('T')[0];
 
-        const matchingTemplates = templates.filter(t => t.dayOfWeek === dayName);
-        
-        matchingTemplates.forEach(t => {
-           const key = `${t.trainerId}-${dateString}-${t.timeSlot}`;
-           if (!existingKeys.has(key)) {
-              newSessions.push({
-                 id: `sess-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                 templateId: t.id,
-                 trainerId: t.trainerId,
-                 date: dateString,
-                 timeSlot: t.timeSlot,
-                 title: t.title,
-                 capacity: t.capacity,
-                 branchId: t.branchId
-              });
-              existingKeys.add(key); // Prevent duplicates within same loop
-           }
-        });
-     }
+      const matchingTemplates = templates.filter(t => t.dayOfWeek === dayName);
 
-     if (newSessions.length > 0) {
-        const { error } = await supabase.from('class_schedules').insert(newSessions);
-        if (!error) {
-           setClassSchedules(prev => [...prev, ...newSessions]);
-           // console.log(`Generated ${newSessions.length} new class sessions.`);
+      matchingTemplates.forEach(t => {
+        const key = `${t.trainerId}-${dateString}-${t.timeSlot}`;
+        if (!existingKeys.has(key)) {
+          newSessions.push({
+            id: `sess-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            templateId: t.id,
+            trainerId: t.trainerId,
+            date: dateString,
+            timeSlot: t.timeSlot,
+            title: t.title,
+            capacity: t.capacity,
+            branchId: t.branchId
+          });
+          existingKeys.add(key); // Prevent duplicates within same loop
         }
-     }
+      });
+    }
+
+    if (newSessions.length > 0) {
+      const { error } = await supabase.from('class_schedules').insert(newSessions);
+      if (!error) {
+        setClassSchedules(prev => [...prev, ...newSessions]);
+        // console.log(`Generated ${newSessions.length} new class sessions.`);
+      }
+    }
   };
 
   const addClassSession = async (session: ClassSession) => {
@@ -490,18 +502,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const generateTransactionCode = async (targetBranchId?: string): Promise<string> => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const branchToUse = targetBranchId || currentUser?.branchId || branches[0].id;
-    
+
     const { error } = await supabase.from('transaction_codes').insert({
       code,
       branchId: branchToUse,
       status: 'VALID',
       generatedBy: currentUser?.id
     });
-    
+
     if (error) {
-       console.error('Error generating PIN:', error);
-       showToast('Failed to generate PIN', 'error');
-       return '';
+      console.error('Error generating PIN:', error);
+      showToast('Failed to generate PIN', 'error');
+      return '';
     }
     return code;
   };
@@ -523,14 +535,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .from('transaction_codes')
       .update({ status: 'USED' })
       .eq('code', code);
-      
+
     return true;
   };
 
   const sendNotification = async (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => {
     const user = users.find(u => u.id === comm.userId);
     const bId = comm.branchId || user?.branchId || branches[0]?.id;
-    
+
     const newComm: Communication = {
       ...comm,
       id: `comm-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -557,7 +569,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: newUserId,
       name: userData.name || 'New Member',
       email: userData.email || '',
-      password: password, 
+      password: password,
       role: UserRole.MEMBER,
       branchId,
       memberId: `IF-IND-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -653,7 +665,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await supabase.from('subscriptions').insert(newSub);
       await supabase.from('sales').insert(newSale);
-      
+
       setSubscriptions(prev => [...prev, newSub]);
       setSales(prev => [...prev, newSale]);
 
@@ -677,7 +689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      currentUser, setCurrentUser, branches, users, plans, subscriptions, sales, 
+      currentUser, setCurrentUser, branches, users, plans, subscriptions, sales,
       attendance, bookings, feedback, communications, inventory, metrics, offers,
       classSchedules, addClassTemplate, deleteClassTemplate, generateUpcomingClasses, addClassSession, deleteClassSession,
       expenses, addExpense, deleteExpense,
@@ -695,10 +707,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )}
       {isGlobalLoading && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[10000] flex items-center justify-center">
-           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-bounce">
-              <i className="fas fa-dumbbell text-4xl text-blue-600 animate-spin"></i>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing with IronFlow Cloud...</p>
-           </div>
+          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-bounce">
+            <i className="fas fa-dumbbell text-4xl text-blue-600 animate-spin"></i>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing with IronFlow Cloud...</p>
+          </div>
         </div>
       )}
     </AppContext.Provider>
