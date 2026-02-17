@@ -17,6 +17,42 @@ const CheckIn: React.FC = () => {
   // Ref for scanner to avoid stale closures
   const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
 
+  // Helper: Play Sound Feedback
+  const playStatusSound = (type: 'success' | 'error') => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      if (type === 'success') {
+        // High pitched "Ding"
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        oscillator.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); // Octave jump
+        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.15);
+      } else {
+        // Low pitched "Buzz"
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(150, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.3);
+      }
+    } catch (e) {
+      console.error("Audio playback failed", e);
+    }
+  };
+
   // Helper: Calculate distance between two coordinates in meters (Haversine Formula)
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3; // Earth radius in meters
@@ -169,6 +205,7 @@ const CheckIn: React.FC = () => {
           const now = Date.now();
           // Allow 30 seconds tolerance (clock skew + scan time)
           if (now > parsedData.expiresAt + 30000) {
+            playStatusSound('error'); // ERROR SOUND
             setScanResult({
               success: false,
               message: "QR Code Expired. Please refresh."
@@ -216,6 +253,7 @@ const CheckIn: React.FC = () => {
     // Find the booking
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) {
+      playStatusSound('error'); // ERROR SOUND
       setScanResult({
         success: false,
         message: "Class session not found."
@@ -225,6 +263,7 @@ const CheckIn: React.FC = () => {
     }
 
     if (booking.status === 'COMPLETED') {
+      playStatusSound('error'); // ERROR SOUND
       setScanResult({
         success: false,
         message: "Class already marked as completed."
@@ -241,6 +280,7 @@ const CheckIn: React.FC = () => {
     const commission = trainer?.commissionPercentage || 0;
     const classTypeLabel = classType === 'PT' ? 'PT Session' : 'Group Class';
 
+    playStatusSound('success'); // SUCCESS SOUND
     setScanResult({
       success: true,
       message: `${classTypeLabel} Completed! ${commission}% commission credited to trainer.`,
@@ -260,6 +300,7 @@ const CheckIn: React.FC = () => {
     console.log('[CheckIn] Available branches:', branches.map(b => ({ id: b.id, name: b.name })));
 
     if (!currentUser) {
+      playStatusSound('error');
       showToast("Please login to scan branch QR", "error");
       return;
     }
@@ -267,6 +308,7 @@ const CheckIn: React.FC = () => {
     const branch = branches.find(b => b.id === branchIdScanned);
     if (!branch) {
       console.error('[CheckIn] Branch not found for ID:', branchIdScanned);
+      playStatusSound('error'); // ERROR SOUND
       setScanResult({ success: false, message: `Invalid Branch QR Code. Scanned ID: ${branchIdScanned}` });
       setTimeout(() => setScanResult(null), 3000);
       return;
@@ -279,6 +321,7 @@ const CheckIn: React.FC = () => {
     if (branch.latitude && branch.longitude) {
       if (!userLocation) {
         console.warn('[CheckIn] ⚠️ GPS Debug: No user location available.');
+        playStatusSound('error'); // ERROR SOUND
         setScanResult({
           success: false,
           message: "Location not found. Please enable GPS to check in."
@@ -299,6 +342,7 @@ const CheckIn: React.FC = () => {
 
       if (distance > allowedRadius) {
         console.warn(`[CheckIn] ⛔ GPS Debug: Too far. Rejected.`);
+        playStatusSound('error'); // ERROR SOUND
         setScanResult({
           success: false,
           message: `You are ${Math.round(distance)}m away. Move closer to ${branch.name} to check in.`
@@ -310,6 +354,7 @@ const CheckIn: React.FC = () => {
       console.log('[CheckIn] ✅ GPS Debug: Within range.');
     } else {
       console.warn('[CheckIn] ⛔ GPS Debug: Branch has no coordinates. Security Block.');
+      playStatusSound('error'); // ERROR SOUND
       setScanResult({
         success: false,
         message: "Security Error: This branch has no GPS location configured. detailed verification is impossible."
@@ -325,6 +370,7 @@ const CheckIn: React.FC = () => {
       // ✅ BRANCH VALIDATION: Staff can only check in at their assigned branch
       if (currentUser.branchId && currentUser.branchId !== branchIdScanned) {
         const assignedBranch = branches.find(b => b.id === currentUser.branchId);
+        playStatusSound('error'); // ERROR SOUND
         setScanResult({
           success: false,
           message: `Access Denied: You are assigned to ${assignedBranch?.name || 'another branch'}. Please scan your assigned branch QR.`,
@@ -344,6 +390,7 @@ const CheckIn: React.FC = () => {
       if (openAttendance) {
         // Normal Checkout
         updateAttendance(openAttendance.id, { timeOut: new Date().toLocaleTimeString() });
+        playStatusSound('success'); // SUCCESS SOUND
         setScanResult({
           success: true,
           message: `Shift Finalized at ${branch.name}. Great work!`,
@@ -378,6 +425,7 @@ const CheckIn: React.FC = () => {
           branchId: branch.id,
           type: 'STAFF'
         });
+        playStatusSound('success'); // SUCCESS SOUND
         setScanResult({
           success: true,
           message: `Punch-In Recorded at ${branch.name}. Shift started.`,
@@ -400,6 +448,7 @@ const CheckIn: React.FC = () => {
       });
 
       if (!gymSub) {
+        playStatusSound('error'); // ERROR SOUND
         setScanResult({ success: false, message: "Access Denied: No active gym membership found." });
         setTimeout(() => setScanResult(null), 3000);
         return;
@@ -411,6 +460,7 @@ const CheckIn: React.FC = () => {
 
       if (!isHomeBranch && !allowsMultiBranch) {
         const homeBranch = branches.find(b => b.id === currentUser.branchId);
+        playStatusSound('error'); // ERROR SOUND
         setScanResult({
           success: false,
           message: `Denied: Access restricted to ${homeBranch?.name || 'Home Branch'}.`,
@@ -429,6 +479,7 @@ const CheckIn: React.FC = () => {
         type: 'MEMBER'
       });
 
+      playStatusSound('success'); // SUCCESS SOUND
       setScanResult({
         success: true,
         message: isHomeBranch ? `Welcome back to ${branch.name}!` : `Guest Access at ${branch.name} Approved.`,
