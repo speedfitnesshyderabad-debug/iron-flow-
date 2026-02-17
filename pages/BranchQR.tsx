@@ -10,12 +10,7 @@ const BranchQR: React.FC = () => {
         ? branches
         : branches.filter(b => b.id === currentUser?.branchId);
 
-    const [timestamp, setTimestamp] = React.useState(Date.now());
 
-    React.useEffect(() => {
-        const interval = setInterval(() => setTimestamp(Date.now()), 15000);
-        return () => clearInterval(interval);
-    }, []);
 
     const handlePrint = (branchId: string) => {
         const printWindow = window.open('', '_blank');
@@ -116,7 +111,7 @@ const BranchQR: React.FC = () => {
 
                         <div id={`qr-${branch.id}`} className="flex justify-center mb-6 bg-slate-50 p-8 rounded-[2rem]">
                             <QRCodeSVG
-                                value={JSON.stringify({ id: branch.id, ts: timestamp })}
+                                value={JSON.stringify({ type: 'STATIC', branchId: branch.id })}
                                 size={280}
                                 level="H"
                                 includeMargin={true}

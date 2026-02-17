@@ -48,34 +48,59 @@ const CheckIn: React.FC = () => {
 
   const handleQRScan = async (decodedText: string) => {
     try {
-      // Try to parse as class completion code
+      // Attempt to parse as JSON
       const parsedData = JSON.parse(decodedText);
 
-      // Validate Expiry for Dynamic QRs
-      if (parsedData.expiresAt) {
-        const now = Date.now();
-        const discrepancy = now - parsedData.expiresAt;
-        // Allow 5 minutes tolerance after expiry (to handle clock skew or slow scanning)
-        if (discrepancy > 300000) {
-          setScanResult({
-            success: false,
-            message: "QR Code Expired. Please regenerate."
-          });
-          setTimeout(() => setScanResult(null), 3000);
-          return;
-        }
-      }
-
+      // Handle Class Completion
       if (parsedData.type === 'CLASS_COMPLETION' && parsedData.bookingId) {
-        // This is a class completion QR
         await handleClassCompletion(parsedData);
         return;
       }
+
+      // Handle Branch Entry (Dynamic)
+      if (parsedData.type === 'ENTRY') {
+        if (parsedData.expiresAt) {
+          const now = Date.now();
+          // Allow 30 seconds tolerance (clock skew + scan time)
+          if (now > parsedData.expiresAt + 30000) {
+            setScanResult({
+              success: false,
+              message: "QR Code Expired. Please refresh."
+            });
+            setTimeout(() => setScanResult(null), 3000);
+            return;
+          }
+        }
+        handleCheckIn(parsedData.branchId || parsedData.id);
+        return;
+      }
+
+      // Handle Static Branch QR
+      if (parsedData.type === 'STATIC') {
+        handleCheckIn(parsedData.branchId || parsedData.id);
+        return;
+      }
+
+      // Fallback for weird JSON
+      if (parsedData.branchId || parsedData.id) {
+        handleCheckIn(parsedData.branchId || parsedData.id);
+        return;
+      }
+
     } catch (e) {
-      // Not a class completion QR, treat as branch check-in
+      // Not JSON, treat as legacy string format
     }
 
-    // Default: handle as branch check-in
+    // Legacy: Check for Pipe Separator (Old Dynamic Format)
+    if (decodedText.includes('|')) {
+      const parts = decodedText.split('|');
+      // Format: branchId|timestamp|random
+      // We'll just take the branchId for now to be nice, or valid it if we cared about the old format
+      handleCheckIn(parts[0]);
+      return;
+    }
+
+    // Default: Plain String (Legacy Static)
     handleCheckIn(decodedText);
   };
 

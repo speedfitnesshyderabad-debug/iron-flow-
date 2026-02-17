@@ -18,8 +18,11 @@ const Branches: React.FC = () => {
 
     const generateToken = () => {
       const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 10);
-      setQrToken(`${activeBranchId}|${timestamp}|${random}`);
+      setQrToken(JSON.stringify({
+        type: 'ENTRY',
+        branchId: activeBranchId,
+        expiresAt: timestamp + 20000 // Valid for 20 seconds (15s refresh + 5s buffer)
+      }));
     };
 
     generateToken(); // Generate immediately
