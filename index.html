@@ -1,19 +1,23 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IronFlow Gym Manager</title>
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         :root {
             --app-height: 100%;
         }
-        html, body {
+
+        html,
+        body {
             height: 100%;
             width: 100%;
             margin: 0;
@@ -22,31 +26,52 @@
             overscroll-behavior: none;
             -webkit-tap-highlight-color: transparent;
         }
-        body { 
-            font-family: 'Inter', sans-serif; 
+
+        body {
+            font-family: 'Inter', sans-serif;
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+
         #root {
             height: 100%;
             display: flex;
             flex-direction: column;
         }
-        .sidebar-item-active { background-color: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; }
-        
+
+        .sidebar-item-active {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
         /* Smooth Scrollbars for Desktop */
         @media (min-width: 1024px) {
-            ::-webkit-scrollbar { width: 6px; height: 6px; }
-            ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-            ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #e2e8f0;
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #cbd5e1;
+            }
         }
 
         /* Prevent text zoom on orientation change */
-        html { -webkit-text-size-adjust: 100%; }
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
@@ -59,8 +84,10 @@
 }
 </script>
 </head>
+
 <body class="bg-gray-50 text-gray-900">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

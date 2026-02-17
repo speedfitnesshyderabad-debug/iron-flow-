@@ -12,6 +12,9 @@ const CheckIn: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  // Ref for scanner to avoid stale closures
+  const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
+
   // Helper: Calculate distance between two coordinates in meters (Haversine Formula)
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3; // Earth radius in meters
@@ -59,7 +62,11 @@ const CheckIn: React.FC = () => {
     scanner.render(onScanSuccess, onScanFailure);
 
     function onScanSuccess(decodedText: string) {
-      handleQRScan(decodedText);
+      // Use the ref to call the latest version of handleQRScan
+      if (handleQRScanRef.current) {
+        handleQRScanRef.current(decodedText);
+      }
+
       scanner.clear();
       // Re-enable after 3 seconds
       setTimeout(() => {
@@ -207,8 +214,12 @@ const CheckIn: React.FC = () => {
     }
 
     // 🌟 GPS VERIFICATION LOGIC
+    console.log('[CheckIn] 🌟 GPS Debug: Branch', branch.name, 'Lat:', branch.latitude, 'Lng:', branch.longitude);
+    console.log('[CheckIn] 🌟 GPS Debug: User Location:', userLocation);
+
     if (branch.latitude && branch.longitude) {
       if (!userLocation) {
+        console.warn('[CheckIn] ⚠️ GPS Debug: No user location available.');
         setScanResult({
           success: false,
           message: "Location not found. Please enable GPS to check in."
@@ -225,8 +236,10 @@ const CheckIn: React.FC = () => {
       );
 
       const allowedRadius = branch.geofenceRadius || 100; // Default 100 meters
+      console.log(`[CheckIn] 📏 GPS Debug: Distance: ${distance}m, Allowed: ${allowedRadius}m`);
 
       if (distance > allowedRadius) {
+        console.warn(`[CheckIn] ⛔ GPS Debug: Too far. Rejected.`);
         setScanResult({
           success: false,
           message: `You are ${Math.round(distance)}m away. Move closer to ${branch.name} to check in.`
@@ -234,6 +247,9 @@ const CheckIn: React.FC = () => {
         setTimeout(() => setScanResult(null), 5000);
         return;
       }
+      console.log('[CheckIn] ✅ GPS Debug: Within range.');
+    } else {
+      console.log('[CheckIn] ⚠️ GPS Debug: Branch has no coordinates configured. GPS check skipped.');
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -360,6 +376,11 @@ const CheckIn: React.FC = () => {
       setTimeout(() => { setIsGateOpen(false); setScanResult(null); }, 4000);
     }
   };
+
+  // Update the ref with the latest handleQRScan function
+  useEffect(() => {
+    handleQRScanRef.current = handleQRScan;
+  }, [handleQRScan]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-[fadeIn_0.5s_ease-out]">

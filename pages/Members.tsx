@@ -16,7 +16,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, verifyTransactionCode, showToast, purchaseSubscription } = useAppContext();
+  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, verifyTransactionCode, showToast, purchaseSubscription, branches } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [pendingRenewal, setPendingRenewal] = useState<{ planId: string; amount: number; paymentMethod: any; discount: number; memberId: string; } | null>(null);
@@ -25,7 +25,7 @@ const Members: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Form States
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '' });
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '' });
   const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1 });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isEnrollImageModalOpen, setEnrollImageModalOpen] = useState(false);
@@ -46,13 +46,14 @@ const Members: React.FC = () => {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const plan = plans.find(p => p.id === enrollData.planId);
+    if (!plan) {
+      showToast('Please select a valid plan', 'error');
+      return;
+    }
+
     // For ONLINE payments, show Razorpay modal first
     if (enrollData.paymentMethod === 'ONLINE') {
-      const plan = plans.find(p => p.id === enrollData.planId);
-      if (!plan) {
-        showToast('Please select a valid plan', 'error');
-        return;
-      }
       const finalAmount = Math.max(0, plan.price - Number(enrollData.discount));
       setPendingEnrollment({
         userData: {
@@ -61,13 +62,14 @@ const Members: React.FC = () => {
           emergencyContact: enrollData.emergencyContact,
           address: enrollData.address,
           phone: enrollData.emergencyContact, // Using emergency contact as phone
-          avatar: enrollData.avatar
+          avatar: enrollData.avatar,
+          branchId: enrollData.branchId
         },
         planId: enrollData.planId,
         discount: Number(enrollData.discount),
         amount: finalAmount,
         planName: plan.name,
-        branchId: currentUser?.branchId // Pass the current branch for payment config
+        branchId: enrollData.branchId || currentUser?.branchId // Pass the current branch for payment config
       });
       setPaymentModalOpen(true);
       return;
@@ -99,7 +101,8 @@ const Members: React.FC = () => {
       email: enrollData.email,
       emergencyContact: enrollData.emergencyContact,
       address: enrollData.address,
-      avatar: enrollData.avatar
+      avatar: enrollData.avatar,
+      branchId: enrollData.branchId
     }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate);
 
     if (paymentId) {
@@ -109,7 +112,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '' });
+    setEnrollData({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -329,6 +332,22 @@ const Members: React.FC = () => {
               <button onClick={() => setAddModalOpen(false)}><i className="fas fa-times"></i></button>
             </div>
             <form onSubmit={handleAddMember} className="p-8 space-y-6">
+
+              {currentUser?.role === UserRole.SUPER_ADMIN && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
+                    value={enrollData.branchId}
+                    onChange={e => setEnrollData({ ...enrollData, branchId: e.target.value })}
+                  >
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Profile Picture Upload */}
               <div className="flex flex-col items-center space-y-3">
                 <div
