@@ -31,15 +31,7 @@ export const BRANCHES = [
   },
 ];
 
-export const MOCK_USERS = [
-  { id: 'u1', name: 'Arjun Sharma', email: 'owner@gym.in', role: UserRole.SUPER_ADMIN, branchId: null, avatar: 'https://i.pravatar.cc/150?u=arjun' },
-  { id: 'u2', name: 'Priya Patel', email: 'priya@gym.in', role: UserRole.BRANCH_ADMIN, branchId: 'b1', avatar: 'https://i.pravatar.cc/150?u=priya' },
-  { id: 'u3', name: 'Vikram Singh', email: 'vikram@gym.in', role: UserRole.TRAINER, branchId: 'b1', avatar: 'https://i.pravatar.cc/150?u=vikram', hourlyRate: 800, commissionPercentage: 20, shifts: [{ start: '06:00', end: '11:00' }, { start: '17:00', end: '21:00' }] },
-  { id: 'u4', name: 'Rahul Verma', email: 'rahul@gmail.com', role: UserRole.MEMBER, branchId: 'b1', memberId: 'IF-IND-1001', avatar: 'https://i.pravatar.cc/150?u=rahul' },
-  { id: 'u5', name: 'Sanjay Dutt', email: 'manager@gym.in', role: UserRole.MANAGER, branchId: 'b1', avatar: 'https://i.pravatar.cc/150?u=sanjay', hourlyRate: 1200, commissionPercentage: 5 },
-  { id: 'u6', name: 'Neha Kapoor', email: 'reception@gym.in', role: UserRole.RECEPTIONIST, branchId: 'b1', avatar: 'https://i.pravatar.cc/150?u=neha', hourlyRate: 400 },
-  { id: 'u7', name: 'Karan Mehra', email: 'staff@gym.in', role: UserRole.STAFF, branchId: 'b1', avatar: 'https://i.pravatar.cc/150?u=karan', hourlyRate: 300 },
-];
+export const MOCK_USERS: any[] = [];
 
 export const MOCK_PLANS = [
   { id: 'p1', name: 'Standard Monthly Gym', type: PlanType.GYM, price: 2500, durationDays: 30, branchId: 'b1', isActive: true, isMultiBranch: false },

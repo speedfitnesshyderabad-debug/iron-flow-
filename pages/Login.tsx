@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 import { UserRole } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 const Login: React.FC = () => {
   const { users, setCurrentUser, createSession } = useAppContext();
@@ -33,45 +34,47 @@ const Login: React.FC = () => {
     setIsAuthenticating(true);
     setError('');
 
-    console.log('🔐 Login attempt:', email);
-    console.log('📊 Available users:', users.length);
+    try {
+      // 1. Authenticate with Supabase Auth
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    setTimeout(async () => {
-      if (users.length === 0) {
-        setError(`Database not loaded yet. Found ${users.length} users. Please wait and try again.`);
-        setIsAuthenticating(false);
-        return;
-      }
+      if (authError) throw authError;
 
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (data.user) {
+        // 2. Find the Public User Record
+        // In a real app, this should be fetched from the DB by Auth UID
+        // For now, we match by email to keep compatibility with existing data
+        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-      if (user) {
-        console.log('✅ User found:', user.name);
-        // Authenticate using individual password OR demo key fallback
-        const isValidPassword = (user.password && password === user.password) || (password === DEMO_SECRET_KEY);
+        if (user) {
+          console.log('✅ User found:', user.name);
 
-        if (isValidPassword) {
-          // Check device limit
+          // 3. Create Session
           const sessionCreated = await createSession(user.id);
 
           if (sessionCreated) {
             setCurrentUser(user);
-            // Redirect logic happens automatically in AppRoutes via Dashboard component
+            // Redirect happens automatically
           } else {
             setError('Maximum devices reached. Please logout from another device.');
-            setIsAuthenticating(false);
+            await supabase.auth.signOut(); // Cleanup auth session if app session fails
           }
         } else {
-          setError(`Access Denied: Invalid Security Token.`);
-          setIsAuthenticating(false);
+          setError('Login successful, but user profile not found. Please contact support.');
+          await supabase.auth.signOut();
         }
-      } else {
-        console.error('❌ No user found with email:', email);
-        console.log('Available emails:', users.map(u => u.email));
-        setError(`System Error: Account not recognized. (${users.length} users loaded)`);
-        setIsAuthenticating(false);
       }
-    }, 1500);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message === 'Invalid login credentials'
+        ? 'Invalid email or password.'
+        : err.message);
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   const handleForgotSubmit = (e: React.FormEvent) => {
@@ -181,7 +184,7 @@ const Login: React.FC = () => {
                     <input
                       type="password"
                       className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all pl-12"
-                      placeholder="••••••••"
+                      placeholder="Enter Password"
                       value={password}
                       disabled={isAuthenticating}
                       onChange={(e) => { setPassword(e.target.value); setError(''); }}
@@ -222,72 +225,11 @@ const Login: React.FC = () => {
                 </button>
               </form>
 
-              {/* Demo Sandbox Entry */}
-              <div className="mt-8">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="h-px bg-slate-800 flex-1"></div>
-                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Quick Demo Roles</span>
-                  <div className="h-px bg-slate-800 flex-1"></div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto scrollbar-hide pr-1">
-                  <button
-                    onClick={() => quickLogin(UserRole.SUPER_ADMIN)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-blue-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-0.5">Owner</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Super Admin</p>
-                  </button>
-                  <button
-                    onClick={() => quickLogin(UserRole.BRANCH_ADMIN)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-indigo-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">Branch Admin</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Priya Patel</p>
-                  </button>
-                  <button
-                    onClick={() => quickLogin(UserRole.MANAGER)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-cyan-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-0.5">Manager</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Sanjay Dutt</p>
-                  </button>
-                  <button
-                    onClick={() => quickLogin(UserRole.TRAINER)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-violet-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-violet-500 uppercase tracking-widest mb-0.5">Trainer</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Vikram Singh</p>
-                  </button>
-                  <button
-                    onClick={() => quickLogin(UserRole.RECEPTIONIST)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-emerald-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-0.5">Front Desk</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Neha Kapoor</p>
-                  </button>
-                  <button
-                    onClick={() => quickLogin(UserRole.MEMBER)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-orange-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest mb-0.5">Athlete</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Rahul Verma</p>
-                  </button>
-                  <button
-                    onClick={() => quickLogin(UserRole.STAFF)}
-                    disabled={isAuthenticating}
-                    className="bg-slate-800/50 border border-slate-800 p-2.5 rounded-xl text-left hover:border-slate-500 transition-all group disabled:opacity-30"
-                  >
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">General Staff</p>
-                    <p className="text-[11px] text-slate-300 font-bold group-hover:text-white truncate">Karan Mehra</p>
-                  </button>
-                </div>
+              {/* Production Setup Link */}
+              <div className="mt-8 text-center">
+                <Link to="/admin-setup" className="text-[10px] font-black text-slate-600 uppercase tracking-widest hover:text-blue-500 transition-colors">
+                  Setup Super Admin
+                </Link>
               </div>
             </div>
           )}
