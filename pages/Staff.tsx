@@ -314,13 +314,15 @@ const Staff: React.FC = () => {
                           >
                             <i className="fas fa-user-pen"></i>
                           </button>
-                          <button
-                            onClick={() => handleDeleteStaff(staff.id)}
-                            className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                            title="Delete Account"
-                          >
-                            <i className="fas fa-trash-can"></i>
-                          </button>
+                          {staff.role !== UserRole.SUPER_ADMIN && (
+                            <button
+                              onClick={() => handleDeleteStaff(staff.id)}
+                              className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                              title="Delete Account"
+                            >
+                              <i className="fas fa-trash-can"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
