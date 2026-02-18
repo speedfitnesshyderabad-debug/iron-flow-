@@ -197,6 +197,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => { supabase.removeChannel(channel); }
   }, []);
 
+  // Supabase Auth State Listener - Handle recovery sessions and auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', event, session);
+
+      // Handle password recovery flow - don't interfere with recovery sessions
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('Password recovery session detected');
+        // Do NOT set currentUser during recovery - let ResetPassword component handle it
+        return;
+      }
+
+      // Handle other auth events if needed
+      if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+        // Don't clear currentUser here - let the app handle it through logout
+      }
+
+      // For other events, you can add additional handling as needed
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const askGemini = async (prompt: string, modelType: 'flash' | 'pro' = 'flash') => {
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
