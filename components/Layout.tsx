@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, setCurrentUser, branches, updateUser } = useAppContext();
@@ -43,30 +44,56 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Handle Password Change
-    if (passwordData.newPassword) {
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
-        alert("New passwords do not match!");
-        return;
+    try {
+      // Handle Password Change
+      if (passwordData.newPassword) {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+          alert("New passwords do not match!");
+          return;
+        }
+
+        if (passwordData.newPassword.length < 6) {
+          alert("Password must be at least 6 characters!");
+          return;
+        }
+
+        // Verify current password by attempting to sign in with it
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: currentUser.email,
+          password: passwordData.currentPassword
+        });
+
+        if (signInError) {
+          alert("Incorrect current password!");
+          return;
+        }
+
+        // Update to new password
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: passwordData.newPassword
+        });
+
+        if (updateError) {
+          alert("Failed to update password: " + updateError.message);
+          return;
+        }
+
+        // Update local user data (name, address, emergency contact)
+        await updateUser(currentUser.id, accountData);
+
+        alert("Password updated successfully!");
+      } else {
+        // Just update profile data without password change
+        await updateUser(currentUser.id, accountData);
+        alert("Profile updated successfully!");
       }
 
-      const currentActualPassword = currentUser.password || 'ironflow2025';
-      if (passwordData.currentPassword !== currentActualPassword) {
-        alert("Incorrect current password!");
-        return;
-      }
-
-      await updateUser(currentUser.id, {
-        ...accountData,
-        password: passwordData.newPassword
-      });
-      alert("Password updated successfully!");
-    } else {
-      await updateUser(currentUser.id, accountData);
+      setIsAccountModalOpen(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err: any) {
+      console.error('Account update error:', err);
+      alert("Failed to update account: " + err.message);
     }
-
-    setIsAccountModalOpen(false);
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
