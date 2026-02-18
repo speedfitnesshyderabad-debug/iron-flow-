@@ -468,21 +468,7 @@ const Members: React.FC = () => {
                 <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
               </div>
 
-              <div className="space-y-2 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-1">
-                  <i className="fas fa-key"></i> Set Login Password
-                </label>
-                <input
-                  required
-                  type="password"
-                  className="w-full p-3 bg-white border border-indigo-100 rounded-xl font-bold"
-                  placeholder="Enter password for login"
-                  minLength={6}
-                  value={enrollData.password}
-                  onChange={e => setEnrollData({ ...enrollData, password: e.target.value })}
-                />
-                <p className="text-[10px] text-indigo-600 font-medium">Member will use this password to login to their account (min 6 characters)</p>
-              </div>
+              <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>

@@ -631,7 +631,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
-      const memberPassword = password || 'ironflow2025';
+      // Auto-generate secure password for Member
+      const randomSuffix = Math.random().toString(36).slice(-6).toUpperCase();
+      const memberPassword = password || `IronFlow-${randomSuffix}`;
 
       // 2. Sign up the new user in Supabase Auth
       const { data: authData, error: authError } = await tempSupabase.auth.signUp({
@@ -708,7 +710,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userId: newUserId,
         type: CommType.SMS,
         recipient: userData.phone || userData.email || 'N/A',
-        body: `Welcome to IronFlow! Your athlete ID is ${newUser.memberId}. Login with email: ${userData.email} and your chosen password. Valid until ${newSub.endDate}.`,
+        body: `Welcome to IronFlow! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nChange securely after login.`,
         category: 'WELCOME',
         branchId: branchId
       });

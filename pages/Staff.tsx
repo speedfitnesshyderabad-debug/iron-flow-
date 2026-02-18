@@ -107,7 +107,9 @@ const Staff: React.FC = () => {
         }
       });
 
-      const staffPassword = formData.password || 'ironflow2025';
+      // Auto-generate strong password
+      const randomSuffix = Math.random().toString(36).slice(-6).toUpperCase();
+      const staffPassword = `IronFlow-${randomSuffix}`;
 
       // 2. Sign up the new user in Supabase Auth
       const { data: authData, error: authError } = await tempSupabase.auth.signUp({
@@ -148,7 +150,7 @@ const Staff: React.FC = () => {
 
         await addUser(newStaff);
         setAddModalOpen(false);
-        alert(`Staff account created successfully!\n\nEmail: ${formData.email}\nPassword: ${staffPassword}`);
+        alert(`STAFF ACCOUNT CREATED!\n\nEmail: ${formData.email}\nTemporary Password: ${staffPassword}\n\nPlease share this password with the staff member securely.`);
       }
 
     } catch (error: any) {
@@ -496,14 +498,8 @@ const Staff: React.FC = () => {
                   <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{isEditModalOpen ? 'Set New Password' : 'Password'}</label>
-                  <input
-                    type="password"
-                    placeholder={isEditModalOpen ? '(Leave blank to keep same)' : 'e.g. staff123'}
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
-                    value={formData.password || ''}
-                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                  />
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                  <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                 </div>
               </div>
 

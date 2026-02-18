@@ -128,18 +128,18 @@ const Login: React.FC = () => {
           {view === 'login' && (
             <div className="animate-[fadeIn_0.3s_ease-out]">
               <div className="mb-10 text-center lg:text-left">
-                <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">System Access</h2>
-                <p className="text-slate-400 font-medium">IronFlow Management Protocol v4.2</p>
+                <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Sign In</h2>
+                <p className="text-slate-400 font-medium">Welcome back to IronFlow</p>
               </div>
 
               <form onSubmit={handleManualLogin} className="space-y-5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Work Email</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
                   <div className="relative">
                     <input
                       type="email"
                       className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all pl-12"
-                      placeholder="identity@ironflow.in"
+                      placeholder="name@example.com"
                       value={email}
                       disabled={isAuthenticating}
                       onChange={(e) => { setEmail(e.target.value); setError(''); }}
@@ -151,19 +151,19 @@ const Login: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="flex justify-between items-center ml-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Security Token</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Password</label>
                   </div>
                   <div className="relative">
                     <input
                       type="password"
                       className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all pl-12"
-                      placeholder="Enter Password"
+                      placeholder="Enter your password"
                       value={password}
                       disabled={isAuthenticating}
                       onChange={(e) => { setPassword(e.target.value); setError(''); }}
                       required
                     />
-                    <i className="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                   </div>
                   <div className="flex justify-between items-center pt-2">
                     <Link
@@ -177,7 +177,7 @@ const Login: React.FC = () => {
                       onClick={() => setView('forgot')}
                       className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
                     >
-                      Forgot Token?
+                      Forgot Password?
                     </button>
                   </div>
                 </div>
@@ -193,8 +193,8 @@ const Login: React.FC = () => {
                   disabled={isAuthenticating}
                   className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3"
                 >
-                  {isAuthenticating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-shield-check"></i>}
-                  {isAuthenticating ? 'VERIFYING...' : 'ESTABLISH SESSION'}
+                  {isAuthenticating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-sign-in-alt"></i>}
+                  {isAuthenticating ? 'SIGNING IN...' : 'SIGN IN'}
                 </button>
               </form>
 
