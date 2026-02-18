@@ -690,41 +690,7 @@ const CheckIn: React.FC = () => {
         </div>
       </div>
 
-      {/* Manual QR Testing (for development/testing without camera) */}
-      <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-[2.5rem] shadow-lg">
-        <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-amber-900">
-          <i className="fas fa-wrench text-amber-600"></i> Manual QR Testing (Dev Mode)
-        </h3>
-        <p className="text-xs text-amber-800 mb-4 font-medium">
-          For testing without a camera, paste the QR code data below:
-        </p>
-        <div className="space-y-3">
-          <textarea
-            className="w-full p-3 rounded-xl border-2 border-amber-300 bg-white font-mono text-xs"
-            rows={3}
-            placeholder='Paste QR data here, e.g. {"type":"STATIC","branchId":"b1"}'
-            value={manualQRInput}
-            onChange={(e) => setManualQRInput(e.target.value)}
-          />
-          <button
-            onClick={() => {
-              if (manualQRInput.trim()) {
-                handleQRScan(manualQRInput.trim());
-                setManualQRInput('');
-              }
-            }}
-            className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all"
-          >
-            <i className="fas fa-play mr-2"></i> Test QR Code
-          </button>
-          <div className="bg-white border border-amber-300 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-amber-900 mb-2">Example QR Data:</p>
-            <code className="text-[9px] text-amber-700 block bg-amber-50 p-2 rounded">
-              {JSON.stringify({ type: 'STATIC', branchId: 'b1' })}
-            </code>
-          </div>
-        </div>
-      </div>
+
 
       <style>{`
         #reader { border: none !important; }
