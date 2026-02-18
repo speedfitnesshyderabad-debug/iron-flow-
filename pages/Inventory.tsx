@@ -37,6 +37,12 @@ const Inventory: React.FC = () => {
     setModalOpen(true);
   };
 
+  const handleOpenEdit = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setFormData({ name: item.name, category: item.category as any, price: item.price, stock: item.stock, branchId: item.branchId });
+    setModalOpen(true);
+  };
+
   const handleOpenSell = (item: InventoryItem) => {
     setSelectedItem(item);
     setSellData({ memberId: '', quantity: 1, paymentMethod: 'CASH', transactionCode: '' });
@@ -130,6 +136,13 @@ const Inventory: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => handleOpenEdit(item)}
+                  className="bg-blue-50 text-blue-500 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all"
+                  title="Edit Item"
+                >
+                  <i className="fas fa-pen"></i>
+                </button>
+                <button
                   onClick={() => setDeleteConfirm(item)}
                   className="bg-red-50 text-red-500 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"
                   title="Delete Item"
@@ -151,7 +164,7 @@ const Inventory: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out]">
-            <h3 className="text-2xl font-bold mb-6">Inventory Entry</h3>
+            <h3 className="text-2xl font-bold mb-6">{selectedItem ? 'Edit Item' : 'Add New Item'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input required placeholder="Item Name" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value as any })}>
@@ -164,7 +177,7 @@ const Inventory: React.FC = () => {
                 <input type="number" placeholder="Price" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
                 <input type="number" placeholder="Stock" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
               </div>
-              <button className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">SAVE ITEM</button>
+              <button className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">{selectedItem ? 'UPDATE ITEM' : 'SAVE ITEM'}</button>
               <button type="button" onClick={() => setModalOpen(false)} className="w-full py-2 text-gray-400">CANCEL</button>
             </form>
           </div>
