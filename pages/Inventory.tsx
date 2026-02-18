@@ -5,7 +5,8 @@ import { InventoryItem, UserRole } from '../types';
 import PaymentModal from '../components/PaymentModal';
 
 const Inventory: React.FC = () => {
-  const { inventory, branches, addInventory, updateInventory, sellInventoryItem, users, currentUser } = useAppContext();
+  const { inventory, branches, addInventory, updateInventory, deleteInventory, sellInventoryItem, users, currentUser } = useAppContext();
+  const [deleteConfirm, setDeleteConfirm] = useState<InventoryItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [isSellModalOpen, setSellModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -40,6 +41,13 @@ const Inventory: React.FC = () => {
     setSelectedItem(item);
     setSellData({ memberId: '', quantity: 1, paymentMethod: 'CASH', transactionCode: '' });
     setSellModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (deleteConfirm) {
+      await deleteInventory(deleteConfirm.id);
+      setDeleteConfirm(null);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -120,12 +128,21 @@ const Inventory: React.FC = () => {
                 <p className="text-[10px] font-bold text-gray-400 uppercase">In Stock</p>
                 <p className={`font-black ${item.stock < 5 ? 'text-red-600' : 'text-slate-900'}`}>{item.stock} Units</p>
               </div>
-              <button
-                onClick={() => handleOpenSell(item)}
-                className="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-110 transition-transform"
-              >
-                <i className="fas fa-shopping-basket"></i>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDeleteConfirm(item)}
+                  className="bg-red-50 text-red-500 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"
+                  title="Delete Item"
+                >
+                  <i className="fas fa-trash-alt"></i>
+                </button>
+                <button
+                  onClick={() => handleOpenSell(item)}
+                  className="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-110 transition-transform"
+                >
+                  <i className="fas fa-shopping-basket"></i>
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -232,6 +249,35 @@ const Inventory: React.FC = () => {
             setPaymentModalOpen(false);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-trash-alt text-2xl text-red-500"></i>
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2 uppercase">Delete Item</h3>
+            <p className="text-slate-500 text-sm mb-6">
+              Are you sure you want to delete <span className="font-bold text-slate-900">{deleteConfirm.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-all"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all"
+              >
+                DELETE
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

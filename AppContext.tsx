@@ -41,6 +41,7 @@ interface AppContextType {
   updateFeedbackStatus: (id: string, status: Feedback['status']) => Promise<void>;
   addInventory: (item: InventoryItem) => Promise<void>;
   updateInventory: (id: string, updates: Partial<InventoryItem>) => Promise<void>;
+  deleteInventory: (id: string) => Promise<void>;
   sellInventoryItem: (itemId: string, memberId: string, quantity: number, paymentMethod: 'CASH' | 'POS' | 'CARD' | 'ONLINE', transactionCode?: string, razorpayPaymentId?: string) => Promise<void>;
   addMetric: (metric: BodyMetric) => Promise<void>;
   addOffer: (offer: Offer) => Promise<void>;
@@ -375,6 +376,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase.from('inventory').update(updates).eq('id', id);
     if (!error) setInventory(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
     else showToast('Failed to update inventory', 'error');
+  };
+
+  const deleteInventory = async (id: string) => {
+    const { error } = await supabase.from('inventory').delete().eq('id', id);
+    if (!error) {
+      setInventory(prev => prev.filter(i => i.id !== id));
+      showToast('Item deleted from inventory');
+    } else showToast('Failed to delete item', 'error');
   };
 
   const sellInventoryItem = async (itemId: string, memberId: string, quantity: number, paymentMethod: 'CASH' | 'POS' | 'CARD' | 'ONLINE', transactionCode?: string, razorpayPaymentId?: string) => {
@@ -881,7 +890,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
-      addInventory, updateInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
+      addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
       generateDeviceFingerprint, createSession, revokeSession, getSessions
     }}>
       {children}
