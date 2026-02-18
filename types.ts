@@ -99,7 +99,9 @@ export interface User {
   weekOffs?: string[]; // Array of days e.g. ['Sunday']
   hourlyRate?: number;
   commissionPercentage?: number; // Base commission (Sessions for Trainers)
-  salesCommissionPercentage?: number; // Specific commission for Sales
+  salesCommissionPercentage?: number; // Specific commission for Sales (Gym/General)
+  ptCommissionPercentage?: number; // Specific commission for PT Sales
+  groupCommissionPercentage?: number; // Specific commission for Group Class Sales
   maxDevices?: number; // For multi-device restriction
 }
 

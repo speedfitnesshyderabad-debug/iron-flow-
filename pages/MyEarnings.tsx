@@ -99,22 +99,57 @@ const MyEarnings: React.FC = () => {
         );
       });
 
+      // Group sales by Plan Type
       const gymSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.GYM);
+      const ptSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.PT);
+      const groupSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.GROUP);
 
+      // 1. Gym Sales
       if (gymSales.length > 0) {
-        const salesRate = currentUser.salesCommissionPercentage ?? currentUser.commissionPercentage ?? 0;
-        const saleEarnings = gymSales.map(sale => sale.amount * (salesRate / 100));
-        const totalSaleComm = saleEarnings.reduce((acc, e) => acc + e, 0);
+        const rate = currentUser.salesCommissionPercentage ?? currentUser.commissionPercentage ?? 0;
+        const earnings = gymSales.reduce((acc, s) => acc + (s.amount * (rate / 100)), 0);
 
-        if (totalSaleComm > 0) {
-          commissions += totalSaleComm;
-          incentiveParts.push(`${gymSales.length} Sales (${salesRate}%)`);
+        if (earnings > 0) {
+          commissions += earnings;
+          incentiveParts.push(`${gymSales.length} Gym Sales (${rate}%)`);
+        }
+      }
+
+      // 2. PT Sales
+      if (ptSales.length > 0) {
+        let rate = 0;
+        if (currentUser.role === UserRole.MANAGER) {
+          rate = currentUser.ptCommissionPercentage ?? 0;
+        } else {
+          rate = currentUser.salesCommissionPercentage ?? currentUser.commissionPercentage ?? 0;
+        }
+
+        const earnings = ptSales.reduce((acc, s) => acc + (s.amount * (rate / 100)), 0);
+        if (earnings > 0) {
+          commissions += earnings;
+          incentiveParts.push(`${ptSales.length} PT Sales (${rate}%)`);
+        }
+      }
+
+      // 3. Group Sales
+      if (groupSales.length > 0) {
+        let rate = 0;
+        if (currentUser.role === UserRole.MANAGER) {
+          rate = currentUser.groupCommissionPercentage ?? 0;
+        } else {
+          rate = currentUser.salesCommissionPercentage ?? currentUser.commissionPercentage ?? 0;
+        }
+
+        const earnings = groupSales.reduce((acc, s) => acc + (s.amount * (rate / 100)), 0);
+        if (earnings > 0) {
+          commissions += earnings;
+          incentiveParts.push(`${groupSales.length} Group Sales (${rate}%)`);
         }
       }
     }
 
     const incentiveType = incentiveParts.length > 0
-      ? `${incentiveParts.join(' + ')} (${currentUser.commissionPercentage || 0}%)`
+      ? incentiveParts.join(' + ')
       : "No incentives found";
 
     return {

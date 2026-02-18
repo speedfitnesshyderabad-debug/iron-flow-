@@ -23,6 +23,8 @@ const Staff: React.FC = () => {
     hourlyRate: 500,
     commissionPercentage: 10,
     salesCommissionPercentage: 0,
+    ptCommissionPercentage: 0,
+    groupCommissionPercentage: 0,
     emergencyContact: '',
     avatar: '',
     maxDevices: 1
@@ -47,6 +49,8 @@ const Staff: React.FC = () => {
       hourlyRate: 500,
       commissionPercentage: 10,
       salesCommissionPercentage: 0,
+      ptCommissionPercentage: 0,
+      groupCommissionPercentage: 0,
       emergencyContact: '',
       avatar: '',
       maxDevices: 1
@@ -66,7 +70,9 @@ const Staff: React.FC = () => {
       weekOffs: staff.weekOffs || [],
       hourlyRate: staff.hourlyRate || 500,
       commissionPercentage: staff.commissionPercentage || 0,
-      salesCommissionPercentage: staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0, // Fallback to base commission
+      salesCommissionPercentage: staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0,
+      ptCommissionPercentage: staff.ptCommissionPercentage ?? 0,
+      groupCommissionPercentage: staff.groupCommissionPercentage ?? 0,
       emergencyContact: staff.emergencyContact || '',
       avatar: staff.avatar || '',
       maxDevices: staff.maxDevices || 1
@@ -97,6 +103,8 @@ const Staff: React.FC = () => {
       hourlyRate: formData.hourlyRate,
       commissionPercentage: formData.commissionPercentage,
       salesCommissionPercentage: formData.salesCommissionPercentage,
+      ptCommissionPercentage: formData.ptCommissionPercentage,
+      groupCommissionPercentage: formData.groupCommissionPercentage,
       emergencyContact: formData.emergencyContact,
       avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`
     };
@@ -474,27 +482,61 @@ const Staff: React.FC = () => {
 
               {(formData.role === UserRole.TRAINER || formData.role === UserRole.MANAGER) && (
                 <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-[fadeIn_0.3s_ease-out] space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                      {formData.role === UserRole.MANAGER ? 'Gym Sales Commission (%)' : 'Session Commission (%)'}
-                    </label>
-                    <div className="relative">
-                      <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.commissionPercentage} onChange={e => setFormData({ ...formData, commissionPercentage: Number(e.target.value) })} />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
-                    </div>
-                  </div>
-
-                  {/* Separate Sales Commission for Trainers */}
-                  {formData.role === UserRole.TRAINER && (
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                        Sales Commission (%)
-                      </label>
-                      <div className="relative">
-                        <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                  {/* Manager Specific UI: 3 Commission Types */}
+                  {formData.role === UserRole.MANAGER && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                          Gym Membership Commission (%)
+                        </label>
+                        <div className="relative">
+                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        </div>
                       </div>
-                    </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                          Personal Training Commission (%)
+                        </label>
+                        <div className="relative">
+                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.ptCommissionPercentage} onChange={e => setFormData({ ...formData, ptCommissionPercentage: Number(e.target.value) })} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                          Group Class Commission (%)
+                        </label>
+                        <div className="relative">
+                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.groupCommissionPercentage} onChange={e => setFormData({ ...formData, groupCommissionPercentage: Number(e.target.value) })} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Trainer Specific UI: Session + Sales (Gym) */}
+                  {formData.role === UserRole.TRAINER && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                          Session Commission (%)
+                        </label>
+                        <div className="relative">
+                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.commissionPercentage} onChange={e => setFormData({ ...formData, commissionPercentage: Number(e.target.value) })} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                          Sales Commission (%)
+                        </label>
+                        <div className="relative">
+                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
