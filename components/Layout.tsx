@@ -11,10 +11,107 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  // Stop camera stream
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraOpen(false);
+  };
+
+  // Start camera stream
+  const startCamera = async () => {
+    try {
+      setIsCameraOpen(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      alert("Could not access camera. Please allow camera permissions.");
+      setIsCameraOpen(false);
+    }
+  };
+
+  // Capture photo from video stream
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+
+      if (context) {
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw video frame to canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert to blob and upload
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+            // Re-use the existing file change logic but pass a mock event or call upload directly
+            // Since handleFileChange expects an event, let's extract the upload logic or just create a synthetic event
+            // Better: Create a dedicated upload function
+            handleFileUpload(file);
+          }
+        }, 'image/jpeg');
+
+        stopCamera();
+      }
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+    setIsUploading(true);
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      await updateUser(currentUser.id, { avatar: publicUrl });
+      alert('Profile photo updated successfully!');
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      alert('Error uploading avatar: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
 
   const [accountData, setAccountData] = useState({
     name: currentUser?.name || '',
@@ -98,39 +195,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-      setIsUploading(true);
-
-      try {
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-
-        await updateUser(currentUser.id, { avatar: publicUrl });
-        alert('Profile photo updated successfully!');
-      } catch (error: any) {
-        console.error('Error uploading avatar:', error);
-        alert('Error uploading avatar: ' + (error.message || 'Unknown error'));
-      } finally {
-        setIsUploading(false);
-      }
-    }
-  };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -316,7 +381,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </div>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400 font-bold mt-3 uppercase tracking-widest">Click to change photo</p>
+                <div className="flex gap-4 mt-3">
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    className="text-[10px] text-blue-500 font-bold uppercase tracking-widest hover:text-blue-600 flex items-center gap-1"
+                  >
+                    <i className="fas fa-upload"></i> Upload
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="text-[10px] text-blue-500 font-bold uppercase tracking-widest hover:text-blue-600 flex items-center gap-1"
+                  >
+                    <i className="fas fa-camera"></i> Take Photo
+                  </button>
+                </div>
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -324,6 +406,37 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   className="hidden"
                   accept="image/*"
                 />
+
+                {/* Camera Modal Overlay */}
+                {isCameraOpen && (
+                  <div className="fixed inset-0 bg-black z-[110] flex flex-col items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
+                    <div className="relative w-full max-w-md aspect-[3/4] bg-black rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
+                      <canvas ref={canvasRef} className="hidden" />
+
+                      <div className="absolute top-4 right-4 z-10">
+                        <button
+                          type="button"
+                          onClick={stopCamera}
+                          className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/70 transition-all"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+
+                      <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent flex justify-center items-end pb-10">
+                        <button
+                          type="button"
+                          onClick={capturePhoto}
+                          className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all active:scale-95 shadow-lg shadow-black/50"
+                        >
+                          <div className="w-16 h-16 bg-white rounded-full"></div>
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-white/50 text-xs mt-6 font-medium uppercase tracking-widest">Make sure your face is clearly visible</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
