@@ -67,6 +67,7 @@ const MyEarnings: React.FC = () => {
         );
       });
 
+      const sessionRate = currentUser.commissionPercentage || 0;
       const sessionEarnings = completedBookings.map(booking => {
         const sub = subscriptions.find(s =>
           s.memberId === booking.memberId &&
@@ -77,13 +78,13 @@ const MyEarnings: React.FC = () => {
         if (!plan) return 0;
         const maxSessions = plan.maxSessions || 1;
         const unitPrice = plan.price / maxSessions;
-        return unitPrice * ((currentUser.commissionPercentage || 0) / 100);
+        return unitPrice * (sessionRate / 100);
       });
 
       const totalSessionComm = sessionEarnings.reduce((acc, e) => acc + e, 0);
       if (totalSessionComm > 0) {
         commissions += totalSessionComm;
-        incentiveParts.push(`${completedBookings.length} Sessions`);
+        incentiveParts.push(`${completedBookings.length} Sessions (${sessionRate}%)`);
       }
     }
 
@@ -101,10 +102,14 @@ const MyEarnings: React.FC = () => {
       const gymSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.GYM);
 
       if (gymSales.length > 0) {
-        const saleEarnings = gymSales.map(sale => sale.amount * ((currentUser.commissionPercentage || 0) / 100));
+        const salesRate = currentUser.salesCommissionPercentage ?? currentUser.commissionPercentage ?? 0;
+        const saleEarnings = gymSales.map(sale => sale.amount * (salesRate / 100));
         const totalSaleComm = saleEarnings.reduce((acc, e) => acc + e, 0);
-        commissions += totalSaleComm;
-        incentiveParts.push(`${gymSales.length} Sales`);
+
+        if (totalSaleComm > 0) {
+          commissions += totalSaleComm;
+          incentiveParts.push(`${gymSales.length} Sales (${salesRate}%)`);
+        }
       }
     }
 

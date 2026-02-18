@@ -98,7 +98,8 @@ export interface User {
   shifts?: Shift[];
   weekOffs?: string[]; // Array of days e.g. ['Sunday']
   hourlyRate?: number;
-  commissionPercentage?: number;
+  commissionPercentage?: number; // Base commission (Sessions for Trainers)
+  salesCommissionPercentage?: number; // Specific commission for Sales
   maxDevices?: number; // For multi-device restriction
 }
 
