@@ -35,13 +35,39 @@ const Members: React.FC = () => {
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
 
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
+
   const members = users.filter(u => u.role === UserRole.MEMBER &&
     (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId));
 
-  const filteredMembers = members.filter(m =>
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.memberId?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMembers = members.filter(m => {
+    // 1. Search Filter
+    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.memberId?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // 2. Status Filter
+    const memberSubs = subscriptions.filter(s => s.memberId === m.id);
+    const activeSub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE);
+
+    // Check Expiring Soon (Active + Ends in <= 7 days)
+    const isExpiringSoon = (() => {
+      if (!activeSub) return false;
+      const today = new Date();
+      const end = new Date(activeSub.endDate);
+      const diffTime = end.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 7;
+    })();
+
+    switch (filter) {
+      case 'ACTIVE': return !!activeSub;
+      case 'EXPIRED': return !activeSub;
+      case 'EXPIRING_SOON': return isExpiringSoon;
+      default: return true;
+    }
+  });
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,16 +262,39 @@ const Members: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-col md:flex-row items-center gap-4">
-        <div className="flex-1 relative w-full">
-          <input
-            type="text"
-            placeholder="Search by name or ID..."
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+          <div className="flex-1 relative w-full">
+            <input
+              type="text"
+              placeholder="Search by name or ID..."
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {[
+            { id: 'ALL', label: 'All Members', icon: 'fa-users' },
+            { id: 'ACTIVE', label: 'Active', icon: 'fa-check-circle', color: 'text-green-600 bg-green-50 border-green-100 ring-2 ring-green-100' },
+            { id: 'EXPIRING_SOON', label: 'Expiring Soon (7 Days)', icon: 'fa-clock', color: 'text-amber-600 bg-amber-50 border-amber-100 ring-2 ring-amber-100' },
+            { id: 'EXPIRED', label: 'Expired', icon: 'fa-times-circle', color: 'text-red-600 bg-red-50 border-red-100 ring-2 ring-red-100' }
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${filter === f.id
+                  ? (f.color || 'bg-slate-800 text-white border-slate-800 shadow-lg scale-105')
+                  : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'
+                }`}
+            >
+              <i className={`fas ${f.icon} mr-2`}></i>
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
