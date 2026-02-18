@@ -10,6 +10,7 @@ const Register: React.FC = () => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [generatedCreds, setGeneratedCreds] = useState<{ email: string, password: string } | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -41,20 +42,13 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      showToast("Security Tokens do not match.", "error");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      showToast("Token must be at least 6 characters.", "error");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      // Auto-generate secure password
+      const randomSuffix = Math.random().toString(36).slice(-6).toUpperCase();
+      const generatedPassword = `IronFlow-${randomSuffix}`;
+
       await enrollMember({
         name: formData.name,
         email: formData.email,
@@ -62,10 +56,14 @@ const Register: React.FC = () => {
         branchId: formData.branchId,
         emergencyContact: formData.emergencyContact,
         address: formData.address
-      }, formData.planId, undefined, formData.password);
+      }, formData.planId, undefined, generatedPassword);
 
-      showToast("Athlete Account Created! Redirecting to Login...", "success");
-      setTimeout(() => navigate('/login'), 2000);
+      // Success Step
+      setIsSubmitting(false);
+      setGeneratedCreds({ email: formData.email, password: generatedPassword });
+      setStep(4);
+      showToast("Account Created Successfully!", "success");
+
     } catch (err) {
       showToast("Registration failed. Please try again.", "error");
       setIsSubmitting(false);
@@ -196,37 +194,14 @@ const Register: React.FC = () => {
                   <input required type="email" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="athlete@ironflow.in" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">Choose Security Token</label>
-                    <div className="relative">
-                      <input
-                        required
-                        type={showPassword ? "text" : "password"}
-                        className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all"
-                        value={formData.password}
-                        onChange={e => setFormData({ ...formData, password: e.target.value })}
-                        placeholder="Min. 6 chars"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-                      >
-                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                      </button>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2">Security</p>
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-start gap-3">
+                    <i className="fas fa-shield-alt text-blue-400 mt-0.5"></i>
+                    <div>
+                      <p className="text-sm font-bold text-white">Secure Token Generation</p>
+                      <p className="text-xs text-slate-400 mt-1">A unique, secure password will be generated for you and shown on the next screen.</p>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">Confirm Token</label>
-                    <input
-                      required
-                      type={showPassword ? "text" : "password"}
-                      className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all"
-                      value={formData.confirmPassword}
-                      onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      placeholder="Re-enter token"
-                    />
                   </div>
                 </div>
 
@@ -253,6 +228,53 @@ const Register: React.FC = () => {
                   >
                     {isSubmitting ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-check-circle"></i>}
                     {isSubmitting ? 'SECURING...' : 'JOIN IRONFLOW'}
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Step 4: Success & Credentials */}
+            {step === 4 && generatedCreds && (
+              <div className="space-y-8 animate-[slideUp_0.3s_ease-out] text-center">
+                <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-green-500/20">
+                  <i className="fas fa-check text-4xl text-white"></i>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight">Welcome to IronFlow!</h3>
+                  <p className="text-slate-400 font-medium">Your account has been successfully created.</p>
+                </div>
+
+                <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8 space-y-6">
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Your Login Credentials</p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs text-slate-500 font-bold uppercase mb-1">Email / Username</p>
+                      <p className="text-xl font-mono font-bold text-white tracking-wide">{generatedCreds.email}</p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-700/50">
+                      <p className="text-xs text-slate-500 font-bold uppercase mb-1">Temporary Password</p>
+                      <div className="flex items-center justify-center gap-3">
+                        <p className="text-2xl font-mono font-black text-green-400 tracking-wider p-2 bg-slate-900 rounded-lg select-all">
+                          {generatedCreds.password}
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-2 flex items-center justify-center gap-2">
+                        <i className="fas fa-exclamation-triangle text-amber-500"></i>
+                        Please copy and save this password now.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/login')}
+                    className="w-full py-5 bg-green-600 hover:bg-green-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl active:scale-[0.98] flex items-center justify-center gap-3 transition-all"
+                  >
+                    Proceed to Login <i className="fas fa-arrow-right"></i>
                   </button>
                 </div>
               </div>

@@ -7,8 +7,8 @@ const Communications: React.FC = () => {
   const { communications, users, branches } = useAppContext();
   const [filter, setFilter] = useState<'ALL' | CommType>('ALL');
 
-  const filteredComms = filter === 'ALL' 
-    ? communications 
+  const filteredComms = filter === 'ALL'
+    ? communications
     : communications.filter(c => c.type === filter);
 
   return (
@@ -20,22 +20,22 @@ const Communications: React.FC = () => {
         </div>
 
         <div className="flex bg-white p-1 rounded-2xl shadow-sm border">
-           {['ALL', CommType.EMAIL, CommType.SMS].map((t) => (
-             <button
-               key={t}
-               onClick={() => setFilter(t as any)}
-               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === t ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
-             >
-               {t}
-             </button>
-           ))}
+          {['ALL', CommType.EMAIL, CommType.SMS].map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilter(t as any)}
+              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === t ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         <StatCard label="Total Sent" value={communications.length} icon="fa-paper-plane" color="blue" />
-         <StatCard label="Emails Delivered" value={communications.filter(c => c.type === CommType.EMAIL).length} icon="fa-envelope" color="indigo" />
-         <StatCard label="SMS Delivered" value={communications.filter(c => c.type === CommType.SMS).length} icon="fa-comment-dots" color="amber" />
+        <StatCard label="Total Sent" value={communications.length} icon="fa-paper-plane" color="blue" />
+        <StatCard label="Emails Delivered" value={communications.filter(c => c.type === CommType.EMAIL).length} icon="fa-envelope" color="indigo" />
+        <StatCard label="SMS Delivered" value={communications.filter(c => c.type === CommType.SMS).length} icon="fa-comment-dots" color="amber" />
       </div>
 
       <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
@@ -56,8 +56,8 @@ const Communications: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center text-slate-400 italic font-medium">
                     <div className="flex flex-col items-center gap-3">
-                       <i className="fas fa-inbox text-4xl opacity-10"></i>
-                       <p>No communications recorded in current session.</p>
+                      <i className="fas fa-inbox text-4xl opacity-10"></i>
+                      <p>No communications recorded in current session.</p>
                     </div>
                   </td>
                 </tr>
@@ -83,8 +83,8 @@ const Communications: React.FC = () => {
                       </td>
                       <td className="px-8 py-6">
                         <div className="max-w-md">
-                           {comm.subject && <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight mb-1">{comm.subject}</p>}
-                           <p className="text-xs text-slate-500 line-clamp-1 leading-relaxed">{comm.body}</p>
+                          {comm.subject && <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight mb-1">{comm.subject}</p>}
+                          <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">{comm.body}</p>
                         </div>
                       </td>
                       <td className="px-8 py-6">
@@ -92,8 +92,8 @@ const Communications: React.FC = () => {
                       </td>
                       <td className="px-8 py-6">
                         <span className="bg-green-100 text-green-700 text-[9px] font-black px-3 py-1 rounded-full flex items-center gap-2 w-fit">
-                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                           DELIVERED
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                          DELIVERED
                         </span>
                       </td>
                     </tr>
@@ -104,7 +104,7 @@ const Communications: React.FC = () => {
           </table>
         </div>
       </div>
-      
+
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
@@ -120,13 +120,13 @@ const StatCard = ({ label, value, icon, color }: any) => {
   };
   return (
     <div className="bg-white p-6 rounded-[2rem] border shadow-sm flex items-center gap-6">
-       <div className={`${colors[color]} w-14 h-14 rounded-2xl flex items-center justify-center shrink-0`}>
-          <i className={`fas ${icon} text-xl`}></i>
-       </div>
-       <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{label}</p>
-          <p className="text-2xl font-black text-slate-900">{value}</p>
-       </div>
+      <div className={`${colors[color]} w-14 h-14 rounded-2xl flex items-center justify-center shrink-0`}>
+        <i className={`fas ${icon} text-xl`}></i>
+      </div>
+      <div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{label}</p>
+        <p className="text-2xl font-black text-slate-900">{value}</p>
+      </div>
     </div>
   );
 };
