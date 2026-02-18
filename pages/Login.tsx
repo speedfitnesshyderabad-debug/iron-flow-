@@ -71,7 +71,7 @@ const Login: React.FC = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: 'https://speedfitness.org/reset-password',
+        redirectTo: 'https://speedfitness.org/#/reset-password',
       });
 
       if (error) throw error;
