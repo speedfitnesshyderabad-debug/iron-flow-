@@ -18,7 +18,7 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, verifyTransactionCode, showToast, purchaseSubscription, branches } = useAppContext();
+  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, branches } = useAppContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -381,6 +381,18 @@ const Members: React.FC = () => {
                     className="py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
                   >
                     MANAGE
+                  </button>
+                )}
+                {currentUser?.role === UserRole.SUPER_ADMIN && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone.`)) {
+                        deleteUser(member.id);
+                      }
+                    }}
+                    className="py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                  >
+                    DELETE
                   </button>
                 )}
                 <button
