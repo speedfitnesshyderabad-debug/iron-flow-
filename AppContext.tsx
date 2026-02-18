@@ -610,11 +610,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!error) setCommunications(prev => [newComm, ...prev]);
   };
 
-  const enrollMember = async (userData: Partial<User>, planId: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string) => {
+  const enrollMember = async (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string) => {
     setGlobalLoading(true);
-    const plan = plans.find(p => p.id === planId);
-    if (!plan) {
+    const plan = planId ? plans.find(p => p.id === planId) : undefined;
+    if (planId && !plan) {
       setGlobalLoading(false);
+      showToast('Selected plan not found', 'error');
       return;
     }
 
@@ -672,51 +673,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         phone: userData.phone
       };
 
-      const newSub: Subscription = {
-        id: `s-${Date.now()}`,
-        memberId: newUserId,
-        planId: planId,
-        startDate: membershipStartDate,
-        endDate: new Date(new Date(membershipStartDate).getTime() + plan.durationDays * 86400000).toISOString().split('T')[0],
-        status: SubscriptionStatus.ACTIVE,
-        branchId,
-        trainerId
-      };
-
-      const finalAmount = Math.max(0, plan.price - discount);
-      const newSale: Sale = {
-        id: `sale-${Date.now()}`,
-        invoiceNo: generateInvoiceNo(branchId),
-        date: new Date().toISOString().split('T')[0],
-        amount: finalAmount,
-        discount,
-        memberId: newUserId,
-        planId: planId,
-        staffId: staffId || currentUser?.id || 'admin',
-        branchId,
-        paymentMethod: 'ONLINE',
-        trainerId
-      };
-
       await supabase.from('users').insert(newUser);
-      await supabase.from('subscriptions').insert(newSub);
-      await supabase.from('sales').insert(newSale);
-
       setUsers(prev => [...prev, newUser]);
-      setSubscriptions(prev => [...prev, newSub]);
-      setSales(prev => [...prev, newSale]);
+
+      let subEndDate = '';
+
+      if (plan) {
+        const newSub: Subscription = {
+          id: `s-${Date.now()}`,
+          memberId: newUserId,
+          planId: plan.id,
+          startDate: membershipStartDate,
+          endDate: new Date(new Date(membershipStartDate).getTime() + plan.durationDays * 86400000).toISOString().split('T')[0],
+          status: SubscriptionStatus.ACTIVE,
+          branchId,
+          trainerId
+        };
+        subEndDate = newSub.endDate;
+
+        const finalAmount = Math.max(0, plan.price - discount);
+        const newSale: Sale = {
+          id: `sale-${Date.now()}`,
+          invoiceNo: generateInvoiceNo(branchId),
+          date: new Date().toISOString().split('T')[0],
+          amount: finalAmount,
+          discount,
+          memberId: newUserId,
+          planId: plan.id,
+          staffId: staffId || currentUser?.id || 'admin',
+          branchId,
+          paymentMethod: 'ONLINE',
+          trainerId
+        };
+
+        await supabase.from('subscriptions').insert(newSub);
+        await supabase.from('sales').insert(newSale);
+
+        setSubscriptions(prev => [...prev, newSub]);
+        setSales(prev => [...prev, newSale]);
+
+        showToast(`Member enrolled! Invoice: ${newSale.invoiceNo}`);
+      } else {
+        showToast('Member registered successfully!');
+      }
+
+      const welcomeBody = plan
+        ? `Welcome to IronFlow! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nValid until ${subEndDate}.`
+        : `Welcome to IronFlow! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nPlease purchase a plan from your dashboard.`;
 
       await sendNotification({
         userId: newUserId,
         type: CommType.SMS,
         recipient: userData.phone || userData.email || 'N/A',
-        body: `Welcome to IronFlow! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nChange securely after login.`,
+        body: welcomeBody,
         category: 'WELCOME',
         branchId: branchId
       });
-
-      showToast(`Member enrolled! Invoice: ${newSale.invoiceNo}`);
-      // alert(`Member account created successfully!\n\nEmail: ${userData.email}\nPassword: ${memberPassword}`);
 
     } catch (e: any) {
       console.error(e);

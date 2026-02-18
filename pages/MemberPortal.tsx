@@ -174,8 +174,16 @@ const MemberPortal: React.FC = () => {
       }
    };
 
+   const handleOpenPurchase = () => {
+      setRenewTarget({ member: currentUser, currentPlan: undefined });
+      setRenewModalOpen(true);
+   };
+
    return (
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
+         {/* ... (rest of the file remains, I need to be careful with replacement context) ... */}
+         {/* actually I should insert handleOpenPurchase before return, and the button inside the JSX. I should use multi_replace or separate calls. */}
+
 
          {/* Offers Billboard - Ultra Responsive */}
          {activeOffers.length > 0 && (
@@ -241,6 +249,20 @@ const MemberPortal: React.FC = () => {
                         <i className="fas fa-ticket-alt text-blue-500"></i> Active Subscriptions
                      </h3>
                      <div className="space-y-4">
+                        {memberSubs.length === 0 && (
+                           <div className="text-center py-8 flex flex-col items-center">
+                              <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4 text-2xl animate-bounce">
+                                 <i className="fas fa-crown"></i>
+                              </div>
+                              <p className="text-slate-500 font-medium mb-6">No active membership found.</p>
+                              <button
+                                 onClick={handleOpenPurchase}
+                                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:scale-105 active:scale-95 transition-all"
+                              >
+                                 Purchase Membership
+                              </button>
+                           </div>
+                        )}
                         {memberSubs.map(sub => {
                            const plan = plans.find(p => p.id === sub.planId);
                            return (
