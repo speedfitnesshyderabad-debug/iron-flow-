@@ -287,11 +287,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteUser = async (id: string) => {
-    const { error } = await supabase.from('users').delete().eq('id', id);
-    if (!error) {
-      setUsers(prev => prev.filter(u => u.id !== id));
-      showToast('User deleted');
-    } else showToast('Failed to delete user', 'error');
+    try {
+      showToast('Processing cascading delete...');
+
+      // A. UPDATE ORPHANED REFERENCES (Set to NULL)
+      // These are records we want to keep but unlink from the user
+
+      const updatePromises = [
+        supabase.from('walk_ins').update({ convertedToMemberId: null }).eq('convertedToMemberId', id),
+        supabase.from('walk_ins').update({ assignedTo: null }).eq('assignedTo', id),
+        supabase.from('sales').update({ staffId: null }).eq('staffId', id),
+        supabase.from('sales').update({ trainerId: null }).eq('trainerId', id),
+        supabase.from('subscriptions').update({ trainerId: null }).eq('trainerId', id),
+        supabase.from('bookings').update({ trainerId: null }).eq('trainerId', id),
+        supabase.from('class_templates').update({ trainerId: null }).eq('trainerId', id),
+        supabase.from('class_schedules').update({ trainerId: null }).eq('trainerId', id),
+        supabase.from('expenses').update({ recordedBy: null }).eq('recordedBy', id),
+        supabase.from('transaction_codes').update({ generatedBy: null }).eq('generatedBy', id),
+        supabase.from('class_completion_codes').update({ trainerId: null }).eq('trainerId', id)
+      ];
+
+      await Promise.all(updatePromises);
+
+      // B. DELETE PERSONAL DATA
+      // CRITICAL: Delete Child records BEFORE Parent records to avoid FK violations!
+      // Hierarchy: class_completion_codes -> bookings -> users
+
+      // 1. Class Completion Codes (Dependent on Bookings)
+      await supabase.from('class_completion_codes').delete().eq('memberId', id);
+
+      // 2. Bookings (Dependent on Users, Parent of Codes)
+      await supabase.from('bookings').delete().eq('memberId', id);
+
+      // 3. Other Independent Records (Order doesn't matter for these)
+      const deletePromises = [
+        supabase.from('attendance').delete().eq('userId', id),
+        supabase.from('subscriptions').delete().eq('memberId', id),
+        supabase.from('sales').delete().eq('memberId', id),
+        supabase.from('feedback').delete().eq('memberId', id),
+        supabase.from('communications').delete().eq('userId', id),
+        supabase.from('metrics').delete().eq('memberId', id)
+      ];
+
+      await Promise.all(deletePromises);
+
+      // C. DELETE USER
+      const { error } = await supabase.from('users').delete().eq('id', id);
+
+      if (!error) {
+        // Update Local State strictly
+        setUsers(prev => prev.filter(u => u.id !== id));
+        setAttendance(prev => prev.filter(a => a.userId !== id));
+        setSubscriptions(prev => prev.filter(s => s.memberId !== id));
+        setSales(prev => prev.filter(s => s.memberId !== id));
+        setBookings(prev => prev.filter(b => b.memberId !== id));
+        setFeedback(prev => prev.filter(f => f.memberId !== id));
+        setCommunications(prev => prev.filter(c => c.userId !== id));
+        setMetrics(prev => prev.filter(m => m.memberId !== id));
+
+        showToast('User deleted successfully', 'success');
+      } else {
+        console.error('Delete user error:', error);
+        showToast('Failed to delete user: ' + error.message, 'error');
+      }
+    } catch (err: any) {
+      console.error('Delete operation failed:', err);
+      showToast('Delete operation failed: ' + err.message, 'error');
+    }
   };
 
   const addPlan = async (p: Plan) => {
