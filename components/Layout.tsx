@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 import { NAV_ITEMS } from '../constants';
@@ -10,9 +10,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, setCurrentUser, branches, updateUser } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [accountData, setAccountData] = useState({
     name: currentUser?.name || '',
@@ -93,6 +95,40 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     } catch (err: any) {
       console.error('Account update error:', err);
       alert("Failed to update account: " + err.message);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+      setIsUploading(true);
+
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        await updateUser(currentUser.id, { avatar: publicUrl });
+        alert('Profile photo updated successfully!');
+      } catch (error: any) {
+        console.error('Error uploading avatar:', error);
+        alert('Error uploading avatar: ' + (error.message || 'Unknown error'));
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -263,6 +299,33 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </button>
             </div>
             <form onSubmit={handleUpdateAccount} className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1 scrollbar-hide">
+              {/* Avatar Upload Section */}
+              <div className="flex flex-col items-center mb-2">
+                <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                  <img
+                    src={currentUser.avatar || "https://ui-avatars.com/api/?name=" + currentUser.name}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg group-hover:opacity-75 transition-opacity"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i className="fas fa-camera text-white text-2xl"></i>
+                  </div>
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+                      <i className="fas fa-spinner fa-spin text-white text-2xl"></i>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold mt-3 uppercase tracking-widest">Click to change photo</p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+              </div>
+
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
                 <div className="relative">
