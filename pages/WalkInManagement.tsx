@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, WalkIn } from '../types';
 
+import { useNavigate } from 'react-router-dom';
+
 const WalkInManagement: React.FC = () => {
   const { users, currentUser, branches, showToast } = useAppContext();
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWalkIn, setSelectedWalkIn] = useState<WalkIn | null>(null);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'NEW' | 'FOLLOW_UP' | 'CONVERTED' | 'NOT_INTERESTED'>('ALL');
-  
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -21,8 +24,8 @@ const WalkInManagement: React.FC = () => {
 
   const [walkIns, setWalkIns] = useState<WalkIn[]>([]);
 
-  const staffMembers = users.filter(u => 
-    u.role !== UserRole.MEMBER && 
+  const staffMembers = users.filter(u =>
+    u.role !== UserRole.MEMBER &&
     (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId)
   );
 
@@ -34,7 +37,7 @@ const WalkInManagement: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const newWalkIn: WalkIn = {
       id: `walkin-${Date.now()}`,
       ...formData,
@@ -51,7 +54,7 @@ const WalkInManagement: React.FC = () => {
       setWalkIns(prev => [...prev, newWalkIn]);
       showToast('Walk-in registered successfully');
     }
-    
+
     resetForm();
     setIsModalOpen(false);
   };
@@ -86,14 +89,14 @@ const WalkInManagement: React.FC = () => {
   };
 
   const handleStatusChange = (id: string, newStatus: WalkIn['status']) => {
-    setWalkIns(prev => prev.map(w => 
+    setWalkIns(prev => prev.map(w =>
       w.id === id ? { ...w, status: newStatus, updatedAt: new Date().toISOString() } : w
     ));
     showToast(`Status updated to ${newStatus}`);
   };
 
   const handleConvertToMember = (walkIn: WalkIn) => {
-    showToast('Redirecting to member enrollment...');
+    navigate(`/members?action=enroll&name=${encodeURIComponent(walkIn.name)}&phone=${encodeURIComponent(walkIn.phone)}&assignedTo=${walkIn.assignedTo || ''}`);
   };
 
   const getStatusColor = (status: WalkIn['status']) => {
@@ -125,7 +128,7 @@ const WalkInManagement: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Walk-In Management</h2>
           <p className="text-gray-500">Track visitors and convert leads to members</p>
         </div>
-        <button 
+        <button
           onClick={() => { resetForm(); setIsModalOpen(true); }}
           className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
@@ -152,11 +155,10 @@ const WalkInManagement: React.FC = () => {
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${
-              filterStatus === status 
-                ? 'bg-slate-900 text-white' 
+            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${filterStatus === status
+                ? 'bg-slate-900 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border'
-            }`}
+              }`}
           >
             {status.replace('_', ' ')}
           </button>
@@ -209,14 +211,14 @@ const WalkInManagement: React.FC = () => {
             )}
 
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => handleEdit(walkIn)}
                 className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
               >
                 EDIT
               </button>
               {walkIn.status !== 'CONVERTED' && (
-                <button 
+                <button
                   onClick={() => handleConvertToMember(walkIn)}
                   className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors"
                 >
@@ -227,7 +229,7 @@ const WalkInManagement: React.FC = () => {
 
             {walkIn.status === 'NEW' && (
               <div className="mt-3 pt-3 border-t">
-                <button 
+                <button
                   onClick={() => handleStatusChange(walkIn.id, 'FOLLOW_UP')}
                   className="w-full py-2 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"
                 >
@@ -243,7 +245,7 @@ const WalkInManagement: React.FC = () => {
         <div className="text-center py-12 bg-white rounded-2xl border">
           <i className="fas fa-walking text-4xl text-gray-300 mb-4"></i>
           <p className="text-gray-500">No walk-ins found</p>
-          <button 
+          <button
             onClick={() => { resetForm(); setIsModalOpen(true); }}
             className="mt-4 text-blue-600 font-bold text-sm hover:underline"
           >
@@ -258,46 +260,46 @@ const WalkInManagement: React.FC = () => {
             <h3 className="text-xl font-bold mb-6 tracking-tight uppercase">
               {selectedWalkIn ? 'Update Walk-In' : 'Register Walk-In'}
             </h3>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Name</label>
-                <input 
+                <input
                   required
-                  type="text" 
+                  type="text"
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone</label>
-                <input 
+                <input
                   required
-                  type="tel" 
+                  type="tel"
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.phone}
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email (Optional)</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.email}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Purpose</label>
-                <select 
+                <select
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.purpose}
-                  onChange={e => setFormData({...formData, purpose: e.target.value as WalkIn['purpose']})}
+                  onChange={e => setFormData({ ...formData, purpose: e.target.value as WalkIn['purpose'] })}
                 >
                   <option value="MEMBERSHIP_INQUIRY">Membership Inquiry</option>
                   <option value="TOUR">Gym Tour</option>
@@ -310,10 +312,10 @@ const WalkInManagement: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Source</label>
-                <select 
+                <select
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.source}
-                  onChange={e => setFormData({...formData, source: e.target.value as WalkIn['source']})}
+                  onChange={e => setFormData({ ...formData, source: e.target.value as WalkIn['source'] })}
                 >
                   <option value="WALK_IN">Walk-In</option>
                   <option value="REFERRAL">Referral</option>
@@ -326,10 +328,10 @@ const WalkInManagement: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign To</label>
-                <select 
+                <select
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.assignedTo}
-                  onChange={e => setFormData({...formData, assignedTo: e.target.value})}
+                  onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
                 >
                   <option value="">-- Select Staff --</option>
                   {staffMembers.map(staff => (
@@ -340,32 +342,32 @@ const WalkInManagement: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Follow-up Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
                   value={formData.followUpDate}
-                  onChange={e => setFormData({...formData, followUpDate: e.target.value})}
+                  onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notes</label>
-                <textarea 
+                <textarea
                   rows={3}
                   className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 resize-none"
                   value={formData.notes}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
                 />
               </div>
 
               <div className="pt-4 space-y-3">
-                <button 
+                <button
                   type="submit"
                   className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors"
                 >
                   {selectedWalkIn ? 'Update' : 'Register'}
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => { resetForm(); setIsModalOpen(false); }}
                   className="w-full py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors"

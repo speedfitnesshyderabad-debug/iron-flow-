@@ -609,7 +609,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!error) setCommunications(prev => [newComm, ...prev]);
   };
 
-  const enrollMember = async (userData: Partial<User>, planId: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string) => {
+  const enrollMember = async (userData: Partial<User>, planId: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
     if (!plan) {
@@ -651,7 +651,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       discount,
       memberId: newUserId,
       planId: planId,
-      staffId: currentUser?.id || 'admin',
+      staffId: staffId || currentUser?.id || 'admin',
       branchId,
       paymentMethod: 'ONLINE',
       trainerId

@@ -15,8 +15,11 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+import { useSearchParams } from 'react-router-dom';
+
 const Members: React.FC = () => {
   const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, verifyTransactionCode, showToast, purchaseSubscription, branches } = useAppContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [pendingRenewal, setPendingRenewal] = useState<{ planId: string; amount: number; paymentMethod: any; discount: number; memberId: string; } | null>(null);
@@ -25,7 +28,28 @@ const Members: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Form States
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '' });
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
+
+  // Handle URL Params for Walk-In Conversion
+  React.useEffect(() => {
+    if (searchParams.get('action') === 'enroll') {
+      const name = searchParams.get('name') || '';
+      const phone = searchParams.get('phone') || ''; // Mapping phone to emergencyContact temporarily as phone field is not in enrollData top level yet
+      const assignedTo = searchParams.get('assignedTo') || '';
+
+      setEnrollData(prev => ({
+        ...prev,
+        name,
+        emergencyContact: phone, // Pre-fill phone
+        assignedStaffId: assignedTo
+      }));
+      setAddModalOpen(true);
+      // Clean up params
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
   const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1 });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isEnrollImageModalOpen, setEnrollImageModalOpen] = useState(false);
@@ -34,8 +58,6 @@ const Members: React.FC = () => {
   const [pendingEnrollment, setPendingEnrollment] = useState<any>(null);
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
-
-  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
 
   const members = users.filter(u => u.role === UserRole.MEMBER &&
     (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId));
@@ -95,7 +117,8 @@ const Members: React.FC = () => {
         discount: Number(enrollData.discount),
         amount: finalAmount,
         planName: plan.name,
-        branchId: enrollData.branchId || currentUser?.branchId // Pass the current branch for payment config
+        branchId: enrollData.branchId || currentUser?.branchId, // Pass the current branch for payment config
+        staffId: enrollData.assignedStaffId // Pass staffId for sale attribution
       });
       setPaymentModalOpen(true);
       return;
@@ -129,7 +152,7 @@ const Members: React.FC = () => {
       address: enrollData.address,
       avatar: enrollData.avatar,
       branchId: enrollData.branchId
-    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate);
+    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId);
 
     if (paymentId) {
       showToast(`Payment successful! ID: ${paymentId}`, 'success');
@@ -138,7 +161,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '' });
+    setEnrollData({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -287,8 +310,8 @@ const Members: React.FC = () => {
               key={f.id}
               onClick={() => setFilter(f.id as any)}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${filter === f.id
-                  ? (f.color || 'bg-slate-800 text-white border-slate-800 shadow-lg scale-105')
-                  : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'
+                ? (f.color || 'bg-slate-800 text-white border-slate-800 shadow-lg scale-105')
+                : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'
                 }`}
             >
               <i className={`fas ${f.icon} mr-2`}></i>
