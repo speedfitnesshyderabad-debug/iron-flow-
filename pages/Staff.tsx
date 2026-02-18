@@ -4,6 +4,8 @@ import { useAppContext } from '../AppContext';
 import { UserRole, User, Attendance, Shift } from '../types';
 import { ImageUploadModal } from '../components/ImageUploadModal';
 import ActiveSessionsModal from '../components/ActiveSessionsModal';
+import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../src/lib/supabase';
 
 const Staff: React.FC = () => {
   const { users, branches, currentUser, addUser, updateUser, deleteUser, attendance } = useAppContext();
@@ -89,27 +91,70 @@ const Staff: React.FC = () => {
     setLogsModalOpen(true);
   };
 
-  const handleAddStaff = (e: React.FormEvent) => {
+  const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newStaff: User = {
-      id: `staff-${Date.now()}`,
-      name: formData.name,
-      email: formData.email,
-      password: formData.password || 'ironflow2025', // Use provided password or default
-      role: formData.role,
-      branchId: formData.branchId,
-      shifts: formData.shifts,
-      weekOffs: formData.weekOffs,
-      hourlyRate: formData.hourlyRate,
-      commissionPercentage: formData.commissionPercentage,
-      salesCommissionPercentage: formData.salesCommissionPercentage,
-      ptCommissionPercentage: formData.ptCommissionPercentage,
-      groupCommissionPercentage: formData.groupCommissionPercentage,
-      emergencyContact: formData.emergencyContact,
-      avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`
-    };
-    addUser(newStaff);
-    setAddModalOpen(false);
+
+    try {
+      // 1. Create a temporary Supabase client to create the user without logging out the admin
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const tempSupabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          persistSession: false, // Vital! Don't overwrite the admin's session in localStorage
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      });
+
+      const staffPassword = formData.password || 'ironflow2025';
+
+      // 2. Sign up the new user in Supabase Auth
+      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+        email: formData.email,
+        password: staffPassword,
+        options: {
+          data: {
+            name: formData.name,
+            role: formData.role,
+            branchId: formData.branchId
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        console.log('✅ Staff Auth User Created:', authData.user.id);
+
+        // 3. Create the public user record with the Auth ID
+        const newStaff: User = {
+          id: authData.user.id, // Use the Auth UID!
+          name: formData.name,
+          email: formData.email,
+          // password: staffPassword, // ❌ SECURITY: Do NOT store the password!
+          role: formData.role,
+          branchId: formData.branchId,
+          shifts: formData.shifts,
+          weekOffs: formData.weekOffs,
+          hourlyRate: formData.hourlyRate,
+          commissionPercentage: formData.commissionPercentage,
+          salesCommissionPercentage: formData.salesCommissionPercentage,
+          ptCommissionPercentage: formData.ptCommissionPercentage,
+          groupCommissionPercentage: formData.groupCommissionPercentage,
+          emergencyContact: formData.emergencyContact,
+          avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`
+        };
+
+        await addUser(newStaff);
+        setAddModalOpen(false);
+        alert(`Staff account created successfully!\n\nEmail: ${formData.email}\nPassword: ${staffPassword}`);
+      }
+
+    } catch (error: any) {
+      console.error('Error creating staff:', error);
+      alert('Failed to create staff account: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const handleUpdateStaff = (e: React.FormEvent) => {

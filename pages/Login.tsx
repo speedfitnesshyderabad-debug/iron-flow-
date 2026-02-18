@@ -33,9 +33,9 @@ const Login: React.FC = () => {
 
       if (data.user) {
         // 2. Find the Public User Record
-        // In a real app, this should be fetched from the DB by Auth UID
-        // For now, we match by email to keep compatibility with existing data
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        // Prioritize matching by Auth UID (for new staff), fallback to email (for legacy/demo users)
+        const user = users.find(u => u.id === data.user.id) ||
+          users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
         if (user) {
           console.log('✅ User found:', user.name);

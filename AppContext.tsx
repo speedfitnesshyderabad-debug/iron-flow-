@@ -3,6 +3,7 @@ import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, 
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 interface AppContextType {
   currentUser: User | null;
@@ -616,48 +617,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setGlobalLoading(false);
       return;
     }
-    const branchId = userData.branchId || currentUser?.branchId || branches[0].id;
-    const newUserId = `u-${Date.now()}`;
-    const membershipStartDate = startDate || new Date().toISOString().split('T')[0];
-    const newUser: User = {
-      id: newUserId,
-      name: userData.name || 'New Member',
-      email: userData.email || '',
-      password: password,
-      role: UserRole.MEMBER,
-      branchId,
-      memberId: `IF-IND-${Math.floor(1000 + Math.random() * 9000)}`,
-      avatar: userData.avatar || `https://i.pravatar.cc/150?u=${newUserId}`,
-      emergencyContact: userData.emergencyContact,
-      address: userData.address,
-      phone: userData.phone
-    };
-    const newSub: Subscription = {
-      id: `s-${Date.now()}`,
-      memberId: newUserId,
-      planId: planId,
-      startDate: membershipStartDate,
-      endDate: new Date(new Date(membershipStartDate).getTime() + plan.durationDays * 86400000).toISOString().split('T')[0],
-      status: SubscriptionStatus.ACTIVE,
-      branchId,
-      trainerId
-    };
-    const finalAmount = Math.max(0, plan.price - discount);
-    const newSale: Sale = {
-      id: `sale-${Date.now()}`,
-      invoiceNo: generateInvoiceNo(branchId),
-      date: new Date().toISOString().split('T')[0],
-      amount: finalAmount,
-      discount,
-      memberId: newUserId,
-      planId: planId,
-      staffId: staffId || currentUser?.id || 'admin',
-      branchId,
-      paymentMethod: 'ONLINE',
-      trainerId
-    };
 
     try {
+      // 1. Create a temporary Supabase client to create the user without logging out the admin
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const tempSupabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      });
+
+      const memberPassword = password || 'ironflow2025';
+
+      // 2. Sign up the new user in Supabase Auth
+      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+        email: userData.email!,
+        password: memberPassword,
+        options: {
+          data: {
+            name: userData.name,
+            role: UserRole.MEMBER,
+            branchId: userData.branchId
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) throw new Error('Failed to create auth user');
+
+      console.log('✅ Member Auth User Created:', authData.user.id);
+
+      const branchId = userData.branchId || currentUser?.branchId || branches[0].id;
+      const newUserId = authData.user.id; // Use Auth UUID
+      const membershipStartDate = startDate || new Date().toISOString().split('T')[0];
+
+      const newUser: User = {
+        id: newUserId,
+        name: userData.name || 'New Member',
+        email: userData.email || '',
+        // password: password, // ❌ SECURITY: Do NOT store the password!
+        role: UserRole.MEMBER,
+        branchId,
+        memberId: `IF-IND-${Math.floor(1000 + Math.random() * 9000)}`,
+        avatar: userData.avatar || `https://i.pravatar.cc/150?u=${newUserId}`,
+        emergencyContact: userData.emergencyContact,
+        address: userData.address,
+        phone: userData.phone
+      };
+
+      const newSub: Subscription = {
+        id: `s-${Date.now()}`,
+        memberId: newUserId,
+        planId: planId,
+        startDate: membershipStartDate,
+        endDate: new Date(new Date(membershipStartDate).getTime() + plan.durationDays * 86400000).toISOString().split('T')[0],
+        status: SubscriptionStatus.ACTIVE,
+        branchId,
+        trainerId
+      };
+
+      const finalAmount = Math.max(0, plan.price - discount);
+      const newSale: Sale = {
+        id: `sale-${Date.now()}`,
+        invoiceNo: generateInvoiceNo(branchId),
+        date: new Date().toISOString().split('T')[0],
+        amount: finalAmount,
+        discount,
+        memberId: newUserId,
+        planId: planId,
+        staffId: staffId || currentUser?.id || 'admin',
+        branchId,
+        paymentMethod: 'ONLINE',
+        trainerId
+      };
+
       await supabase.from('users').insert(newUser);
       await supabase.from('subscriptions').insert(newSub);
       await supabase.from('sales').insert(newSale);
@@ -670,15 +708,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userId: newUserId,
         type: CommType.SMS,
         recipient: userData.phone || userData.email || 'N/A',
-        body: `Welcome to IronFlow! Your athlete ID is ${newUser.memberId}. Login with your chosen token. Valid until ${newSub.endDate}.`,
+        body: `Welcome to IronFlow! Your athlete ID is ${newUser.memberId}. Login with email: ${userData.email} and your chosen password. Valid until ${newSub.endDate}.`,
         category: 'WELCOME',
         branchId: branchId
       });
 
       showToast(`Member enrolled! Invoice: ${newSale.invoiceNo}`);
-    } catch (e) {
+      // alert(`Member account created successfully!\n\nEmail: ${userData.email}\nPassword: ${memberPassword}`);
+
+    } catch (e: any) {
       console.error(e);
-      showToast('Enrollment failed', 'error');
+      showToast('Enrollment failed: ' + e.message, 'error');
     } finally {
       setGlobalLoading(false);
     }
