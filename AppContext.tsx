@@ -200,28 +200,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Supabase Auth State Listener - Handle recovery sessions and auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, session);
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
+        // Handle password recovery flow - don't interfere with recovery sessions
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('Password recovery session detected');
+        }
+      });
 
-      // Handle password recovery flow - don't interfere with recovery sessions
-      if (event === 'PASSWORD_RECOVERY') {
-        console.log('Password recovery session detected');
-        // Do NOT set currentUser during recovery - let ResetPassword component handle it
-        return;
-      }
-
-      // Handle other auth events if needed
-      if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
-        // Don't clear currentUser here - let the app handle it through logout
-      }
-
-      // For other events, you can add additional handling as needed
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (err) {
+      console.error('Auth listener error:', err);
+    }
   }, []);
 
   const askGemini = async (prompt: string, modelType: 'flash' | 'pro' = 'flash') => {
