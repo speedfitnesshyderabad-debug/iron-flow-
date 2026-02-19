@@ -92,7 +92,13 @@ const Staff: React.FC = () => {
   };
 
   const handleAddStaff = async (e: React.FormEvent) => {
+
     e.preventDefault();
+
+    if (!formData.branchId) {
+      alert("Please select a home branch for this staff member.");
+      return;
+    }
 
     try {
       // 1. Create a temporary Supabase client to create the user without logging out the admin
@@ -497,10 +503,7 @@ const Staff: React.FC = () => {
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
                   <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
-                  <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                </div>
+
               </div>
 
               <div className="grid grid-cols-2 gap-4">
