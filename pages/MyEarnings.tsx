@@ -39,11 +39,35 @@ const MyEarnings: React.FC = () => {
     });
 
     let totalMinutes = 0;
+
+    // Helper to convert HH:MM to minutes
+    const getMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+
     monthLogs.forEach(log => {
       if (log.timeOut) {
-        const start = new Date(`2000-01-01 ${log.timeIn}`);
-        const end = new Date(`2000-01-01 ${log.timeOut}`);
-        totalMinutes += (end.getTime() - start.getTime()) / 60000;
+        const logStart = getMinutes(log.timeIn);
+        const logEnd = getMinutes(log.timeOut);
+
+        if (currentUser.shifts && currentUser.shifts.length > 0) {
+          // Calculate overlap with assigned shifts
+          let overlap = 0;
+          currentUser.shifts.forEach(shift => {
+            const shiftStart = getMinutes(shift.start);
+            const shiftEnd = getMinutes(shift.end);
+
+            const start = Math.max(logStart, shiftStart);
+            const end = Math.min(logEnd, shiftEnd);
+
+            if (start < end) {
+              overlap += (end - start);
+            }
+          });
+          totalMinutes += overlap;
+        }
+        // No shifts assigned = 0 minutes contributed to salary
       }
     });
 
