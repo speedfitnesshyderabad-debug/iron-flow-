@@ -67,6 +67,7 @@ interface AppContextType {
   createSession: (userId: string) => Promise<boolean>;
   revokeSession: (userId: string, fingerprint?: string) => Promise<void>;
   getSessions: (userId: string) => Promise<ActiveSession[]>;
+  importMembers: (importedUsers: Partial<User>[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -800,6 +801,90 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const importMembers = async (importedUsers: Partial<User>[]) => {
+    setGlobalLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    // Create a temporary client for auth operations
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const tempSupabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+
+    for (const data of importedUsers) {
+      if (!data.email || !data.name) {
+        failCount++;
+        continue;
+      }
+
+      try {
+        // 1. Check if user exists (by Email)
+        const existingData = users.find(u => u.email === data.email);
+
+        if (existingData) {
+          // Update existing
+          await updateUser(existingData.id, {
+            name: data.name,
+            phone: data.phone || existingData.phone,
+            emergencyContact: data.emergencyContact || existingData.emergencyContact,
+            address: data.address || existingData.address,
+            branchId: data.branchId || existingData.branchId,
+            memberId: data.memberId || existingData.memberId
+          });
+          successCount++;
+        } else {
+          // Create New
+          const password = data.password || 'IronFlow@2026'; // Default password
+
+          // A. Create Auth User
+          const { data: authData, error: authError } = await tempSupabase.auth.signUp({
+            email: data.email,
+            password: password,
+            options: {
+              data: {
+                name: data.name,
+                role: UserRole.MEMBER,
+                branchId: data.branchId || currentUser?.branchId
+              }
+            }
+          });
+
+          if (authError) throw authError;
+          if (!authData.user) throw new Error('No user returned from auth');
+
+          // B. Create DB User
+          const newUserId = authData.user.id;
+          const newUser: User = {
+            id: newUserId,
+            name: data.name,
+            email: data.email,
+            role: UserRole.MEMBER,
+            branchId: data.branchId || currentUser?.branchId,
+            memberId: data.memberId || `IF-IMP-${Math.floor(1000 + Math.random() * 9000)}`,
+            avatar: `https://i.pravatar.cc/150?u=${newUserId}`,
+            phone: data.phone,
+            emergencyContact: data.emergencyContact,
+            address: data.address
+          };
+
+          const { error: dbError } = await supabase.from('users').insert(newUser);
+          if (dbError) throw dbError;
+
+          setUsers(prev => [...prev, newUser]);
+          successCount++;
+        }
+      } catch (err) {
+        console.error('Import failed for:', data.email, err);
+        failCount++;
+      }
+    }
+
+    setGlobalLoading(false);
+    showToast(`Import Complete: ${successCount} processed, ${failCount} failed.`);
+  };
+
   const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE', trainerId?: string) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
@@ -999,7 +1084,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
       addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
-      generateDeviceFingerprint, createSession, revokeSession, getSessions
+      generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers
     }}>
       {children}
       {toast && (

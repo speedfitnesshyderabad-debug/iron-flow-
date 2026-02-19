@@ -18,7 +18,7 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, branches } = useAppContext();
+  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, branches, importMembers } = useAppContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -26,10 +26,96 @@ const Members: React.FC = () => {
   const [activeModal, setActiveModal] = useState<'logs' | 'manage' | null>(null);
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Form States
   const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
+
+  const handleExport = () => {
+    const headers = ['Name', 'Email', 'Phone', 'Address', 'BranchID', 'MemberID', 'Role', 'Status'];
+    const rows = filteredMembers.map(m => {
+      const memberSubs = subscriptions.filter(s => s.memberId === m.id);
+      const activeSub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE);
+      return [
+        m.name,
+        m.email,
+        m.emergencyContact || '',
+        m.address || '',
+        m.branchId || '',
+        m.memberId || '',
+        m.role,
+        activeSub ? 'Active' : 'Expired'
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `members_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+      const importedUsers: Partial<User & { password?: string }>[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+
+        // Simple CSV parse (handling quotes roughly)
+        const row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+        const values = row.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+
+        if (values.length < 2) continue; // Basic validation check
+
+        // Map based on headers index
+        const userObj: any = {};
+        headers.forEach((h, index) => {
+          const key = h.toLowerCase().replace(/id/g, 'Id');
+          // Map CSV headers to User fields
+          if (key === 'phone') userObj.emergencyContact = values[index];
+          else if (key === 'branchid') userObj.branchId = values[index];
+          else if (key === 'memberid') userObj.memberId = values[index];
+          else if (key === 'name') userObj.name = values[index];
+          else if (key === 'email') userObj.email = values[index];
+          else if (key === 'address') userObj.address = values[index];
+          else if (key === 'password') userObj.password = values[index];
+        });
+
+        if (userObj.email && userObj.name) {
+          importedUsers.push(userObj);
+        }
+      }
+
+      if (importedUsers.length > 0) {
+        if (window.confirm(`Ready to import/update ${importedUsers.length} members?`)) {
+          await importMembers(importedUsers);
+        }
+      } else {
+        showToast('No valid data found in CSV', 'error');
+      }
+
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
 
   // Handle URL Params for Walk-In Conversion
   React.useEffect(() => {
@@ -285,6 +371,28 @@ const Members: React.FC = () => {
         </button>
       </div>
 
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={handleExport}
+          className="bg-green-100 text-green-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-green-200 transition-colors flex items-center gap-2"
+        >
+          <i className="fas fa-file-csv"></i> EXPORT CSV
+        </button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-slate-200 transition-colors flex items-center gap-2"
+        >
+          <i className="fas fa-file-upload"></i> IMPORT CSV
+        </button>
+        <input
+          type="file"
+          accept=".csv"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={handleImport}
+        />
+      </div>
+
       <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-col gap-4">
         <div className="flex flex-col md:flex-row items-center gap-4 w-full">
           <div className="flex-1 relative w-full">
@@ -408,258 +516,264 @@ const Members: React.FC = () => {
       </div>
 
       {/* Add Member Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="bg-blue-600 p-6 text-white flex justify-between items-center sticky top-0 z-10">
-              <h3 className="text-xl font-bold uppercase tracking-tight leading-none">Athlete Enrollment</h3>
-              <button onClick={() => setAddModalOpen(false)}><i className="fas fa-times"></i></button>
-            </div>
-            <form onSubmit={handleAddMember} className="p-8 space-y-6">
+      {
+        isAddModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
+              <div className="bg-blue-600 p-6 text-white flex justify-between items-center sticky top-0 z-10">
+                <h3 className="text-xl font-bold uppercase tracking-tight leading-none">Athlete Enrollment</h3>
+                <button onClick={() => setAddModalOpen(false)}><i className="fas fa-times"></i></button>
+              </div>
+              <form onSubmit={handleAddMember} className="p-8 space-y-6">
 
-              {currentUser?.role === UserRole.SUPER_ADMIN && (
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
-                  <select
-                    className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
-                    value={enrollData.branchId}
-                    onChange={e => setEnrollData({ ...enrollData, branchId: e.target.value })}
+                {currentUser?.role === UserRole.SUPER_ADMIN && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
+                    <select
+                      className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
+                      value={enrollData.branchId}
+                      onChange={e => setEnrollData({ ...enrollData, branchId: e.target.value })}
+                    >
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center space-y-3">
+                  <div
+                    onClick={() => setEnrollImageModalOpen(true)}
+                    className="w-24 h-24 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-all overflow-hidden"
                   >
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Profile Picture Upload */}
-              <div className="flex flex-col items-center space-y-3">
-                <div
-                  onClick={() => setEnrollImageModalOpen(true)}
-                  className="w-24 h-24 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-all overflow-hidden"
-                >
-                  {enrollData.avatar ? (
-                    <img src={enrollData.avatar} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-center">
-                      <i className="fas fa-camera text-2xl text-gray-400"></i>
-                      <p className="text-[10px] text-gray-400 mt-1">Add Photo</p>
-                    </div>
+                    {enrollData.avatar ? (
+                      <img src={enrollData.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center">
+                        <i className="fas fa-camera text-2xl text-gray-400"></i>
+                        <p className="text-[10px] text-gray-400 mt-1">Add Photo</p>
+                      </div>
+                    )}
+                  </div>
+                  {enrollData.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setEnrollData({ ...enrollData, avatar: '' })}
+                      className="text-xs text-red-500 font-bold hover:text-red-700"
+                    >
+                      Remove Photo
+                    </button>
                   )}
                 </div>
-                {enrollData.avatar && (
-                  <button
-                    type="button"
-                    onClick={() => setEnrollData({ ...enrollData, avatar: '' })}
-                    className="text-xs text-red-500 font-bold hover:text-red-700"
-                  >
-                    Remove Photo
-                  </button>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Name</label>
-                <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="Arjun Reddy" value={enrollData.name} onChange={e => setEnrollData({ ...enrollData, name: e.target.value })} />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Name</label>
+                  <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="Arjun Reddy" value={enrollData.name} onChange={e => setEnrollData({ ...enrollData, name: e.target.value })} />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
-                <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" placeholder="Street, City, State, PIN" value={enrollData.address} onChange={e => setEnrollData({ ...enrollData, address: e.target.value })} rows={2}></textarea>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
+                  <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" placeholder="Street, City, State, PIN" value={enrollData.address} onChange={e => setEnrollData({ ...enrollData, address: e.target.value })} rows={2}></textarea>
+                </div>
 
-              <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
-                <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
-                  <i className="fas fa-truck-medical"></i> Emergency Contact Number
-                </label>
-                <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" placeholder="+91 XXXXX XXXXX" value={enrollData.emergencyContact} onChange={e => setEnrollData({ ...enrollData, emergencyContact: e.target.value })} />
-              </div>
+                <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
+                  <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <i className="fas fa-truck-medical"></i> Emergency Contact Number
+                  </label>
+                  <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" placeholder="+91 XXXXX XXXXX" value={enrollData.emergencyContact} onChange={e => setEnrollData({ ...enrollData, emergencyContact: e.target.value })} />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
-                <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
+                  <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
+                </div>
 
-              <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
+                <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
-                <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value })}>
-                  {plans.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
-                </select>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
+                  <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value })}>
+                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
+                  </select>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
-                  <i className="fas fa-calendar-alt"></i> Membership Start Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-xl font-bold"
-                  value={enrollData.startDate}
-                  onChange={e => setEnrollData({ ...enrollData, startDate: e.target.value })}
-                />
-                <p className="text-[10px] text-slate-400 font-medium">Plan will start from this date</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Method</label>
-                <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.paymentMethod} onChange={e => setEnrollData({ ...enrollData, paymentMethod: e.target.value as any })}>
-                  <option value="ONLINE">Online (UPI / Gateway)</option>
-                  <option value="CASH">Cash</option>
-                  <option value="CARD">Credit / Debit Card</option>
-                </select>
-              </div>
-
-              {(enrollData.paymentMethod === 'CASH' || enrollData.paymentMethod === 'CARD') && (
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
-                    <i className="fas fa-lock"></i> Transaction Authorization Code
+                    <i className="fas fa-calendar-alt"></i> Membership Start Date
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     required
-                    disabled={isVerifying}
-                    className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-xl font-mono text-center text-lg tracking-[0.3em] font-bold outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="XXXXXX"
-                    value={enrollData.transactionCode}
-                    onChange={e => setEnrollData({ ...enrollData, transactionCode: e.target.value })}
+                    className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-xl font-bold"
+                    value={enrollData.startDate}
+                    onChange={e => setEnrollData({ ...enrollData, startDate: e.target.value })}
                   />
-                  <p className="text-[10px] text-slate-400 font-medium">Ask Branch Admin to generate a one-time code.</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Plan will start from this date</p>
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
-                <input type="number" min="0" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
-              </div>
-              <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 active:scale-95 transition-all">ACTIVATE MEMBERSHIP</button>
-            </form>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Method</label>
+                  <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.paymentMethod} onChange={e => setEnrollData({ ...enrollData, paymentMethod: e.target.value as any })}>
+                    <option value="ONLINE">Online (UPI / Gateway)</option>
+                    <option value="CASH">Cash</option>
+                    <option value="CARD">Credit / Debit Card</option>
+                  </select>
+                </div>
+
+                {(enrollData.paymentMethod === 'CASH' || enrollData.paymentMethod === 'CARD') && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                      <i className="fas fa-lock"></i> Transaction Authorization Code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isVerifying}
+                      className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-xl font-mono text-center text-lg tracking-[0.3em] font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="XXXXXX"
+                      value={enrollData.transactionCode}
+                      onChange={e => setEnrollData({ ...enrollData, transactionCode: e.target.value })}
+                    />
+                    <p className="text-[10px] text-slate-400 font-medium">Ask Branch Admin to generate a one-time code.</p>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
+                  <input type="number" min="0" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
+                </div>
+                <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 active:scale-95 transition-all">ACTIVATE MEMBERSHIP</button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Logs Modal */}
-      {activeModal === 'logs' && selectedMember && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
-            <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <img src={selectedMember.avatar} className="w-10 h-10 rounded-full border border-slate-700" alt="" />
-                <div>
-                  <h3 className="font-bold">{selectedMember.name}</h3>
-                  <p className="text-[10px] uppercase text-slate-400">Attendance History</p>
+      {
+        activeModal === 'logs' && selectedMember && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+              <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <img src={selectedMember.avatar} className="w-10 h-10 rounded-full border border-slate-700" alt="" />
+                  <div>
+                    <h3 className="font-bold">{selectedMember.name}</h3>
+                    <p className="text-[10px] uppercase text-slate-400">Attendance History</p>
+                  </div>
                 </div>
+                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white"><i className="fas fa-times"></i></button>
               </div>
-              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white"><i className="fas fa-times"></i></button>
-            </div>
-            <div className="p-8 max-h-[60vh] overflow-y-auto">
-              {attendance.filter(a => a.userId === selectedMember.id).length === 0 ? (
-                <div className="text-center py-10 text-gray-400 italic">No attendance records found for this member.</div>
-              ) : (
-                <div className="space-y-4">
-                  {attendance.filter(a => a.userId === selectedMember.id).reverse().map(a => (
-                    <div key={a.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center">
-                          <i className="fas fa-check text-xs"></i>
+              <div className="p-8 max-h-[60vh] overflow-y-auto">
+                {attendance.filter(a => a.userId === selectedMember.id).length === 0 ? (
+                  <div className="text-center py-10 text-gray-400 italic">No attendance records found for this member.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {attendance.filter(a => a.userId === selectedMember.id).reverse().map(a => (
+                      <div key={a.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center">
+                            <i className="fas fa-check text-xs"></i>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{a.date}</p>
+                            <p className="text-[10px] text-gray-500 uppercase">Checked In at {a.timeIn}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{a.date}</p>
-                          <p className="text-[10px] text-gray-500 uppercase">Checked In at {a.timeIn}</p>
-                        </div>
+                        <span className="text-[10px] font-bold bg-white px-2 py-1 rounded border text-gray-400">LOGGED</span>
                       </div>
-                      <span className="text-[10px] font-bold bg-white px-2 py-1 rounded border text-gray-400">LOGGED</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Manage Modal */}
-      {activeModal === 'manage' && selectedMember && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="bg-indigo-600 p-6 text-white flex justify-between items-center sticky top-0 z-10">
-              <h3 className="text-xl font-bold uppercase tracking-tight leading-none">Manage Profile</h3>
-              <button onClick={() => setActiveModal(null)}><i className="fas fa-times"></i></button>
+      {
+        activeModal === 'manage' && selectedMember && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
+              <div className="bg-indigo-600 p-6 text-white flex justify-between items-center sticky top-0 z-10">
+                <h3 className="text-xl font-bold uppercase tracking-tight leading-none">Manage Profile</h3>
+                <button onClick={() => setActiveModal(null)}><i className="fas fa-times"></i></button>
+              </div>
+              <form onSubmit={handleUpdateMember} className="p-8 space-y-6">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative">
+                    <img
+                      src={manageData.avatar || 'https://i.pravatar.cc/150?u=default'}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImageModalOpen(true)}
+                      className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <i className="fas fa-camera text-xs"></i>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 font-medium">Click camera to change photo</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Athlete Name</label>
+                  <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.name} onChange={e => setManageData({ ...manageData, name: e.target.value })} />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
+                  <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" value={manageData.address} onChange={e => setManageData({ ...manageData, address: e.target.value })} rows={2}></textarea>
+                </div>
+
+                <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
+                  <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <i className="fas fa-truck-medical"></i> Emergency Contact Number
+                  </label>
+                  <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" value={manageData.emergencyContact} onChange={e => setManageData({ ...manageData, emergencyContact: e.target.value })} />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Email</label>
+                  <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.email} onChange={e => setManageData({ ...manageData, email: e.target.value })} />
+                </div>
+                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-[10px] font-black uppercase text-blue-600 tracking-widest leading-relaxed">
+                  <i className="fas fa-info-circle mr-2"></i>
+                  Safety contact information is visible to receptionist and managers in case of emergency.
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Max Devices</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      className="w-full p-4 bg-gray-50 border rounded-xl font-bold"
+                      value={manageData.maxDevices}
+                      onChange={e => setManageData({ ...manageData, maxDevices: parseInt(e.target.value) || 1 })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setActiveSessionsModalOpen(true)}
+                      className="px-4 bg-slate-800 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 whitespace-nowrap shadow-lg"
+                    >
+                      <i className="fas fa-laptop mr-2"></i>
+                      View Sessions
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-medium">Restricts simultaneous logins. Default is 1.</p>
+                </div>
+                <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-indigo-100 active:scale-95 transition-all">COMMIT CHANGES</button>
+              </form>
             </div>
-            <form onSubmit={handleUpdateMember} className="p-8 space-y-6">
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  <img
-                    src={manageData.avatar || 'https://i.pravatar.cc/150?u=default'}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageModalOpen(true)}
-                    className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <i className="fas fa-camera text-xs"></i>
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 font-medium">Click camera to change photo</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Athlete Name</label>
-                <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.name} onChange={e => setManageData({ ...manageData, name: e.target.value })} />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
-                <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" value={manageData.address} onChange={e => setManageData({ ...manageData, address: e.target.value })} rows={2}></textarea>
-              </div>
-
-              <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
-                <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
-                  <i className="fas fa-truck-medical"></i> Emergency Contact Number
-                </label>
-                <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" value={manageData.emergencyContact} onChange={e => setManageData({ ...manageData, emergencyContact: e.target.value })} />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Email</label>
-                <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.email} onChange={e => setManageData({ ...manageData, email: e.target.value })} />
-              </div>
-              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-[10px] font-black uppercase text-blue-600 tracking-widest leading-relaxed">
-                <i className="fas fa-info-circle mr-2"></i>
-                Safety contact information is visible to receptionist and managers in case of emergency.
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Max Devices</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    className="w-full p-4 bg-gray-50 border rounded-xl font-bold"
-                    value={manageData.maxDevices}
-                    onChange={e => setManageData({ ...manageData, maxDevices: parseInt(e.target.value) || 1 })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setActiveSessionsModalOpen(true)}
-                    className="px-4 bg-slate-800 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 whitespace-nowrap shadow-lg"
-                  >
-                    <i className="fas fa-laptop mr-2"></i>
-                    View Sessions
-                  </button>
-                </div>
-                <p className="text-[10px] text-gray-400 font-medium">Restricts simultaneous logins. Default is 1.</p>
-              </div>
-              <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-indigo-100 active:scale-95 transition-all">COMMIT CHANGES</button>
-            </form>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <ImageUploadModal
         isOpen={isImageModalOpen}
@@ -701,24 +815,28 @@ const Members: React.FC = () => {
         }}
       />
 
-      {renewTarget && (
-        <QuickRenewModal
-          isOpen={isRenewModalOpen}
-          onClose={() => setRenewModalOpen(false)}
-          member={renewTarget.member}
-          currentPlan={renewTarget.currentPlan}
-          plans={plans}
-          onRenew={handleProcessRenew}
-          requirePin={true} // Admin facing, so require PIN for cash/pos
-        />
-      )}
+      {
+        renewTarget && (
+          <QuickRenewModal
+            isOpen={isRenewModalOpen}
+            onClose={() => setRenewModalOpen(false)}
+            member={renewTarget.member}
+            currentPlan={renewTarget.currentPlan}
+            plans={plans}
+            onRenew={handleProcessRenew}
+            requirePin={true} // Admin facing, so require PIN for cash/pos
+          />
+        )
+      }
 
-      {selectedMember && isActiveSessionsModalOpen && (
-        <ActiveSessionsModal
-          user={selectedMember}
-          onClose={() => setActiveSessionsModalOpen(false)}
-        />
-      )}
+      {
+        selectedMember && isActiveSessionsModalOpen && (
+          <ActiveSessionsModal
+            user={selectedMember}
+            onClose={() => setActiveSessionsModalOpen(false)}
+          />
+        )
+      }
 
       <style>{`
         @keyframes slideUp {
@@ -727,7 +845,7 @@ const Members: React.FC = () => {
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
-    </div>
+    </div >
   );
 };
 
