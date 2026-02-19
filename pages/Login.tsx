@@ -40,14 +40,15 @@ const Login: React.FC = () => {
         if (user) {
           console.log('✅ User found:', user.name);
 
-          // 3. Create Session
-          const sessionCreated = await createSession(user.id);
+          // 3. Create Session (Strict Device Check)
+          const sessionResult = await createSession(user.id);
 
-          if (sessionCreated) {
+          if (sessionResult.success) {
             setCurrentUser(user);
             // Redirect happens automatically
           } else {
-            setError('Maximum devices reached. Please logout from another device.');
+            console.warn('Session Blocked:', sessionResult.message);
+            setError(sessionResult.message || 'Maximum devices reached. Contact Admin to switch permission.');
             await supabase.auth.signOut(); // Cleanup auth session if app session fails
           }
         } else {

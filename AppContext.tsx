@@ -64,7 +64,7 @@ interface AppContextType {
   showToast: (message: string, type?: 'success' | 'error') => void;
   // Session Management
   generateDeviceFingerprint: () => Promise<string>;
-  createSession: (userId: string) => Promise<boolean>;
+  createSession: (userId: string) => Promise<{ success: boolean; message?: string }>;
   revokeSession: (userId: string, fingerprint?: string) => Promise<void>;
   getSessions: (userId: string) => Promise<ActiveSession[]>;
   importMembers: (importedUsers: Partial<User>[]) => Promise<void>;
@@ -989,12 +989,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const createSession = async (userId: string): Promise<boolean> => {
+  const createSession = async (userId: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const user = users.find(u => u.id === userId);
-      // Super Admin and Branch Admin have unlimited devices (or high limit)
-      // Check specific user limit or role-based default
-      const limit = user?.maxDevices ?? (user?.role === UserRole.MEMBER || user?.role === UserRole.TRAINER ? 1 : 999);
+      // STRICT: Default to 1 device for Staff/Members
+      // Exception: Super Admin & Branch Admin have UNLIMITED devices (999) by default
+      const defaultLimit = (user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.BRANCH_ADMIN) ? 999 : 1;
+      const limit = user?.maxDevices ?? defaultLimit;
 
       const fingerprint = await generateDeviceFingerprint();
 
@@ -1009,12 +1010,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .from('active_sessions')
           .update({ last_activity: new Date().toISOString() })
           .eq('id', existingSession.id);
-        return true;
+        return { success: true };
       }
 
       // Check limit
       if (currentSessions.length >= limit) {
-        return false; // Limit exceeded
+        const activeDevice = currentSessions[0]; // Get the first active device info
+        return {
+          success: false,
+          message: `Active on ${activeDevice.deviceName} (${activeDevice.browserInfo}). Limit: ${limit}.`
+        };
       }
 
       // Create new session
@@ -1051,13 +1056,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (error) {
         console.error('Session creation failed:', error);
-        return true;
+        // If DB insert fails (e.g. valid session but DB error), we currently allow login for resilience
+        // But if it's a constraint error, we might want to block. 
+        // For now, let's assume if it fails, we shouldn't block user unless it's a logic limit.
+        return { success: true };
       }
 
-      return true;
+      return { success: true };
     } catch (e) {
       console.error('Session error:', e);
-      return false;
+      return { success: false, message: 'Session validation failed' };
     }
   };
 
