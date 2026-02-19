@@ -26,6 +26,7 @@ import MyEarnings from './pages/MyEarnings';
 import WalkInManagement from './pages/WalkInManagement';
 import Debug from './pages/Debug';
 import BranchQR from './pages/BranchQR';
+import GateQR from './pages/GateQR';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
   const { currentUser } = useAppContext();
@@ -55,7 +56,9 @@ const AppRoutes: React.FC = () => {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={
+          currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
+        } />
         <Route path="/walk-ins" element={<WalkInManagement />} />
         <Route path="/members" element={<Members />} />
         <Route path="/branches" element={<Branches />} />
@@ -81,6 +84,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/comms" element={<Communications />} />
         <Route path="/tax" element={<TaxCenter />} />
         <Route path="/my-earnings" element={<MyEarnings />} />
+        <Route path="/gate-qr" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.KIOSK]}>
+            <GateQR />
+          </ProtectedRoute>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

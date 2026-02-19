@@ -6,7 +6,8 @@ export enum UserRole {
   RECEPTIONIST = 'RECEPTIONIST',
   TRAINER = 'TRAINER',
   STAFF = 'STAFF',
-  MEMBER = 'MEMBER'
+  MEMBER = 'MEMBER',
+  KIOSK = 'KIOSK'
 }
 
 export enum PlanType {

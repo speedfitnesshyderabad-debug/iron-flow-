@@ -104,4 +104,5 @@ export const NAV_ITEMS = [
   { label: 'Feedback', path: '/feedback', icon: <i className="fas fa-comment-dots"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Sales', path: '/sales', icon: <i className="fas fa-indian-rupee-sign"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Tax Center', path: '/tax', icon: <i className="fas fa-file-contract"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
+  { label: 'Gate QR', path: '/gate-qr', icon: <i className="fas fa-expand"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.KIOSK] },
 ];

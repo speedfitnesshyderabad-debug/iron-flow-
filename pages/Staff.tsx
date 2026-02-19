@@ -519,6 +519,7 @@ const Staff: React.FC = () => {
                     <option value={UserRole.TRAINER}>Trainer</option>
                     <option value={UserRole.RECEPTIONIST}>Receptionist</option>
                     <option value={UserRole.STAFF}>General Staff</option>
+                    <option value={UserRole.KIOSK}>Kiosk Display</option>
                   </select>
                 </div>
               </div>
