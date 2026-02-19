@@ -4,12 +4,14 @@ import { useAppContext } from '../AppContext';
 import { CommType } from '../types';
 
 const Communications: React.FC = () => {
-  const { communications, users, branches } = useAppContext();
+  const { communications, users, branches, currentUser } = useAppContext();
   const [filter, setFilter] = useState<'ALL' | CommType>('ALL');
 
-  const filteredComms = filter === 'ALL'
-    ? communications
-    : communications.filter(c => c.type === filter);
+  const filteredComms = communications.filter(c => {
+    const matchesType = filter === 'ALL' || c.type === filter;
+    const matchesBranch = currentUser?.role === 'SUPER_ADMIN' || c.branchId === currentUser?.branchId;
+    return matchesType && matchesBranch;
+  });
 
   return (
     <div className="space-y-6 animate-[fadeIn_0.5s_ease-out]">
