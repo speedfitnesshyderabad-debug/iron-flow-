@@ -29,7 +29,7 @@ const Members: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Form States
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
 
   const handleExport = () => {
@@ -195,7 +195,7 @@ const Members: React.FC = () => {
           email: enrollData.email,
           emergencyContact: enrollData.emergencyContact,
           address: enrollData.address,
-          phone: enrollData.emergencyContact, // Using emergency contact as phone
+          phone: enrollData.phone,
           avatar: enrollData.avatar,
           branchId: enrollData.branchId
         },
@@ -235,6 +235,7 @@ const Members: React.FC = () => {
       name: enrollData.name,
       email: enrollData.email,
       emergencyContact: enrollData.emergencyContact,
+      phone: enrollData.phone,
       address: enrollData.address,
       avatar: enrollData.avatar,
       branchId: enrollData.branchId
@@ -247,7 +248,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
+    setEnrollData({ name: '', email: '', phone: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -575,6 +576,11 @@ const Members: React.FC = () => {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
                   <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" placeholder="Street, City, State, PIN" value={enrollData.address} onChange={e => setEnrollData({ ...enrollData, address: e.target.value })} rows={2}></textarea>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
+                  <input required type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="+91 XXXXX XXXXX" value={enrollData.phone} onChange={e => setEnrollData({ ...enrollData, phone: e.target.value })} />
                 </div>
 
                 <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
