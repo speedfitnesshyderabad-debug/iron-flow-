@@ -37,13 +37,17 @@ CREATE POLICY "Users can delete their own sessions" ON active_sessions
 
 
 -- ==========================================
--- 2. Fix 'users' 400 Error (Missing Columns)
+-- 2. Fix 'users' Schema (Missing Columns)
 -- ==========================================
 ALTER TABLE users 
 ADD COLUMN IF NOT EXISTS "monthlySalary" numeric DEFAULT 15000,
 ADD COLUMN IF NOT EXISTS "maxDevices" INTEGER DEFAULT 1,
 ADD COLUMN IF NOT EXISTS "weekOffs" TEXT[] DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS "phone" TEXT;  -- Added Phone Number
+ADD COLUMN IF NOT EXISTS "phone" TEXT,
+ADD COLUMN IF NOT EXISTS "commissionPercentage" numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS "salesCommissionPercentage" numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS "ptCommissionPercentage" numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS "groupCommissionPercentage" numeric DEFAULT 0;
 
 
 -- ==========================================

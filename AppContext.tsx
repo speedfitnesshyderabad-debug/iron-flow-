@@ -628,11 +628,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addPayroll = async (record: Payroll) => {
-    const { error } = await supabase.from('payroll').insert(record);
-    if (!error) {
-      setPayroll(prev => [...prev, record]);
+    // Remove ID if present (let DB generate)
+    const { id, ...insertData } = record as any;
+
+    const { data, error } = await supabase.from('payroll').insert(insertData).select().single();
+    if (!error && data) {
+      setPayroll(prev => [...prev, data as Payroll]); // Use returned data with ID
       showToast('Payroll generated');
-    } else showToast('Failed to generate payroll', 'error');
+    } else showToast(`Failed to generate payroll: ${error?.message}`, 'error');
   };
 
   const updatePayroll = async (id: string, updates: Partial<Payroll>) => {
@@ -640,7 +643,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!error) {
       setPayroll(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
       showToast('Payroll updated');
-    } else showToast('Failed to update payroll', 'error');
+    } else showToast(`Failed to update payroll: ${error?.message}`, 'error');
   };
 
   const generateTransactionCode = async (targetBranchId?: string): Promise<string> => {
