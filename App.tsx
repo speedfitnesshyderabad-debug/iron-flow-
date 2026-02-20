@@ -25,7 +25,7 @@ import TaxCenter from './pages/TaxCenter';
 import MyEarnings from './pages/MyEarnings';
 import WalkInManagement from './pages/WalkInManagement';
 import Debug from './pages/Debug';
-import BranchQR from './pages/BranchQR';
+
 import GateQR from './pages/GateQR';
 import Payroll from './pages/Payroll';
 
@@ -63,7 +63,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/walk-ins" element={<WalkInManagement />} />
         <Route path="/members" element={<Members />} />
         <Route path="/branches" element={<Branches />} />
-        <Route path="/branch-qr" element={<BranchQR />} />
+
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/staff" element={
           <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
