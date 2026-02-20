@@ -21,7 +21,8 @@ const Register: React.FC = () => {
     emergencyContact: '',
     address: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    referralCode: ''
   });
 
   const selectedBranchPlans = plans.filter(p => p.branchId === formData.branchId && p.isActive);
@@ -52,7 +53,7 @@ const Register: React.FC = () => {
         branchId: formData.branchId,
         emergencyContact: formData.emergencyContact,
         address: formData.address
-      }, undefined, undefined, generatedPassword);
+      }, undefined, undefined, generatedPassword, 0, 'ONLINE', undefined, undefined, formData.referralCode);
 
       // Success Step
       setIsSubmitting(false);
@@ -162,6 +163,13 @@ const Register: React.FC = () => {
                     <i className="fas fa-life-ring"></i> Emergency Contact
                   </label>
                   <input required className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-red-500 transition-all" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} placeholder="Name & Phone" />
+                </div>
+
+                <div className="space-y-1 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
+                  <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <i className="fas fa-gift"></i> Referral Code (Optional)
+                  </label>
+                  <input className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-indigo-500 transition-all font-mono tracking-wider uppercase placeholder:text-slate-600" value={formData.referralCode} onChange={e => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })} placeholder="IF-ADMIN-1234" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">

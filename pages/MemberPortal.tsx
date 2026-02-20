@@ -220,7 +220,7 @@ const MemberPortal: React.FC = () => {
                      <span className="w-fit mx-auto md:mx-0 bg-green-500/10 text-green-400 text-[8px] font-black px-2 py-0.5 rounded border border-green-500/20 uppercase tracking-widest">ATHLETE</span>
                   </div>
                   <div className="flex flex-wrap justify-center md:justify-start gap-2 md:gap-4 mt-4 overflow-x-auto scrollbar-hide pb-2">
-                     {['OVERVIEW', 'COACH', 'METRICS', 'FEEDBACK'].map(tab => (
+                     {['OVERVIEW', 'COACH', 'METRICS', 'REFERRALS', 'FEEDBACK'].map(tab => (
                         <button
                            key={tab}
                            onClick={() => setActiveTab(tab as any)}
@@ -395,6 +395,57 @@ const MemberPortal: React.FC = () => {
             </div>
          )}
 
+         {activeTab === 'REFERRALS' && (
+            <div className="space-y-6 animate-[slideUp_0.4s_ease-out]">
+               <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 md:p-10 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+                  <div className="relative z-10">
+                     <h3 className="text-xl font-black uppercase tracking-tight mb-2">Referral Program</h3>
+                     <p className="text-indigo-100 text-sm font-medium mb-8 max-w-md">Invite your friends to IronFlow and earn free membership days!</p>
+
+                     <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20">
+                        <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-3">Your Unique Referral Code</p>
+                        <div className="flex items-center gap-4">
+                           <code className="flex-1 bg-black/20 p-4 rounded-2xl text-xl font-black tracking-[0.2em] text-white text-center">
+                              {currentUser.referralCode || `IF-${currentUser.name.split(' ')[0].toUpperCase()}-${currentUser.memberId?.split('-').pop()}`}
+                           </code>
+                           <button
+                              onClick={() => {
+                                 const code = currentUser.referralCode || `IF-${currentUser.name.split(' ')[0].toUpperCase()}-${currentUser.memberId?.split('-').pop()}`;
+                                 navigator.clipboard.writeText(code);
+                                 showToast('Referral code copied!', 'success');
+                              }}
+                              className="bg-white text-indigo-600 p-4 rounded-2xl hover:bg-indigo-50 transition-all active:scale-95"
+                           >
+                              <i className="fas fa-copy text-xl"></i>
+                           </button>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4 mt-8">
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                           <p className="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-1">180 Day Plan</p>
+                           <p className="text-sm font-black text-white">15 DAYS FREE</p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                           <p className="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-1">365 Day Plan</p>
+                           <p className="text-sm font-black text-white">30 DAYS FREE</p>
+                        </div>
+                     </div>
+                  </div>
+                  <i className="fas fa-gift absolute -bottom-10 -right-10 text-[12rem] text-white/5 rotate-12"></i>
+               </div>
+
+               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100">
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-3">
+                     <i className="fas fa-users text-indigo-500"></i> Successful Referrals
+                  </h3>
+                  {/* Referral tracking logic will show referred members here */}
+                  <div className="space-y-4">
+                     <p className="text-center text-slate-400 font-medium py-10">Start sharing your code to earn rewards!</p>
+                  </div>
+               </div>
+            </div>
+         )}
          {activeTab === 'FEEDBACK' && (
             <div className="space-y-6 animate-[slideUp_0.4s_ease-out]">
                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100">

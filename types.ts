@@ -104,6 +104,7 @@ export interface User {
   ptCommissionPercentage?: number; // Specific commission for PT Sales
   groupCommissionPercentage?: number; // Specific commission for Group Class Sales
   maxDevices?: number; // For multi-device restriction
+  referralCode?: string;
 }
 
 export interface Plan {
@@ -146,6 +147,16 @@ export interface Sale {
   trainerId?: string;
   transactionCode?: string; // For Cash/POS payments
   razorpayPaymentId?: string; // For Card/Online payments
+}
+
+export interface Referral {
+  id: string;
+  referrerId: string;
+  refereeId: string;
+  planBoughtId: string;
+  rewardDaysApplied: number;
+  status: 'COMPLETED' | 'PENDING';
+  createdAt: string;
 }
 
 export interface Attendance {

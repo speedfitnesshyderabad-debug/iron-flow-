@@ -41,7 +41,8 @@ CREATE TABLE branches (
   equipment TEXT,
   latitude NUMERIC,
   longitude NUMERIC,
-  "geofenceRadius" INTEGER DEFAULT 100 -- Meters
+  "geofenceRadius" INTEGER DEFAULT 100, -- Meters
+  "isHidden" BOOLEAN DEFAULT FALSE
 );
 
 -- USERS

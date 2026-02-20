@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll } from './types';
+import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral } from './types';
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
@@ -59,8 +59,8 @@ interface AppContextType {
   updatePayroll: (id: string, updates: Partial<Payroll>) => Promise<void>;
   generateTransactionCode: (targetBranchId?: string) => Promise<string>;
   verifyTransactionCode: (code: string) => Promise<boolean>;
-  enrollMember: (userData: Partial<User>, planId: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string) => Promise<void>;
-  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string) => Promise<void>;
+  enrollMember: (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string, staffId?: string, referralCode?: string) => Promise<void>;
+  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string) => Promise<void>;
   sendNotification: (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => Promise<void>;
   askGemini: (prompt: string, modelType?: 'flash' | 'pro') => Promise<string>;
   toast: { message: string; type: 'success' | 'error' } | null;
@@ -702,7 +702,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!error) setCommunications(prev => [newComm, ...prev]);
   };
 
-  const enrollMember = async (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string) => {
+  const processReferralReward = async (refereeId: string, planId: string, providedCode?: string) => {
+    try {
+      // 1. Find the referrer
+      let referrer: User | undefined;
+
+      if (providedCode) {
+        referrer = users.find(u => u.referralCode === providedCode);
+      }
+
+      if (!referrer) return;
+
+      // Same Branch Constraint
+      const referee = users.find(u => u.id === refereeId);
+      if (referrer.branchId !== referee?.branchId) {
+        console.log('Referral rejected: Referrer and Referee belong to different branches.');
+        return;
+      }
+
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) return;
+
+      // 2. Determine reward days
+      let rewardDays = 0;
+      if (plan.durationDays === 180) rewardDays = 15;
+      else if (plan.durationDays === 365) rewardDays = 30;
+
+      if (rewardDays === 0) return;
+
+      // 3. Find referrer's active gym subscription to extend
+      const referrerSubs = subscriptions.filter(s => s.memberId === referrer!.id && s.status === SubscriptionStatus.ACTIVE);
+      // Sort to get the one ending furthest in the future
+      const targetSub = referrerSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
+
+      if (targetSub) {
+        const currentEndDate = new Date(targetSub.endDate);
+        const newEndDate = new Date(currentEndDate.getTime() + rewardDays * 86400000).toISOString().split('T')[0];
+
+        const { error: subError } = await supabase.from('subscriptions').update({ endDate: newEndDate }).eq('id', targetSub.id);
+        if (!subError) {
+          setSubscriptions(prev => prev.map(s => s.id === targetSub.id ? { ...s, endDate: newEndDate } : s));
+          showToast(`Referral Reward! Added ${rewardDays} days to ${referrer!.name}'s membership.`);
+        }
+      }
+
+      // 4. Record the referral
+      const newReferral: Referral = {
+        id: `ref-${Date.now()}`,
+        referrerId: referrer.id,
+        refereeId: refereeId,
+        planBoughtId: planId,
+        rewardDaysApplied: rewardDays,
+        status: 'COMPLETED',
+        createdAt: new Date().toISOString()
+      };
+
+      await supabase.from('referrals').insert(newReferral);
+      // Note: If you want to track referrals in local state, add a state variable.
+
+      // 5. Notify the referrer
+      await sendNotification({
+        userId: referrer.id,
+        type: CommType.SMS,
+        recipient: referrer.phone || referrer.email || 'N/A',
+        body: `Congratulations! You earned ${rewardDays} free days because your friend joined IronFlow. Your membership has been extended to ${targetSub ? (new Date(new Date(targetSub.endDate).getTime() + rewardDays * 86400000).toISOString().split('T')[0]) : 'N/A'}.`,
+        category: 'ANNOUNCEMENT',
+        branchId: referrer.branchId || branches[0].id
+      });
+
+    } catch (err) {
+      console.error('Referral processing failed:', err);
+    }
+  };
+
+  const enrollMember = async (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string, referralCode?: string) => {
     setGlobalLoading(true);
     const plan = planId ? plans.find(p => p.id === planId) : undefined;
     if (planId && !plan) {
@@ -803,6 +876,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         setSubscriptions(prev => [...prev, newSub]);
         setSales(prev => [...prev, newSale]);
+
+        // Trigger referral reward
+        if (referralCode) {
+          await processReferralReward(newUserId, plan.id, referralCode);
+        }
 
         showToast(`Member enrolled! Invoice: ${newSale.invoiceNo}`);
       } else {
@@ -914,7 +992,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Import Complete: ${successCount} processed, ${failCount} failed.`);
   };
 
-  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE', trainerId?: string) => {
+  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
     const user = users.find(u => u.id === userId);
@@ -952,6 +1030,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setSubscriptions(prev => [...prev, newSub]);
       setSales(prev => [...prev, newSale]);
+
+      // Trigger referral reward
+      if (referralCode) {
+        await processReferralReward(userId, planId, referralCode);
+      }
 
       await sendNotification({
         userId: userId,

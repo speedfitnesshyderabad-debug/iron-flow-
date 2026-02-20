@@ -51,7 +51,8 @@ const Branches: React.FC = () => {
     latitude: 0,
     longitude: 0,
     geofenceRadius: 100,
-    holidays: [] as string[]
+    holidays: [] as string[],
+    isHidden: false
   });
   const [newHoliday, setNewHoliday] = useState('');
 
@@ -97,7 +98,8 @@ const Branches: React.FC = () => {
       latitude: 0,
       longitude: 0,
       geofenceRadius: 100,
-      holidays: []
+      holidays: [],
+      isHidden: false
     });
     setModalOpen(true);
   };
@@ -125,7 +127,8 @@ const Branches: React.FC = () => {
       latitude: branch.latitude || 0,
       longitude: branch.longitude || 0,
       geofenceRadius: branch.geofenceRadius || 100,
-      holidays: branch.holidays || []
+      holidays: branch.holidays || [],
+      isHidden: branch.isHidden || false
     });
     setNewHoliday('');
     setModalOpen(true);

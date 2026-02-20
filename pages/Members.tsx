@@ -29,7 +29,9 @@ const Members: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Form States
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
+  const initialBranchId = currentUser?.branchId || branches[0]?.id || '';
+  const initialPlanId = plans.find(p => p.branchId === initialBranchId || p.isMultiBranch)?.id || '';
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '' });
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
 
   const handleExport = () => {
@@ -204,7 +206,8 @@ const Members: React.FC = () => {
         amount: finalAmount,
         planName: plan.name,
         branchId: enrollData.branchId || currentUser?.branchId, // Pass the current branch for payment config
-        staffId: enrollData.assignedStaffId // Pass staffId for sale attribution
+        staffId: enrollData.assignedStaffId, // Pass staffId for sale attribution
+        referralCode: enrollData.referralCode
       });
       setPaymentModalOpen(true);
       return;
@@ -239,7 +242,7 @@ const Members: React.FC = () => {
       address: enrollData.address,
       avatar: enrollData.avatar,
       branchId: enrollData.branchId
-    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId);
+    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId, enrollData.referralCode);
 
     if (paymentId) {
       showToast(`Payment successful! ID: ${paymentId}`, 'success');
@@ -248,7 +251,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', phone: '', password: '', planId: plans[0]?.id || '', emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: currentUser?.branchId || branches[0]?.id || '', assignedStaffId: '' });
+    setEnrollData({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -533,7 +536,11 @@ const Members: React.FC = () => {
                     <select
                       className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
                       value={enrollData.branchId}
-                      onChange={e => setEnrollData({ ...enrollData, branchId: e.target.value })}
+                      onChange={e => {
+                        const newBranchId = e.target.value;
+                        const branchPlans = plans.filter(p => p.branchId === newBranchId);
+                        setEnrollData({ ...enrollData, branchId: newBranchId, planId: branchPlans[0]?.id || '' });
+                      }}
                     >
                       {branches.map(b => (
                         <option key={b.id} value={b.id}>{b.name}</option>
@@ -595,12 +602,19 @@ const Members: React.FC = () => {
                   <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
                 </div>
 
+                <div className="space-y-2 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                  <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <i className="fas fa-gift"></i> Referral Code (Optional)
+                  </label>
+                  <input type="text" className="w-full p-3 bg-white border border-indigo-100 rounded-xl font-black text-indigo-700 uppercase tracking-wider placeholder:text-indigo-200" placeholder="IF-REF-CODE" value={enrollData.referralCode} onChange={e => setEnrollData({ ...enrollData, referralCode: e.target.value.toUpperCase() })} />
+                </div>
+
                 <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
                   <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value })}>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
+                    {plans.filter(p => p.branchId === enrollData.branchId).map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
                   </select>
                 </div>
 
