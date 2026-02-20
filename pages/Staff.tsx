@@ -619,7 +619,7 @@ const Staff: React.FC = () => {
                     </label>
                     {isEditModalOpen && (
                       <button type="button" onClick={() => setActiveSessionsModalOpen(true)} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest">
-                        <i className="fas fa-laptop mr-1"></i> Check Active
+                        <i className="fas fa-laptop-medical mr-1"></i> Reset Device Access
                       </button>
                     )}
                   </div>

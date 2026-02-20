@@ -768,8 +768,8 @@ const Members: React.FC = () => {
                       onClick={() => setActiveSessionsModalOpen(true)}
                       className="px-4 bg-slate-800 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 whitespace-nowrap shadow-lg"
                     >
-                      <i className="fas fa-laptop mr-2"></i>
-                      View Sessions
+                      <i className="fas fa-laptop-medical mr-2"></i>
+                      Reset Device Access
                     </button>
                   </div>
                   <p className="text-[10px] text-gray-400 font-medium">Restricts simultaneous logins. Default is 1.</p>
