@@ -13,7 +13,16 @@ const GateQR: React.FC = () => {
     // Identify the branch to show
     // KIOSK/MANAGER/RECEPTIONIST -> Their assigned branch
     // SUPER_ADMIN -> First branch or prompts (For now, default to first branch)
-    const activeBranchId = currentUser?.branchId || (branches.length > 0 ? branches[0].id : null);
+    const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || (branches.length > 0 ? branches[0].id : ''));
+
+    // Update selected branch if branches load later or user changes
+    useEffect(() => {
+        if (!selectedBranchId && branches.length > 0) {
+            setSelectedBranchId(branches[0].id);
+        }
+    }, [branches, selectedBranchId]);
+
+    const activeBranchId = selectedBranchId;
     const activeBranch = branches.find(b => b.id === activeBranchId);
 
     useEffect(() => {
@@ -128,17 +137,37 @@ const GateQR: React.FC = () => {
             </div>
 
             {/* Footer / Controls */}
-            {currentUser.role !== UserRole.KIOSK && (
-                <div className="mt-12 flex gap-4 relative z-10">
+            <div className="mt-12 flex gap-4 relative z-10 flex-wrap justify-center">
+                {/* Branch Selector for Super Admin */}
+                {currentUser.role === UserRole.SUPER_ADMIN && (
+                    <div className="relative">
+                        <select
+                            value={selectedBranchId}
+                            onChange={(e) => setSelectedBranchId(e.target.value)}
+                            className="appearance-none bg-white/10 hover:bg-white/20 text-white font-bold py-4 pl-6 pr-12 rounded-2xl border border-white/10 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all uppercase tracking-widest text-sm"
+                        >
+                            {branches.map(branch => (
+                                <option key={branch.id} value={branch.id} className="text-slate-900 bg-white">
+                                    {branch.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                            <i className="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                )}
+
+                {(currentUser.role !== UserRole.KIOSK || currentUser.role === UserRole.SUPER_ADMIN) && (
                     <button
                         onClick={toggleFullScreen}
-                        className="flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95"
+                        className="flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-sm"
                     >
                         <i className={`fas ${isFullScreen ? 'fa-compress' : 'fa-expand'}`}></i>
                         {isFullScreen ? 'Exit Full Screen' : 'Full Screen Mode'}
                     </button>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* KIOSK Specific Footer */}
             {currentUser.role === UserRole.KIOSK && !isFullScreen && (
