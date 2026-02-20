@@ -18,7 +18,7 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, branches, importMembers } = useAppContext();
+  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers } = useAppContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -31,8 +31,8 @@ const Members: React.FC = () => {
   // Form States
   const initialBranchId = currentUser?.branchId || branches[0]?.id || '';
   const initialPlanId = plans.find(p => p.branchId === initialBranchId || p.isMultiBranch)?.id || '';
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '' });
-  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON'>('ALL');
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0 });
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED'>('ALL');
 
   const handleExport = () => {
     const headers = ['Name', 'Email', 'Phone', 'Address', 'BranchID', 'MemberID', 'Role', 'Status'];
@@ -173,8 +173,9 @@ const Members: React.FC = () => {
 
     switch (filter) {
       case 'ACTIVE': return !!activeSub;
-      case 'EXPIRED': return !activeSub;
+      case 'EXPIRED': return !activeSub && !memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
       case 'EXPIRING_SOON': return isExpiringSoon;
+      case 'PAUSED': return memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
       default: return true;
     }
   });
@@ -207,7 +208,8 @@ const Members: React.FC = () => {
         planName: plan.name,
         branchId: enrollData.branchId || currentUser?.branchId, // Pass the current branch for payment config
         staffId: enrollData.assignedStaffId, // Pass staffId for sale attribution
-        referralCode: enrollData.referralCode
+        referralCode: enrollData.referralCode,
+        pauseAllowance: enrollData.pauseAllowance
       });
       setPaymentModalOpen(true);
       return;
@@ -242,7 +244,7 @@ const Members: React.FC = () => {
       address: enrollData.address,
       avatar: enrollData.avatar,
       branchId: enrollData.branchId
-    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId, enrollData.referralCode);
+    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId, enrollData.referralCode, enrollData.pauseAllowance);
 
     if (paymentId) {
       showToast(`Payment successful! ID: ${paymentId}`, 'success');
@@ -251,7 +253,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '' });
+    setEnrollData({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0 });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -416,7 +418,8 @@ const Members: React.FC = () => {
             { id: 'ALL', label: 'All Members', icon: 'fa-users' },
             { id: 'ACTIVE', label: 'Active', icon: 'fa-check-circle', color: 'text-green-600 bg-green-50 border-green-100 ring-2 ring-green-100' },
             { id: 'EXPIRING_SOON', label: 'Expiring Soon (7 Days)', icon: 'fa-clock', color: 'text-amber-600 bg-amber-50 border-amber-100 ring-2 ring-amber-100' },
-            { id: 'EXPIRED', label: 'Expired', icon: 'fa-times-circle', color: 'text-red-600 bg-red-50 border-red-100 ring-2 ring-red-100' }
+            { id: 'EXPIRED', label: 'Expired', icon: 'fa-times-circle', color: 'text-red-600 bg-red-50 border-red-100 ring-2 ring-red-100' },
+            { id: 'PAUSED', label: 'Paused', icon: 'fa-pause-circle', color: 'text-slate-600 bg-slate-50 border-slate-100 ring-2 ring-slate-100' }
           ].map(f => (
             <button
               key={f.id}
@@ -450,14 +453,18 @@ const Members: React.FC = () => {
                   <div className="relative">
                     <img src={member.avatar} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
                     {isActive && <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>}
+                    {latestSub?.status === SubscriptionStatus.PAUSED && <div className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 border-2 border-white rounded-full"></div>}
                   </div>
                   <div>
                     <h3 className="font-bold text-lg text-gray-900">{member.name}</h3>
                     <p className="text-xs font-mono text-gray-400 tracking-tighter uppercase">{member.memberId}</p>
                   </div>
                 </div>
-                <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {isActive ? 'Active' : 'Expired'}
+                <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-green-100 text-green-700' :
+                  latestSub?.status === SubscriptionStatus.PAUSED ? 'bg-slate-100 text-slate-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                  {isActive ? 'Active' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Expired'}
                 </div>
               </div>
 
@@ -478,6 +485,12 @@ const Members: React.FC = () => {
                   <span className="text-gray-400 uppercase font-bold">Valid Until</span>
                   <span className="font-medium text-gray-700">{sub?.endDate || 'N/A'}</span>
                 </div>
+                {sub?.pauseAllowanceDays !== undefined && (
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-blue-400 uppercase font-bold text-[9px]">Pause Allowance</span>
+                    <span className="font-black text-blue-700">{(sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0)} Days left</span>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 mt-6">
@@ -509,10 +522,30 @@ const Members: React.FC = () => {
                 )}
                 <button
                   onClick={() => handleOpenRenew(member)}
-                  className="col-span-2 py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
+                  className="py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
                 >
                   CHANGE / RENEW PLAN
                 </button>
+                {activeSub && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to pause ${member.name}'s membership? They will not be able to check in until resumed.`)) {
+                        pauseMembership(activeSub.id);
+                      }
+                    }}
+                    className="col-span-2 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors uppercase tracking-wider"
+                  >
+                    PAUSE MEMBERSHIP
+                  </button>
+                )}
+                {latestSub?.status === SubscriptionStatus.PAUSED && (
+                  <button
+                    onClick={() => resumeMembership(latestSub.id)}
+                    className="col-span-2 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors uppercase tracking-wider"
+                  >
+                    RESUME MEMBERSHIP
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -608,6 +641,15 @@ const Members: React.FC = () => {
                   </label>
                   <input type="text" className="w-full p-3 bg-white border border-indigo-100 rounded-xl font-black text-indigo-700 uppercase tracking-wider placeholder:text-indigo-200" placeholder="IF-REF-CODE" value={enrollData.referralCode} onChange={e => setEnrollData({ ...enrollData, referralCode: e.target.value.toUpperCase() })} />
                 </div>
+
+                {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
+                  <div className="space-y-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <i className="fas fa-pause-circle"></i> Pause Allowance (Days)
+                    </label>
+                    <input type="number" min="0" max="365" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-black text-blue-700" placeholder="0" value={enrollData.pauseAllowance} onChange={e => setEnrollData({ ...enrollData, pauseAllowance: parseInt(e.target.value) || 0 })} />
+                  </div>
+                )}
 
                 <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
 

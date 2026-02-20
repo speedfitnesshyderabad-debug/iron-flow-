@@ -19,7 +19,8 @@ export enum PlanType {
 export enum SubscriptionStatus {
   ACTIVE = 'ACTIVE',
   EXPIRED = 'EXPIRED',
-  PENDING = 'PENDING'
+  PENDING = 'PENDING',
+  PAUSED = 'PAUSED'
 }
 
 export enum CommType {
@@ -130,6 +131,9 @@ export interface Subscription {
   status: SubscriptionStatus;
   branchId: string;
   trainerId?: string;
+  pauseStartDate?: string;
+  pauseAllowanceDays?: number;
+  pausedDaysUsed?: number;
 }
 
 export interface Sale {

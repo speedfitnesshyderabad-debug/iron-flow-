@@ -448,8 +448,15 @@ const CheckIn: React.FC = () => {
       });
 
       if (!gymSub) {
-        playStatusSound('error'); // ERROR SOUND
-        setScanResult({ success: false, message: "Access Denied: No active gym membership found." });
+        // Check if it's paused for a better message
+        const pausedSub = subscriptions.find(s => s.memberId === currentUser.id && s.status === SubscriptionStatus.PAUSED);
+        if (pausedSub) {
+          playStatusSound('error');
+          setScanResult({ success: false, message: "Access Denied: Your membership is currently PAUSED." });
+        } else {
+          playStatusSound('error'); // ERROR SOUND
+          setScanResult({ success: false, message: "Access Denied: No active gym membership found." });
+        }
         setTimeout(() => setScanResult(null), 3000);
         return;
       }

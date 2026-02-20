@@ -59,8 +59,10 @@ interface AppContextType {
   updatePayroll: (id: string, updates: Partial<Payroll>) => Promise<void>;
   generateTransactionCode: (targetBranchId?: string) => Promise<string>;
   verifyTransactionCode: (code: string) => Promise<boolean>;
-  enrollMember: (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string, staffId?: string, referralCode?: string) => Promise<void>;
-  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string) => Promise<void>;
+  enrollMember: (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string, staffId?: string, referralCode?: string, pauseAllowance?: number) => Promise<void>;
+  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance?: number) => Promise<void>;
+  pauseMembership: (subscriptionId: string) => Promise<void>;
+  resumeMembership: (subscriptionId: string) => Promise<void>;
   sendNotification: (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => Promise<void>;
   askGemini: (prompt: string, modelType?: 'flash' | 'pro') => Promise<string>;
   toast: { message: string; type: 'success' | 'error' } | null;
@@ -713,6 +715,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (!referrer) return;
 
+      // Check if referrer has an active membership
+      const referrerActiveSubs = subscriptions.filter(s => s.memberId === referrer!.id && s.status === SubscriptionStatus.ACTIVE);
+      if (referrerActiveSubs.length === 0) {
+        console.log(`Referral rejected: Referrer ${referrer.name} does not have an active membership.`);
+        showToast('Referral code belongs to an inactive member', 'error');
+        return;
+      }
+
       // Same Branch Constraint
       const referee = users.find(u => u.id === refereeId);
       if (referrer.branchId !== referee?.branchId) {
@@ -731,9 +741,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (rewardDays === 0) return;
 
       // 3. Find referrer's active gym subscription to extend
-      const referrerSubs = subscriptions.filter(s => s.memberId === referrer!.id && s.status === SubscriptionStatus.ACTIVE);
       // Sort to get the one ending furthest in the future
-      const targetSub = referrerSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
+      const targetSub = referrerActiveSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
 
       if (targetSub) {
         const currentEndDate = new Date(targetSub.endDate);
@@ -775,7 +784,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const enrollMember = async (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string, referralCode?: string) => {
+  const enrollMember = async (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string, referralCode?: string, pauseAllowance: number = 0) => {
     setGlobalLoading(true);
     const plan = planId ? plans.find(p => p.id === planId) : undefined;
     if (planId && !plan) {
@@ -852,7 +861,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           endDate: new Date(new Date(membershipStartDate).getTime() + plan.durationDays * 86400000).toISOString().split('T')[0],
           status: SubscriptionStatus.ACTIVE,
           branchId,
-          trainerId
+          trainerId,
+          pauseAllowanceDays: pauseAllowance
         };
         subEndDate = newSub.endDate;
 
@@ -992,7 +1002,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Import Complete: ${successCount} processed, ${failCount} failed.`);
   };
 
-  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string) => {
+  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance: number = 0) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
     const user = users.find(u => u.id === userId);
@@ -1009,7 +1019,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       endDate: new Date(Date.now() + plan.durationDays * 86400000).toISOString().split('T')[0],
       status: SubscriptionStatus.ACTIVE,
       branchId,
-      trainerId
+      trainerId,
+      pauseAllowanceDays: pauseAllowance
     };
     const newSale: Sale = {
       id: `sale-${Date.now()}`,
@@ -1194,6 +1205,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await query;
   };
 
+  const pauseMembership = async (subscriptionId: string) => {
+    const sub = subscriptions.find(s => s.id === subscriptionId);
+    if (!sub) return;
+
+    if (sub.status !== SubscriptionStatus.ACTIVE) {
+      showToast('Only active memberships can be paused', 'error');
+      return;
+    }
+
+    const remainingAllowance = (sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0);
+    if (remainingAllowance <= 0) {
+      showToast('No pause allowance remaining!', 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('subscriptions').update({
+      status: SubscriptionStatus.PAUSED,
+      pauseStartDate: new Date().toISOString().split('T')[0]
+    }).eq('id', subscriptionId);
+
+    if (!error) {
+      setSubscriptions(prev => prev.map(s => s.id === subscriptionId ? {
+        ...s,
+        status: SubscriptionStatus.PAUSED,
+        pauseStartDate: new Date().toISOString().split('T')[0]
+      } : s));
+      showToast('Membership paused');
+    } else showToast('Failed to pause membership', 'error');
+  };
+
+  const resumeMembership = async (subscriptionId: string) => {
+    const sub = subscriptions.find(s => s.id === subscriptionId);
+    if (!sub || !sub.pauseStartDate) return;
+
+    if (sub.status !== SubscriptionStatus.PAUSED) {
+      showToast('Membership is not paused', 'error');
+      return;
+    }
+
+    const pauseStart = new Date(sub.pauseStartDate);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - pauseStart.getTime());
+    const pauseDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const currentEndDate = new Date(sub.endDate);
+    const newEndDate = new Date(currentEndDate.getTime() + pauseDuration * 86400000).toISOString().split('T')[0];
+    const newUsedDays = (sub.pausedDaysUsed || 0) + pauseDuration;
+
+    const { error } = await supabase.from('subscriptions').update({
+      status: SubscriptionStatus.ACTIVE,
+      endDate: newEndDate,
+      pausedDaysUsed: newUsedDays,
+      pauseStartDate: null
+    }).eq('id', subscriptionId);
+
+    if (!error) {
+      setSubscriptions(prev => prev.map(s => s.id === subscriptionId ? {
+        ...s,
+        status: SubscriptionStatus.ACTIVE,
+        endDate: newEndDate,
+        pausedDaysUsed: newUsedDays,
+        pauseStartDate: undefined
+      } : s));
+      showToast('Membership resumed and extended');
+    } else showToast('Failed to resume membership', 'error');
+  };
+
   return (
     <AppContext.Provider value={{
       currentUser, setCurrentUser, branches, users, plans, subscriptions, sales,
@@ -1203,7 +1281,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
-      addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
+      addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
       generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers
     }}>
       {children}
