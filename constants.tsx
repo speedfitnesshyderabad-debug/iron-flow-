@@ -101,6 +101,7 @@ export const NAV_ITEMS = [
   { label: 'Communications', path: '/comms', icon: <i className="fas fa-paper-plane"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Portal', path: '/portal', icon: <i className="fas fa-user-circle"></i>, roles: [UserRole.MEMBER] },
   { label: 'My Earnings', path: '/my-earnings', icon: <i className="fas fa-wallet"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.TRAINER, UserRole.RECEPTIONIST, UserRole.STAFF] },
+  { label: 'Payroll', path: '/payroll', icon: <i className="fas fa-money-check-alt"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Feedback', path: '/feedback', icon: <i className="fas fa-comment-dots"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Sales', path: '/sales', icon: <i className="fas fa-indian-rupee-sign"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Tax Center', path: '/tax', icon: <i className="fas fa-file-contract"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },

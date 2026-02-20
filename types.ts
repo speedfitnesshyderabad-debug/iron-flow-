@@ -98,7 +98,7 @@ export interface User {
   hasAcceptedTerms?: boolean;
   shifts?: Shift[];
   weekOffs?: string[]; // Array of days e.g. ['Sunday']
-  hourlyRate?: number;
+  monthlySalary?: number;
   commissionPercentage?: number; // Base commission (Sessions for Trainers)
   salesCommissionPercentage?: number; // Specific commission for Sales (Gym/General)
   ptCommissionPercentage?: number; // Specific commission for PT Sales
@@ -156,6 +156,7 @@ export interface Attendance {
   timeOut?: string;
   branchId: string;
   type: 'MEMBER' | 'STAFF';
+  notes?: string; // Added for manual overrides/remarks
 }
 
 export interface Booking {
@@ -275,4 +276,31 @@ export interface ActiveSession {
   ipAddress?: string;
   loginTime: string;
   lastActivity: string;
+}
+
+export interface Payroll {
+  id: string;
+  staffId: string;
+  branchId: string;
+  month: string;
+  year: number;
+  baseSalary: number;
+  payableDays: number;
+  deductions: number;
+  commissionAmount: number;
+  netSalary: number;
+  status: 'GENERATED' | 'PAID';
+  generatedAt: string;
+  paidAt?: string;
+  details?: {
+    totalDays: number;
+    presentDays: number;
+    weekOffs: number;
+    holidays: number;
+    lateDays: number;
+    halfDays: number;
+    absentDays: number;
+    penaltyDays: number;
+    dailyRate: number;
+  };
 }

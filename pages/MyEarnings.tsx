@@ -3,9 +3,10 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus } from '../types';
 import PayslipModal from '../components/PayslipModal';
+import { calculateMonthlySalary } from '../src/utils/payrollUtils';
 
 const MyEarnings: React.FC = () => {
-  const { currentUser, attendance, sales, bookings, plans, subscriptions, branches } = useAppContext();
+  const { currentUser, attendance, sales, bookings, plans, subscriptions, branches, payroll } = useAppContext();
 
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -28,92 +29,96 @@ const MyEarnings: React.FC = () => {
   const stats = useMemo(() => {
     if (!currentUser) return null;
 
-    // 1. Base Salary from Attendance
-    const monthLogs = attendance.filter(a => {
-      const d = new Date(a.date);
-      return (
-        a.userId === currentUser.id &&
-        d.getMonth() === selectedMonth &&
-        d.getFullYear() === selectedYear
-      );
-    });
+    // 1. Check for Finalized Payroll Record
+    const finalizedRecord = payroll.find(p =>
+      p.staffId === currentUser.id &&
+      p.month === months[selectedMonth] &&
+      p.year === selectedYear
+    );
 
-    let totalMinutes = 0;
+    let salaryStats;
 
-    // Helper to convert HH:MM to minutes
-    const getMinutes = (time: string) => {
-      const [h, m] = time.split(':').map(Number);
-      return h * 60 + m;
-    };
+    if (finalizedRecord) {
+      // Use Finalized Data
+      salaryStats = {
+        baseSalary: finalizedRecord.baseSalary,
+        finalBaseSalary: finalizedRecord.netSalary, // In payroll table, netSalary is the final amount (but wait, comms might be separate? Let's check logic)
+        // In Payroll Table: netSalary = base - deductions + commissions. 
+        // But here we calc commissions separately? 
+        // If finalized, commissions should be IN the record? 
+        // The record has `commissionAmount`.
+        // So we should use that.
 
-    monthLogs.forEach(log => {
-      if (log.timeOut) {
-        const logStart = getMinutes(log.timeIn);
-        const logEnd = getMinutes(log.timeOut);
+        deductions: finalizedRecord.deductions,
+        payableDays: finalizedRecord.payableDays,
+        presentDays: finalizedRecord.details?.presentDays || 0,
+        totalDays: finalizedRecord.details?.totalDays || 30,
+        weekOffs: finalizedRecord.details?.weekOffs || 0,
+        holidays: finalizedRecord.details?.holidays || 0,
+        lateDays: finalizedRecord.details?.lateDays || 0,
+        halfDays: finalizedRecord.details?.halfDays || 0,
+        absentDays: finalizedRecord.details?.absentDays || 0,
+        penaltyDays: finalizedRecord.details?.penaltyDays || 0,
+        dailyRate: finalizedRecord.details?.dailyRate || 0,
+        breakdown: finalizedRecord.status === 'PAID' ? 'PAID' : 'GENERATED', // Status indicator
+        isFinalized: true
+      };
+    } else {
+      // Use Live Calculation
+      salaryStats = calculateMonthlySalary(currentUser, attendance, selectedMonth, selectedYear, branches);
+    }
 
-        if (currentUser.shifts && currentUser.shifts.length > 0) {
-          // Calculate overlap with assigned shifts
-          let overlap = 0;
-          currentUser.shifts.forEach(shift => {
-            const shiftStart = getMinutes(shift.start);
-            const shiftEnd = getMinutes(shift.end);
 
-            const start = Math.max(logStart, shiftStart);
-            const end = Math.min(logEnd, shiftEnd);
+    // 2. Commissions (Only calc if NOT finalized or if we want to show breakdown)
+    // If finalized, we use record.commissionAmount.
+    // But we might still want to show the breakdown of *how* it was reached if possible? 
+    // Or just trust the record? 
+    // Let's trust the record if finalized.
 
-            if (start < end) {
-              overlap += (end - start);
-            }
-          });
-          totalMinutes += overlap;
-        }
-        // No shifts assigned = 0 minutes contributed to salary
-      }
-    });
-
-    const hours = totalMinutes / 60;
-    const rate = currentUser.hourlyRate || 500;
-    const baseSalary = hours * rate;
-
-    // 2. Commissions
     let commissions = 0;
     let incentiveParts: string[] = [];
 
-    // A. Session Commissions (Trainers Only)
-    if (currentUser.role === UserRole.TRAINER) {
-      const completedBookings = bookings.filter(b => {
-        const d = new Date(b.date);
-        return (
-          b.trainerId === currentUser.id &&
-          b.status === 'COMPLETED' &&
-          d.getMonth() === selectedMonth &&
-          d.getFullYear() === selectedYear
-        );
-      });
+    if (finalizedRecord) {
+      commissions = finalizedRecord.commissionAmount || 0;
+      incentiveParts.push(finalizedRecord.status === 'PAID' ? 'Paid with Salary' : 'Included in Payroll');
+    } else {
+      // ... Live Calc Logic ...
+      // A. Session Commissions (Trainers Only)
+      if (currentUser.role === UserRole.TRAINER) {
+        const completedBookings = bookings.filter(b => {
+          const d = new Date(b.date);
+          return (
+            b.trainerId === currentUser.id &&
+            b.status === 'COMPLETED' &&
+            d.getMonth() === selectedMonth &&
+            d.getFullYear() === selectedYear
+          );
+        });
 
-      const sessionRate = currentUser.commissionPercentage || 0;
-      const sessionEarnings = completedBookings.map(booking => {
-        const sub = subscriptions.find(s =>
-          s.memberId === booking.memberId &&
-          s.status === SubscriptionStatus.ACTIVE &&
-          plans.find(p => p.id === s.planId)?.type === booking.type
-        );
-        const plan = plans.find(p => p.id === (sub?.planId || ''));
-        if (!plan) return 0;
-        const maxSessions = plan.maxSessions || 1;
-        const unitPrice = plan.price / maxSessions;
-        return unitPrice * (sessionRate / 100);
-      });
+        const sessionRate = currentUser.commissionPercentage || 0;
+        const sessionEarnings = completedBookings.map(booking => {
+          const sub = subscriptions.find(s =>
+            s.memberId === booking.memberId &&
+            s.status === SubscriptionStatus.ACTIVE &&
+            plans.find(p => p.id === s.planId)?.type === booking.type
+          );
+          const plan = plans.find(p => p.id === (sub?.planId || ''));
+          if (!plan) return 0;
+          const maxSessions = plan.maxSessions || 1;
+          const unitPrice = plan.price / maxSessions;
+          return unitPrice * (sessionRate / 100);
+        });
 
-      const totalSessionComm = sessionEarnings.reduce((acc, e) => acc + e, 0);
-      if (totalSessionComm > 0) {
-        commissions += totalSessionComm;
-        incentiveParts.push(`${completedBookings.length} Sessions (${sessionRate}%)`);
+        const totalSessionComm = sessionEarnings.reduce((acc, e) => acc + e, 0);
+        if (totalSessionComm > 0) {
+          commissions += totalSessionComm;
+          incentiveParts.push(`${completedBookings.length} Sessions (${sessionRate}%)`);
+        }
       }
     }
 
     // B. Sales Commissions (Managers AND Trainers)
-    if (currentUser.role === UserRole.MANAGER || currentUser.role === UserRole.TRAINER) {
+    if (!finalizedRecord && (currentUser.role === UserRole.MANAGER || currentUser.role === UserRole.TRAINER)) {
       const mySales = sales.filter(s => {
         const d = new Date(s.date);
         return (
@@ -177,14 +182,12 @@ const MyEarnings: React.FC = () => {
       : "No incentives found";
 
     return {
-      hours,
-      rate,
-      baseSalary,
+      ...salaryStats,
       commissions,
       incentiveType,
-      total: baseSalary + commissions
+      total: finalizedRecord ? finalizedRecord.netSalary : (salaryStats.finalBaseSalary + commissions)
     };
-  }, [currentUser, attendance, bookings, sales, plans, subscriptions, selectedMonth, selectedYear]);
+  }, [currentUser, attendance, bookings, sales, plans, subscriptions, selectedMonth, selectedYear, payroll]);
 
   const formatCurrency = (amt: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
@@ -227,12 +230,12 @@ const MyEarnings: React.FC = () => {
             <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{formatCurrency(stats?.total || 0)}</h3>
             <div className="mt-6 pt-6 border-t border-slate-50 flex justify-between text-left">
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase">Hourly Rate</p>
-                <p className="font-bold text-sm text-slate-700">{formatCurrency(stats?.rate || 0)}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase">Payable Days</p>
+                <p className="font-bold text-sm text-slate-700">{stats?.payableDays} / {stats?.totalDays}</p>
               </div>
               <div className="text-right">
-                <p className="text-[9px] font-black text-slate-400 uppercase">Hours Logged</p>
-                <p className="font-bold text-sm text-slate-700">{(stats?.hours || 0).toFixed(1)} hrs</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase">Deductions</p>
+                <p className="font-bold text-sm text-red-500">-{formatCurrency(stats?.deductions || 0)}</p>
               </div>
             </div>
           </div>
@@ -251,7 +254,10 @@ const MyEarnings: React.FC = () => {
           <div className="bg-white rounded-[3rem] border shadow-sm overflow-hidden">
             <div className="p-8 border-b bg-slate-50/50 flex justify-between items-center">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Earnings Breakdown</h3>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Period: {months[selectedMonth]} {selectedYear}</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Period: {months[selectedMonth]} {selectedYear}</span>
+                {stats?.isFinalized && <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full mt-1">FINALIZED</span>}
+              </div>
             </div>
             <div className="p-8">
               <div className="space-y-6">
@@ -261,11 +267,14 @@ const MyEarnings: React.FC = () => {
                       <i className="fas fa-clock"></i>
                     </div>
                     <div>
-                      <p className="text-sm font-black text-slate-900 uppercase">Base Salary</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Logged hours × Hourly rate</p>
+                      <p className="text-sm font-black text-slate-900 uppercase">Monthly Earnings</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                        Base: {formatCurrency(stats?.baseSalary || 0)}
+                        {stats?.deductions > 0 && <span className="text-red-500 block">Deductions: -{formatCurrency(stats?.deductions)} ({stats?.breakdown})</span>}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-lg font-black text-slate-900">{formatCurrency(stats?.baseSalary || 0)}</p>
+                  <p className="text-lg font-black text-slate-900">{formatCurrency(stats?.finalBaseSalary || 0)}</p>
                 </div>
 
                 <div className="flex items-center justify-between group">

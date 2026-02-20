@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession } from './types';
+import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll } from './types';
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
@@ -22,6 +22,7 @@ interface AppContextType {
   offers: Offer[];
   classSchedules: ClassSession[];
   expenses: Expense[];
+  payroll: Payroll[];
   settlementRate: number;
   setSettlementRate: (rate: number) => void;
   isGlobalLoading: boolean;
@@ -54,6 +55,8 @@ interface AppContextType {
   deleteClassSession: (id: string) => Promise<void>;
   addExpense: (expense: Expense) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  addPayroll: (record: Payroll) => Promise<void>;
+  updatePayroll: (id: string, updates: Partial<Payroll>) => Promise<void>;
   generateTransactionCode: (targetBranchId?: string) => Promise<string>;
   verifyTransactionCode: (code: string) => Promise<boolean>;
   enrollMember: (userData: Partial<User>, planId: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string) => Promise<void>;
@@ -100,6 +103,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [offers, setOffers] = useState<Offer[]>([]);
   const [classSchedules, setClassSchedules] = useState<ClassSession[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [payroll, setPayroll] = useState<Payroll[]>([]);
   const [settlementRate, setSettlementRate] = useState<number>(250);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isGlobalLoading, setGlobalLoading] = useState(false);
@@ -170,6 +174,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { data: exData } = await supabase.from('expenses').select('*');
       if (exData) setExpenses(exData);
 
+      const { data: pyData } = await supabase.from('payroll').select('*');
+      if (pyData) setPayroll(pyData);
+
     } catch (error) {
       console.error('Error fetching data:', error);
       showToast('Error connecting to database', 'error');
@@ -194,6 +201,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
         supabase.from('expenses').select('*').then(({ data }) => { if (data) setExpenses(data); });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll' }, () => {
+        supabase.from('payroll').select('*').then(({ data }) => { if (data) setPayroll(data); });
       })
       .subscribe();
 
@@ -284,7 +294,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
       if (currentUser?.id === id) setCurrentUser(prev => prev ? { ...prev, ...updates } : null);
       showToast('User updated');
-    } else showToast('Failed to update user', 'error');
+    } else showToast(`Failed to update user: ${error.message}`, 'error');
   };
 
   const deleteUser = async (id: string) => {
@@ -615,6 +625,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase.from('expenses').delete().eq('id', id);
     if (!error) setExpenses(prev => prev.filter(e => e.id !== id));
     else showToast('Failed to delete expense', 'error');
+  };
+
+  const addPayroll = async (record: Payroll) => {
+    const { error } = await supabase.from('payroll').insert(record);
+    if (!error) {
+      setPayroll(prev => [...prev, record]);
+      showToast('Payroll generated');
+    } else showToast('Failed to generate payroll', 'error');
+  };
+
+  const updatePayroll = async (id: string, updates: Partial<Payroll>) => {
+    const { error } = await supabase.from('payroll').update(updates).eq('id', id);
+    if (!error) {
+      setPayroll(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+      showToast('Payroll updated');
+    } else showToast('Failed to update payroll', 'error');
   };
 
   const generateTransactionCode = async (targetBranchId?: string): Promise<string> => {
@@ -1087,7 +1113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentUser, setCurrentUser, branches, users, plans, subscriptions, sales,
       attendance, bookings, feedback, communications, inventory, metrics, offers,
       classSchedules, addClassTemplate, deleteClassTemplate, generateUpcomingClasses, addClassSession, deleteClassSession,
-      expenses, addExpense, deleteExpense,
+      expenses, addExpense, deleteExpense, payroll, addPayroll, updatePayroll,
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,

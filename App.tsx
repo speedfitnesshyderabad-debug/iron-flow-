@@ -27,6 +27,7 @@ import WalkInManagement from './pages/WalkInManagement';
 import Debug from './pages/Debug';
 import BranchQR from './pages/BranchQR';
 import GateQR from './pages/GateQR';
+import Payroll from './pages/Payroll';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
   const { currentUser } = useAppContext();
@@ -84,6 +85,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/comms" element={<Communications />} />
         <Route path="/tax" element={<TaxCenter />} />
         <Route path="/my-earnings" element={<MyEarnings />} />
+        <Route path="/payroll" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
+            <Payroll />
+          </ProtectedRoute>
+        } />
         <Route path="/gate-qr" element={
           <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.KIOSK]}>
             <GateQR />

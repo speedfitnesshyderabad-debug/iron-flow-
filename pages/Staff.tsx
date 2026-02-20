@@ -22,12 +22,13 @@ const Staff: React.FC = () => {
     branchId: branches[0]?.id || '',
     shifts: [{ start: '09:00', end: '13:00' }] as Shift[],
     weekOffs: [] as string[],
-    hourlyRate: 500,
+    monthlySalary: 15000,
     commissionPercentage: 10,
     salesCommissionPercentage: 0,
     ptCommissionPercentage: 0,
     groupCommissionPercentage: 0,
     emergencyContact: '',
+    phone: '',
     avatar: '',
     maxDevices: 1
   });
@@ -48,12 +49,14 @@ const Staff: React.FC = () => {
       branchId: currentUser?.branchId || branches[0]?.id || '',
       shifts: [{ start: '09:00', end: '13:00' }],
       weekOffs: [],
-      hourlyRate: 500,
+      monthlySalary: 15000,
       commissionPercentage: 10,
       salesCommissionPercentage: 0,
       ptCommissionPercentage: 0,
       groupCommissionPercentage: 0,
+      groupCommissionPercentage: 0,
       emergencyContact: '',
+      phone: '',
       avatar: '',
       maxDevices: 1
     });
@@ -70,12 +73,13 @@ const Staff: React.FC = () => {
       branchId: staff.branchId || branches[0]?.id || '',
       shifts: staff.shifts && staff.shifts.length > 0 ? staff.shifts : [{ start: '09:00', end: '13:00' }],
       weekOffs: staff.weekOffs || [],
-      hourlyRate: staff.hourlyRate || 500,
+      monthlySalary: staff.monthlySalary || 15000,
       commissionPercentage: staff.commissionPercentage || 0,
       salesCommissionPercentage: staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0,
       ptCommissionPercentage: staff.ptCommissionPercentage ?? 0,
       groupCommissionPercentage: staff.groupCommissionPercentage ?? 0,
       emergencyContact: staff.emergencyContact || '',
+      phone: staff.phone || '',
       avatar: staff.avatar || '',
       maxDevices: staff.maxDevices || 1
     });
@@ -145,12 +149,15 @@ const Staff: React.FC = () => {
           branchId: formData.branchId,
           shifts: formData.shifts,
           weekOffs: formData.weekOffs,
-          hourlyRate: formData.hourlyRate,
+          monthlySalary: formData.monthlySalary,
           commissionPercentage: formData.commissionPercentage,
           salesCommissionPercentage: formData.salesCommissionPercentage,
           ptCommissionPercentage: formData.ptCommissionPercentage,
           groupCommissionPercentage: formData.groupCommissionPercentage,
+          ptCommissionPercentage: formData.ptCommissionPercentage,
+          groupCommissionPercentage: formData.groupCommissionPercentage,
           emergencyContact: formData.emergencyContact,
+          phone: formData.phone,
           avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`
         };
 
@@ -168,13 +175,18 @@ const Staff: React.FC = () => {
   const handleUpdateStaff = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedStaff) {
-      // Only update password if provided
-      const updates: any = { ...formData };
-      if (!updates.password) delete updates.password;
+      // 1. Separate Password from Profile Data
+      // Note: We cannot update another user's password via the public table or standard client auth.
+      // This would require a backend function. For now, we allow profile updates only.
+      const { password, ...profileUpdates } = formData;
 
-      updateUser(selectedStaff.id, updates);
+      updateUser(selectedStaff.id, profileUpdates);
       setEditModalOpen(false);
       setSelectedStaff(null);
+
+      if (password) {
+        alert("Note: Password was not updated. Staff password updates require Admin Console access.");
+      }
     }
   };
 
@@ -330,7 +342,7 @@ const Staff: React.FC = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
-                          <span className="text-sm font-black text-emerald-600">₹{staff.hourlyRate || 500}<span className="text-[8px] opacity-60">/hr</span></span>
+                          <span className="text-sm font-black text-emerald-600">₹{staff.monthlySalary || 15000}<span className="text-[8px] opacity-60">/mo</span></span>
                           {(staff.role === UserRole.TRAINER || staff.role === UserRole.MANAGER) && (
                             <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.commissionPercentage || 0}% Comm.</span>
                           )}
@@ -498,6 +510,13 @@ const Staff: React.FC = () => {
                 <input required type="tel" className="w-full p-4 bg-red-50 border border-red-100 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 font-black text-sm text-red-700 placeholder:text-red-200" placeholder="+91 XXXXX XXXXX" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} />
               </div>
 
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  Mobile Number
+                </label>
+                <input type="tel" className="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-black text-sm text-blue-700 placeholder:text-blue-300" placeholder="+91 XXXXX XXXXX" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
@@ -508,8 +527,8 @@ const Staff: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Hourly Salary (₹)</label>
-                  <input type="number" className="w-full p-4 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm" value={formData.hourlyRate} onChange={e => setFormData({ ...formData, hourlyRate: Number(e.target.value) })} />
+                  <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Monthly Salary (₹)</label>
+                  <input type="number" className="w-full p-4 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm" value={formData.monthlySalary} onChange={e => setFormData({ ...formData, monthlySalary: Number(e.target.value) })} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Primary Role</label>
@@ -522,150 +541,149 @@ const Staff: React.FC = () => {
                     <option value={UserRole.KIOSK}>Kiosk Display</option>
                   </select>
                 </div>
-              </div>
 
 
-              {(formData.role === UserRole.TRAINER || formData.role === UserRole.MANAGER) && (
-                <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-[fadeIn_0.3s_ease-out] space-y-4">
-                  {/* Manager Specific UI: 3 Commission Types */}
-                  {formData.role === UserRole.MANAGER && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                          Gym Membership Commission (%)
-                        </label>
-                        <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                {(formData.role === UserRole.TRAINER || formData.role === UserRole.MANAGER) && (
+                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-[fadeIn_0.3s_ease-out] space-y-4">
+                    {/* Manager Specific UI: 3 Commission Types */}
+                    {formData.role === UserRole.MANAGER && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                            Gym Membership Commission (%)
+                          </label>
+                          <div className="relative">
+                            <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                          Personal Training Commission (%)
-                        </label>
-                        <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.ptCommissionPercentage} onChange={e => setFormData({ ...formData, ptCommissionPercentage: Number(e.target.value) })} />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                            Personal Training Commission (%)
+                          </label>
+                          <div className="relative">
+                            <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.ptCommissionPercentage} onChange={e => setFormData({ ...formData, ptCommissionPercentage: Number(e.target.value) })} />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                          Group Class Commission (%)
-                        </label>
-                        <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.groupCommissionPercentage} onChange={e => setFormData({ ...formData, groupCommissionPercentage: Number(e.target.value) })} />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                            Group Class Commission (%)
+                          </label>
+                          <div className="relative">
+                            <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.groupCommissionPercentage} onChange={e => setFormData({ ...formData, groupCommissionPercentage: Number(e.target.value) })} />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
 
-                  {/* Trainer Specific UI: Session + Sales (Gym) */}
-                  {formData.role === UserRole.TRAINER && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                          Session Commission (%)
-                        </label>
-                        <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.commissionPercentage} onChange={e => setFormData({ ...formData, commissionPercentage: Number(e.target.value) })} />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                    {/* Trainer Specific UI: Session + Sales (Gym) */}
+                    {formData.role === UserRole.TRAINER && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                            Session Commission (%)
+                          </label>
+                          <div className="relative">
+                            <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.commissionPercentage} onChange={e => setFormData({ ...formData, commissionPercentage: Number(e.target.value) })} />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
-                          Sales Commission (%)
-                        </label>
-                        <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                            Sales Commission (%)
+                          </label>
+                          <div className="relative">
+                            <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
+                  <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase" value={formData.branchId} onChange={e => setFormData({ ...formData, branchId: e.target.value })}>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
-                <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase" value={formData.branchId} onChange={e => setFormData({ ...formData, branchId: e.target.value })}>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+                {(formData.role === UserRole.TRAINER || formData.role === UserRole.MANAGER || formData.role === UserRole.STAFF || formData.role === UserRole.RECEPTIONIST) && (
+                  <div className="space-y-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-[fadeIn_0.3s_ease-out]">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                        Max Login Devices
+                      </label>
+                      {isEditModalOpen && (
+                        <button type="button" onClick={() => setActiveSessionsModalOpen(true)} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest">
+                          <i className="fas fa-laptop mr-1"></i> Check Active
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input type="number" min="1" max="10" className="w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-400 font-black text-sm" value={formData.maxDevices} onChange={e => setFormData({ ...formData, maxDevices: parseInt(e.target.value) || 1 })} />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-300 text-[10px] uppercase">Devices</span>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold ml-1 mt-1">Controls simultaneous active sessions for security.</p>
+                  </div>
+                )}
 
-              {(formData.role === UserRole.TRAINER || formData.role === UserRole.MANAGER || formData.role === UserRole.STAFF || formData.role === UserRole.RECEPTIONIST) && (
-                <div className="space-y-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-[fadeIn_0.3s_ease-out]">
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                      Max Login Devices
-                    </label>
-                    {isEditModalOpen && (
-                      <button type="button" onClick={() => setActiveSessionsModalOpen(true)} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest">
-                        <i className="fas fa-laptop mr-1"></i> Check Active
+                <div className="pt-6 border-t border-gray-100 space-y-4">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Work Shifts (1-3 Max)</label>
+                    {formData.shifts.length < 3 && (
+                      <button type="button" onClick={addShiftInput} className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition-all">
+                        <i className="fas fa-plus mr-1"></i> Add Shift
                       </button>
                     )}
                   </div>
-                  <div className="relative">
-                    <input type="number" min="1" max="10" className="w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-400 font-black text-sm" value={formData.maxDevices} onChange={e => setFormData({ ...formData, maxDevices: parseInt(e.target.value) || 1 })} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-300 text-[10px] uppercase">Devices</span>
+
+                  <div className="space-y-4">
+                    {formData.shifts.map((shift, index) => (
+                      <div key={index} className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100/50 space-y-3 relative group/shift animate-[slideUp_0.2s_ease-out]">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Shift Slot #{index + 1}</span>
+                          {formData.shifts.length > 1 && (
+                            <button type="button" onClick={() => removeShiftInput(index)} className="text-red-400 hover:text-red-600 transition-colors text-xs">
+                              <i className="fas fa-trash-can"></i>
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Starts At</label>
+                            <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.start} onChange={e => handleShiftChange(index, 'start', e.target.value)} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ends At</label>
+                            <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.end} onChange={e => handleShiftChange(index, 'end', e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-[9px] text-slate-400 font-bold ml-1 mt-1">Controls simultaneous active sessions for security.</p>
-                </div>
-              )}
-
-              <div className="pt-6 border-t border-gray-100 space-y-4">
-                <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Work Shifts (1-3 Max)</label>
-                  {formData.shifts.length < 3 && (
-                    <button type="button" onClick={addShiftInput} className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition-all">
-                      <i className="fas fa-plus mr-1"></i> Add Shift
-                    </button>
-                  )}
                 </div>
 
-                <div className="space-y-4">
-                  {formData.shifts.map((shift, index) => (
-                    <div key={index} className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100/50 space-y-3 relative group/shift animate-[slideUp_0.2s_ease-out]">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Shift Slot #{index + 1}</span>
-                        {formData.shifts.length > 1 && (
-                          <button type="button" onClick={() => removeShiftInput(index)} className="text-red-400 hover:text-red-600 transition-colors text-xs">
-                            <i className="fas fa-trash-can"></i>
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Starts At</label>
-                          <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.start} onChange={e => handleShiftChange(index, 'start', e.target.value)} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ends At</label>
-                          <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.end} onChange={e => handleShiftChange(index, 'end', e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="pt-4">
+                  <button type="submit" className={`w-full py-5 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all active:scale-95 ${isEditModalOpen ? 'bg-indigo-600 shadow-indigo-100 hover:bg-indigo-700' : 'bg-blue-600 shadow-blue-100 hover:bg-blue-700'}`}>
+                    {isEditModalOpen ? 'COMMIT UPDATES' : 'DEPLOY STAFF ACCOUNT'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAddModalOpen(false); setEditModalOpen(false); }}
+                    className="w-full py-3 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors mt-2"
+                  >
+                    DISCARD CHANGES
+                  </button>
                 </div>
-              </div>
-
-              <div className="pt-4">
-                <button type="submit" className={`w-full py-5 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl transition-all active:scale-95 ${isEditModalOpen ? 'bg-indigo-600 shadow-indigo-100 hover:bg-indigo-700' : 'bg-blue-600 shadow-blue-100 hover:bg-blue-700'}`}>
-                  {isEditModalOpen ? 'COMMIT UPDATES' : 'DEPLOY STAFF ACCOUNT'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAddModalOpen(false); setEditModalOpen(false); }}
-                  className="w-full py-3 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors mt-2"
-                >
-                  DISCARD CHANGES
-                </button>
-              </div>
             </form>
           </div>
-        </div>
+        </div >
       )}
       <ImageUploadModal
         isOpen={isImageModalOpen}
@@ -674,18 +692,20 @@ const Staff: React.FC = () => {
         title="Update Staff Photo"
       />
 
-      {selectedStaff && isActiveSessionsModalOpen && (
-        <ActiveSessionsModal
-          user={selectedStaff}
-          onClose={() => setActiveSessionsModalOpen(false)}
-        />
-      )}
+      {
+        selectedStaff && isActiveSessionsModalOpen && (
+          <ActiveSessionsModal
+            user={selectedStaff}
+            onClose={() => setActiveSessionsModalOpen(false)}
+          />
+        )
+      }
 
       <style>{`
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
-    </div>
+    </div >
   );
 };
 
