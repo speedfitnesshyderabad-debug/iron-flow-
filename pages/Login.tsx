@@ -16,11 +16,45 @@ const Login: React.FC = () => {
   const [view, setView] = useState<'login' | 'forgot' | 'success'>('login');
   const [forgotEmail, setForgotEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [systemStatus, setSystemStatus] = useState<{ checked: boolean; ok: boolean; message: string }>({ checked: false, ok: false, message: '' });
+  const [isCheckingSystem, setIsCheckingSystem] = useState(false);
+
+  const handleSystemCheck = async () => {
+    setIsCheckingSystem(true);
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+      setSystemStatus({ checked: true, ok: false, message: 'Missing API Credentials in .env' });
+      setIsCheckingSystem(false);
+      return;
+    }
+
+    try {
+      const start = Date.now();
+      const { data, error } = await supabase.from('branches').select('count', { count: 'exact', head: true });
+      const latency = Date.now() - start;
+
+      if (error) throw error;
+      setSystemStatus({ checked: true, ok: true, message: `Cloud Connected (${latency}ms)` });
+    } catch (err: any) {
+      console.error('System Check Error:', err);
+      setSystemStatus({ checked: true, ok: false, message: `Connection Failed: ${err.message || 'Network unreachable'}` });
+    } finally {
+      setIsCheckingSystem(false);
+    }
+  };
 
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
     setError('');
+
+    if (!supabase.auth) {
+      setError('Supabase client is not correctly initialized. Check your environment variables.');
+      setIsAuthenticating(false);
+      return;
+    }
 
     try {
       // 1. Authenticate with Supabase Auth
@@ -58,9 +92,15 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message === 'Invalid login credentials'
-        ? 'Invalid email or password.'
-        : err.message);
+
+      let friendlyError = err.message;
+      if (err.message === 'Invalid login credentials') {
+        friendlyError = 'Invalid email or password.';
+      } else if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        friendlyError = 'Network error: Failed to reach security service. Please check your internet connection and ensure Supabase is configured correctly.';
+      }
+
+      setError(friendlyError);
     } finally {
       setIsAuthenticating(false);
     }
@@ -197,6 +237,23 @@ const Login: React.FC = () => {
                   {isAuthenticating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-sign-in-alt"></i>}
                   {isAuthenticating ? 'SIGNING IN...' : 'SIGN IN'}
                 </button>
+
+                {/* System Check Utility */}
+                <div className="pt-4 border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={handleSystemCheck}
+                    disabled={isCheckingSystem}
+                    className="w-full py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 group"
+                  >
+                    {isCheckingSystem ? (
+                      <i className="fas fa-spinner fa-spin text-blue-500"></i>
+                    ) : (
+                      <i className={`fas ${systemStatus.checked ? (systemStatus.ok ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500') : 'fa-network-wired group-hover:text-blue-500'}`}></i>
+                    )}
+                    {isCheckingSystem ? 'Verifying Cloud Connectivity...' : (systemStatus.checked ? systemStatus.message : 'Diagnostic: Check Cloud Status')}
+                  </button>
+                </div>
               </form>
 
               {/* Production Setup Link */}
