@@ -305,7 +305,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // A. UPDATE ORPHANED REFERENCES (Set to NULL)
       // These are records we want to keep but unlink from the user
-
       const updatePromises = [
         supabase.from('walk_ins').update({ convertedToMemberId: null }).eq('convertedToMemberId', id),
         supabase.from('walk_ins').update({ assignedTo: null }).eq('assignedTo', id),
@@ -317,14 +316,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supabase.from('class_schedules').update({ trainerId: null }).eq('trainerId', id),
         supabase.from('expenses').update({ recordedBy: null }).eq('recordedBy', id),
         supabase.from('transaction_codes').update({ generatedBy: null }).eq('generatedBy', id),
-        supabase.from('class_completion_codes').update({ trainerId: null }).eq('trainerId', id)
+        supabase.from('class_completion_codes').update({ trainerId: null }).eq('trainerId', id),
+        supabase.from('payroll').update({ staffId: null }).eq('staffId', id)
       ];
 
       await Promise.all(updatePromises);
 
       // B. DELETE PERSONAL DATA
       // CRITICAL: Delete Child records BEFORE Parent records to avoid FK violations!
-      // Hierarchy: class_completion_codes -> bookings -> users
 
       // 1. Class Completion Codes (Dependent on Bookings)
       await supabase.from('class_completion_codes').delete().eq('memberId', id);
@@ -350,10 +349,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!error) {
         // Update Local State strictly
         setUsers(prev => prev.filter(u => u.id !== id));
+
+        // Unlink records in state (Preserve History)
+        setSales(prev => prev.map(s => {
+          if (s.memberId === id) return { ...s, memberId: null }; // Should have been deleted but if it exists
+          let updates: Partial<Sale> = {};
+          if (s.staffId === id) updates.staffId = null;
+          if (s.trainerId === id) updates.trainerId = null;
+          return Object.keys(updates).length > 0 ? { ...s, ...updates } : s;
+        }));
+
+        setSubscriptions(prev => prev.map(s => {
+          if (s.memberId === id) return { ...s, memberId: null };
+          if (s.trainerId === id) return { ...s, trainerId: null };
+          return s;
+        }));
+
+        setBookings(prev => prev.map(b => {
+          if (b.memberId === id) return { ...b, memberId: null };
+          if (b.trainerId === id) return { ...b, trainerId: null };
+          return b;
+        }));
+
+        setExpenses(prev => prev.map(e => e.recordedBy === id ? { ...e, recordedBy: null } : e));
+        setPayroll(prev => prev.map(p => p.staffId === id ? { ...p, staffId: null } : p));
+
+        // Remove personal records
         setAttendance(prev => prev.filter(a => a.userId !== id));
-        setSubscriptions(prev => prev.filter(s => s.memberId !== id));
-        setSales(prev => prev.filter(s => s.memberId !== id));
-        setBookings(prev => prev.filter(b => b.memberId !== id));
         setFeedback(prev => prev.filter(f => f.memberId !== id));
         setCommunications(prev => prev.filter(c => c.userId !== id));
         setMetrics(prev => prev.filter(m => m.memberId !== id));

@@ -30,7 +30,7 @@ export enum CommType {
 
 export interface Communication {
   id: string;
-  userId: string;
+  userId: string | null;
   type: CommType;
   recipient: string;
   subject?: string;
@@ -124,13 +124,13 @@ export interface Plan {
 
 export interface Subscription {
   id: string;
-  memberId: string;
+  memberId: string | null;
   planId: string;
   startDate: string;
   endDate: string;
   status: SubscriptionStatus;
   branchId: string;
-  trainerId?: string;
+  trainerId?: string | null;
   pauseStartDate?: string;
   pauseAllowanceDays?: number;
   pausedDaysUsed?: number;
@@ -142,21 +142,21 @@ export interface Sale {
   date: string;
   amount: number;
   discount?: number; // Added discount field
-  memberId: string;
+  memberId: string | null;
   planId?: string;
   itemId?: string;
-  staffId: string;
+  staffId: string | null;
   branchId: string;
   paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS';
-  trainerId?: string;
+  trainerId?: string | null;
   transactionCode?: string; // For Cash/POS payments
   razorpayPaymentId?: string; // For Card/Online payments
 }
 
 export interface Referral {
   id: string;
-  referrerId: string;
-  refereeId: string;
+  referrerId: string | null;
+  refereeId: string | null;
   planBoughtId: string;
   rewardDaysApplied: number;
   status: 'COMPLETED' | 'PENDING';
@@ -165,7 +165,7 @@ export interface Referral {
 
 export interface Attendance {
   id: string;
-  userId: string;
+  userId: string | null;
   date: string;
   timeIn: string;
   timeOut?: string;
@@ -176,8 +176,8 @@ export interface Attendance {
 
 export interface Booking {
   id: string;
-  memberId: string;
-  trainerId?: string;
+  memberId: string | null;
+  trainerId?: string | null;
   type: PlanType.PT | PlanType.GROUP;
   date: string;
   timeSlot: string;
@@ -187,7 +187,7 @@ export interface Booking {
 
 export interface Feedback {
   id: string;
-  memberId: string;
+  memberId: string | null;
   branchId: string;
   type: 'SUGGESTION' | 'COMPLAINT';
   content: string;
@@ -206,7 +206,7 @@ export interface InventoryItem {
 
 export interface BodyMetric {
   id: string;
-  memberId: string;
+  memberId: string | null;
   date: string;
   weight: number;
   bmi?: number;
@@ -215,7 +215,7 @@ export interface BodyMetric {
 export interface ClassSession {
   id: string;
   templateId?: string;
-  trainerId: string;
+  trainerId: string | null;
   date: string;
   timeSlot: string;
   title: string;
@@ -226,7 +226,7 @@ export interface ClassSession {
 export interface ClassTemplate {
   id: string;
   title: string;
-  trainerId: string;
+  trainerId: string | null;
   dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
   timeSlot: string;
   capacity: number;
@@ -240,7 +240,7 @@ export interface Expense {
   amount: number;
   date: string;
   description: string;
-  recordedBy: string;
+  recordedBy: string | null;
 }
 
 export interface WalkIn {
@@ -252,9 +252,9 @@ export interface WalkIn {
   source: 'WALK_IN' | 'REFERRAL' | 'SOCIAL_MEDIA' | 'GOOGLE' | 'JUSTDIAL' | 'OTHER';
   status: 'NEW' | 'FOLLOW_UP' | 'CONVERTED' | 'NOT_INTERESTED';
   notes?: string;
-  assignedTo?: string;
+  assignedTo?: string | null;
   followUpDate?: string;
-  convertedToMemberId?: string;
+  convertedToMemberId?: string | null;
   branchId: string;
   createdAt: string;
   updatedAt: string;
@@ -264,15 +264,15 @@ export interface TransactionCode {
   code: string;
   branchId: string;
   status: 'VALID' | 'USED';
-  generatedBy: string;
+  generatedBy: string | null;
   createdAt: string;
 }
 
 export interface ClassCompletionCode {
   id: string;
   bookingId: string;
-  trainerId: string;
-  memberId: string;
+  trainerId: string | null;
+  memberId: string | null;
   code: string;
   status: 'VALID' | 'USED' | 'EXPIRED';
   classDate: string;
@@ -284,7 +284,7 @@ export interface ClassCompletionCode {
 
 export interface ActiveSession {
   id: string;
-  userId: string;
+  userId: string | null;
   deviceFingerprint: string;
   deviceName: string; // e.g., "Chrome on Windows"
   browserInfo: string;
@@ -295,7 +295,7 @@ export interface ActiveSession {
 
 export interface Payroll {
   id: string;
-  staffId: string;
+  staffId: string | null;
   branchId: string;
   month: string;
   year: number;

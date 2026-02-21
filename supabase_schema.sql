@@ -82,13 +82,13 @@ CREATE TABLE plans (
 -- SUBSCRIPTIONS
 CREATE TABLE subscriptions (
   id TEXT PRIMARY KEY,
-  "memberId" TEXT REFERENCES users(id),
+  "memberId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   "planId" TEXT REFERENCES plans(id),
   "startDate" DATE NOT NULL,
   "endDate" DATE NOT NULL,
   status TEXT NOT NULL,
   "branchId" TEXT REFERENCES branches(id),
-  "trainerId" TEXT REFERENCES users(id)
+  "trainerId" TEXT REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- SALES
@@ -98,19 +98,19 @@ CREATE TABLE sales (
   date DATE NOT NULL,
   amount NUMERIC NOT NULL,
   discount NUMERIC DEFAULT 0, -- Added discount column
-  "memberId" TEXT REFERENCES users(id),
+  "memberId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   "planId" TEXT REFERENCES plans(id),
   "itemId" TEXT, 
-  "staffId" TEXT REFERENCES users(id),
+  "staffId" TEXT REFERENCES users(id) ON DELETE SET NULL,
   "branchId" TEXT REFERENCES branches(id),
   "paymentMethod" TEXT NOT NULL,
-  "trainerId" TEXT REFERENCES users(id)
+  "trainerId" TEXT REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- ATTENDANCE
 CREATE TABLE attendance (
   id TEXT PRIMARY KEY,
-  "userId" TEXT REFERENCES users(id),
+  "userId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   "timeIn" TIME NOT NULL,
   "timeOut" TIME,
@@ -121,8 +121,8 @@ CREATE TABLE attendance (
 -- BOOKINGS
 CREATE TABLE bookings (
   id TEXT PRIMARY KEY,
-  "memberId" TEXT REFERENCES users(id),
-  "trainerId" TEXT REFERENCES users(id),
+  "memberId" TEXT REFERENCES users(id) ON DELETE CASCADE,
+  "trainerId" TEXT REFERENCES users(id) ON DELETE SET NULL,
   type TEXT NOT NULL,
   date DATE NOT NULL,
   "timeSlot" TEXT NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE bookings (
 -- FEEDBACK
 CREATE TABLE feedback (
   id TEXT PRIMARY KEY,
-  "memberId" TEXT REFERENCES users(id),
+  "memberId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   "branchId" TEXT REFERENCES branches(id),
   type TEXT NOT NULL,
   content TEXT NOT NULL,
@@ -154,7 +154,7 @@ CREATE TABLE inventory (
 -- METRICS
 CREATE TABLE metrics (
   id TEXT PRIMARY KEY,
-  "memberId" TEXT REFERENCES users(id),
+  "memberId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   weight NUMERIC,
   bmi NUMERIC
@@ -175,7 +175,7 @@ CREATE TABLE offers (
 -- COMMUNICATIONS
 CREATE TABLE communications (
   id TEXT PRIMARY KEY,
-  "userId" TEXT REFERENCES users(id),
+  "userId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   type TEXT NOT NULL,
   recipient TEXT NOT NULL,
   subject TEXT,
@@ -190,7 +190,7 @@ CREATE TABLE communications (
 CREATE TABLE class_templates (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
-  "trainerId" TEXT REFERENCES users(id),
+  "trainerId" TEXT REFERENCES users(id) ON DELETE SET NULL,
   "dayOfWeek" TEXT NOT NULL, -- MONDAY, TUESDAY, etc.
   "timeSlot" TEXT NOT NULL,
   capacity INTEGER DEFAULT 20,
@@ -201,7 +201,7 @@ CREATE TABLE class_templates (
 CREATE TABLE class_schedules (
   id TEXT PRIMARY KEY,
   "templateId" TEXT REFERENCES class_templates(id),
-  "trainerId" TEXT REFERENCES users(id),
+  "trainerId" TEXT REFERENCES users(id) ON DELETE SET NULL,
   date DATE NOT NULL,
   "timeSlot" TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -217,7 +217,7 @@ CREATE TABLE expenses (
   amount NUMERIC NOT NULL,
   date DATE NOT NULL,
   description TEXT,
-  "recordedBy" TEXT REFERENCES users(id)
+  "recordedBy" TEXT REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- TRANSACTION CODES
@@ -225,7 +225,7 @@ CREATE TABLE transaction_codes (
   code TEXT PRIMARY KEY,
   "branchId" TEXT REFERENCES branches(id),
   status TEXT NOT NULL, -- VALID or USED
-  "generatedBy" TEXT REFERENCES users(id),
+  "generatedBy" TEXT REFERENCES users(id) ON DELETE SET NULL,
   "createdAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -239,9 +239,9 @@ CREATE TABLE walk_ins (
   source TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'NEW',
   notes TEXT,
-  "assignedTo" TEXT REFERENCES users(id),
+  "assignedTo" TEXT REFERENCES users(id) ON DELETE SET NULL,
   "followUpDate" DATE,
-  "convertedToMemberId" TEXT REFERENCES users(id),
+  "convertedToMemberId" TEXT REFERENCES users(id) ON DELETE SET NULL,
   "branchId" TEXT REFERENCES branches(id),
   "createdAt" TIMESTAMPTZ DEFAULT NOW(),
   "updatedAt" TIMESTAMPTZ DEFAULT NOW()
@@ -250,9 +250,9 @@ CREATE TABLE walk_ins (
 -- CLASS_COMPLETION_CODES (For QR-based class completion)
 CREATE TABLE class_completion_codes (
   id TEXT PRIMARY KEY,
-  "bookingId" TEXT REFERENCES bookings(id),
-  "trainerId" TEXT REFERENCES users(id),
-  "memberId" TEXT REFERENCES users(id),
+  "bookingId" TEXT REFERENCES bookings(id) ON DELETE CASCADE,
+  "trainerId" TEXT REFERENCES users(id) ON DELETE SET NULL,
+  "memberId" TEXT REFERENCES users(id) ON DELETE CASCADE,
   code TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'VALID',
   "classDate" DATE NOT NULL,

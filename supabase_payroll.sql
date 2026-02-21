@@ -1,7 +1,7 @@
 -- 1. Create payroll table
 CREATE TABLE IF NOT EXISTS payroll (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  "staffId" text REFERENCES users(id),
+  "staffId" text REFERENCES users(id) ON DELETE SET NULL,
   "branchId" text REFERENCES branches(id),
   month text NOT NULL, -- e.g. "January"
   year integer NOT NULL,
