@@ -68,22 +68,32 @@ const Login: React.FC = () => {
       if (data.user) {
         // 2. Find the Public User Record
         // Prioritize matching by Auth UID (for new staff), fallback to email (for legacy/demo users)
-        const user = users.find(u => u.id === data.user.id) ||
+        let user = users.find(u => u.id === data.user.id) ||
           users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+        // CRITICAL FALLBACK: If user not found in context (stale state), fetch directly from Supabase
+        if (!user) {
+          console.log('🔄 User not found in local context, fetching from Supabase...');
+          const { data: dbUser, error: dbError } = await supabase
+            .from('users')
+            .select('*')
+            .or(`id.eq.${data.user.id},email.eq.${email.toLowerCase()}`)
+            .single();
+
+          if (dbUser && !dbError) {
+            user = dbUser;
+          }
+        }
 
         if (user) {
           console.log('✅ User found:', user.name);
-
-          // 3. Create Session (Strict Device Check)
+          // ... rest of the logic ...
           const sessionResult = await createSession(user.id);
-
           if (sessionResult.success) {
             setCurrentUser(user);
-            // Redirect happens automatically
           } else {
-            console.warn('Session Blocked:', sessionResult.message);
             setError(sessionResult.message || 'Maximum devices reached. Contact Admin to switch permission.');
-            await supabase.auth.signOut(); // Cleanup auth session if app session fails
+            await supabase.auth.signOut();
           }
         } else {
           setError('Login successful, but user profile not found. Please contact support.');

@@ -27,7 +27,7 @@ const AdminSetup: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // 1. Create Auth User
+            // 1. Create or Identify Auth User
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -39,25 +39,43 @@ const AdminSetup: React.FC = () => {
                 }
             });
 
-            if (authError) throw authError;
-            if (!authData.user) throw new Error('Failed to create auth user');
+            let userId = authData?.user?.id;
+
+            // Handle "User already registered" error
+            if (authError) {
+                if (authError.message.includes('User already registered')) {
+                    // Try to get existing user via sign in (if password matches) or just proceed if seeded
+                    console.log('User already exists in Auth, attempting to create profile anyway...');
+
+                    // To get the UID of an existing user without password (since we can't admin-get users easily),
+                    // we'll try to sign in. This is a bit of a hack for "Setup" mode.
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email: formData.email,
+                        password: formData.password
+                    });
+
+                    if (signInError) throw new Error('User exists but password does not match. Please use the password set during initial setup.');
+                    userId = signInData.user.id;
+                } else {
+                    throw authError;
+                }
+            }
+
+            if (!userId) throw new Error('Could not determine User ID for profile creation');
 
             // 2. Create Public User Record
-            const { error: dbError } = await supabase.from('users').insert({
-                id: authData.user.id,
+            const { error: dbError } = await supabase.from('users').upsert({
+                id: userId,
                 name: formData.name,
                 email: formData.email,
                 role: UserRole.SUPER_ADMIN,
                 phone: formData.phone,
-                avatar: `https://i.pravatar.cc/150?u=${authData.user.id}`
+                avatar: `https://i.pravatar.cc/150?u=${userId}`
             });
 
-            if (dbError) {
-                // If DB record fails, we should ideally clean up auth, but for setup we'll just report it
-                throw dbError;
-            }
+            if (dbError) throw dbError;
 
-            showToast("Super Admin initialized successfully!", "success");
+            showToast("Super Admin profile initialized!", "success");
             navigate('/login');
 
         } catch (err: any) {
