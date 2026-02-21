@@ -6,7 +6,7 @@ import PayslipModal from '../components/PayslipModal';
 import { calculateMonthlySalary } from '../src/utils/payrollUtils';
 
 const MyEarnings: React.FC = () => {
-  const { currentUser, attendance, sales, bookings, plans, subscriptions, branches, payroll } = useAppContext();
+  const { currentUser, attendance, sales, bookings, plans, subscriptions, branches, payroll, holidays } = useAppContext();
 
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -65,7 +65,7 @@ const MyEarnings: React.FC = () => {
       };
     } else {
       // Use Live Calculation
-      salaryStats = calculateMonthlySalary(currentUser, attendance, selectedMonth, selectedYear, branches);
+      salaryStats = calculateMonthlySalary(currentUser, attendance, selectedMonth, selectedYear, branches, holidays);
     }
 
 

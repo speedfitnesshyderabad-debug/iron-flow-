@@ -52,6 +52,30 @@ export interface Offer {
   ctaText?: string;
 }
 
+export interface Holiday {
+  id: string;
+  name: string;
+  date: string;
+  message?: string;
+  branchId: string;
+  createdAt?: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  minPurchase?: number;
+  maxDiscount?: number;
+  expiryDate?: string;
+  usageLimit?: number;
+  timesUsed: number;
+  branchId: string | null; // null for GLOBAL
+  isActive: boolean;
+  createdAt?: string;
+}
+
 export interface Branch {
   id: string;
   name: string;
@@ -74,7 +98,7 @@ export interface Branch {
   latitude?: number;
   longitude?: number;
   geofenceRadius?: number;
-  holidays?: string[]; // Array of ISO date strings 'YYYY-MM-DD'
+  holidays?: string[]; // Array of ISO date strings 'YYYY-MM-DD' (Deprecated: use dedicated Holiday table)
   termsAndConditions?: string;
   isHidden?: boolean;
 }

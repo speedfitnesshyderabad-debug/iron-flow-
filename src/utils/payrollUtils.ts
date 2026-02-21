@@ -1,4 +1,4 @@
-import { User, Attendance, Branch, Shift } from '../../types';
+import { User, Attendance, Branch, Shift, Holiday } from '../../types';
 
 export interface SalaryBreakdown {
     baseSalary: number;
@@ -22,7 +22,8 @@ export const calculateMonthlySalary = (
     attendanceLogs: Attendance[],
     month: number, // 0-11
     year: number,
-    branches: Branch[]
+    branches: Branch[],
+    allHolidays: Holiday[]
 ): SalaryBreakdown => {
     const branch = branches.find(b => b.id === user.branchId);
     const monthlySalary = user.monthlySalary || 0;
@@ -35,7 +36,9 @@ export const calculateMonthlySalary = (
     let weekOffCount = 0;
     let holidayCount = 0;
     const userWeekOffs = user.weekOffs || [];
-    const branchHolidays = branch?.holidays || [];
+    const branchHolidays = allHolidays
+        .filter(h => h.branchId === user.branchId)
+        .map(h => h.date);
 
     // Helper to check if a specific date is a week off
     const isWeekOff = (date: Date) => {

@@ -51,10 +51,9 @@ const Branches: React.FC = () => {
     latitude: 0,
     longitude: 0,
     geofenceRadius: 100,
-    holidays: [] as string[],
-    isHidden: false
+    isHidden: false,
+    termsAndConditions: (selectedBranch as any)?.termsAndConditions || ''
   });
-  const [newHoliday, setNewHoliday] = useState('');
 
   const getBranchStats = (branchId: string) => {
     const memberCount = users.filter(u => u.branchId === branchId && u.role === 'MEMBER').length;
@@ -62,18 +61,6 @@ const Branches: React.FC = () => {
     return { memberCount, revenue };
   };
 
-  const notifyUsers = (branchId: string, holidayDate: string, branchName: string) => {
-    // Simulate Notification
-    const recipients = users.filter(u => u.branchId === branchId);
-    const count = recipients.length;
-
-    // In a real app, this would make an API call to send SMS/Email
-    // Here we just simulate and show success
-    console.log(`[NOTIFICATION] Sending Holiday Alert for ${holidayDate} to ${count} users of ${branchName}`);
-    recipients.forEach(u => console.log(` - Queued for: ${u.name} (${u.role})`));
-
-    return count;
-  };
 
   const handleOpenAdd = () => {
     setSelectedBranch(null);
@@ -98,8 +85,8 @@ const Branches: React.FC = () => {
       latitude: 0,
       longitude: 0,
       geofenceRadius: 100,
-      holidays: [],
-      isHidden: false
+      isHidden: false,
+      termsAndConditions: ''
     });
     setModalOpen(true);
   };
@@ -127,23 +114,12 @@ const Branches: React.FC = () => {
       latitude: branch.latitude || 0,
       longitude: branch.longitude || 0,
       geofenceRadius: branch.geofenceRadius || 100,
-      holidays: branch.holidays || [],
-      isHidden: branch.isHidden || false
+      isHidden: branch.isHidden || false,
+      termsAndConditions: (branch as any).termsAndConditions || ''
     });
-    setNewHoliday('');
     setModalOpen(true);
   };
 
-  const handleAddHoliday = () => {
-    if (newHoliday && !formData.holidays.includes(newHoliday)) {
-      setFormData({ ...formData, holidays: [...formData.holidays, newHoliday] });
-      setNewHoliday('');
-    }
-  };
-
-  const handleRemoveHoliday = (date: string) => {
-    setFormData({ ...formData, holidays: formData.holidays.filter(d => d !== date) });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,50 +435,6 @@ const Branches: React.FC = () => {
                 </div>
               </section>
 
-              <section className="space-y-3 pt-6 border-t">
-                <label className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
-                  <i className="fas fa-calendar-star"></i> Branch Holidays & Events
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    className="flex-1 p-3 bg-rose-50/50 border border-rose-100 rounded-xl outline-none text-xs font-bold uppercase text-rose-900"
-                    value={newHoliday}
-                    onChange={e => setNewHoliday(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (newHoliday) {
-                        handleAddHoliday();
-                        notifyUsers(selectedBranch?.id || '', newHoliday, formData.name);
-                        alert(`Holiday set for ${newHoliday}. Notifications sent to all Branch Members & Staff.`);
-                      }
-                    }}
-                    className="px-4 bg-rose-600 text-white rounded-xl font-bold text-xs hover:bg-rose-700 transition-colors"
-                  >
-                    ADD & NOTIFY
-                  </button>
-                </div>
-
-                {formData.holidays.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {formData.holidays.map(date => (
-                      <div key={date} className="flex items-center gap-2 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg">
-                        <span className="text-[10px] font-black text-rose-800">{date}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveHoliday(date)}
-                          className="text-rose-400 hover:text-rose-600"
-                        >
-                          <i className="fas fa-times"></i>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-[9px] text-slate-400 italic">Adding a holiday will automatically credit 9 hours pay to all staff and notify all members.</p>
-              </section>
 
               <section className="space-y-3 pt-6 border-t">
                 <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">

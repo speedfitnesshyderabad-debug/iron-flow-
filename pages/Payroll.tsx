@@ -5,7 +5,7 @@ import { UserRole, Payroll as PayrollType, User } from '../types';
 import PayslipModal from '../components/PayslipModal';
 
 const Payroll: React.FC = () => {
-    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser } = useAppContext();
+    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays } = useAppContext();
 
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -59,7 +59,7 @@ const Payroll: React.FC = () => {
             }
 
             // Calculate Live
-            const stats = calculateMonthlySalary(staff, attendance, selectedMonth, selectedYear, branches);
+            const stats = calculateMonthlySalary(staff, attendance, selectedMonth, selectedYear, branches, holidays);
             // NOTE: Commissions are NOT in stats yet. We can add a placeholder or simple calc if needed.
             // For now, let's assume 0 commission in "Live" view or implement it properly? 
             // The implementation plan said "commissionAmount" in payroll table. 

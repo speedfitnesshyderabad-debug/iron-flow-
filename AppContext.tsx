@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral } from './types';
+import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral, Holiday, Coupon } from './types';
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
@@ -23,6 +23,9 @@ interface AppContextType {
   classSchedules: ClassSession[];
   expenses: Expense[];
   payroll: Payroll[];
+  holidays: Holiday[];
+  coupons: Coupon[];
+
   settlementRate: number;
   setSettlementRate: (rate: number) => void;
   isGlobalLoading: boolean;
@@ -50,6 +53,14 @@ interface AppContextType {
   deleteOffer: (id: string) => Promise<void>;
   addClassTemplate: (template: any) => Promise<void>;
   deleteClassTemplate: (id: string) => Promise<void>;
+  addHoliday: (holiday: Omit<Holiday, 'id' | 'createdAt'>, notify?: boolean) => Promise<void>;
+  updateHoliday: (id: string, updates: Partial<Holiday>) => Promise<void>;
+  deleteHoliday: (id: string) => Promise<void>;
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => Promise<void>;
+  updateCoupon: (id: string, updates: Partial<Coupon>) => Promise<void>;
+  deleteCoupon: (id: string) => Promise<void>;
+  validateCoupon: (code: string, planId: string) => Promise<{ valid: boolean; discount: number; message: string }>;
+
   generateUpcomingClasses: () => Promise<void>;
   addClassSession: (session: ClassSession) => Promise<void>;
   deleteClassSession: (id: string) => Promise<void>;
@@ -60,7 +71,7 @@ interface AppContextType {
   generateTransactionCode: (targetBranchId?: string) => Promise<string>;
   verifyTransactionCode: (code: string) => Promise<boolean>;
   enrollMember: (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string, staffId?: string, referralCode?: string, pauseAllowance?: number) => Promise<void>;
-  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance?: number) => Promise<void>;
+  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance?: number, discount?: number) => Promise<void>;
   pauseMembership: (subscriptionId: string) => Promise<void>;
   resumeMembership: (subscriptionId: string) => Promise<void>;
   sendNotification: (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => Promise<void>;
@@ -106,6 +117,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [classSchedules, setClassSchedules] = useState<ClassSession[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [payroll, setPayroll] = useState<Payroll[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+
   const [settlementRate, setSettlementRate] = useState<number>(250);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isGlobalLoading, setGlobalLoading] = useState(false);
@@ -156,6 +170,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: cData } = await supabase.from('communications').select('*');
       if (cData) setCommunications(cData);
+      const { data: holidaysData } = await supabase.from('holidays').select('*');
+      setHolidays(holidaysData || []);
 
       const { data: iData } = await supabase.from('inventory').select('*');
       if (iData) setInventory(iData);
@@ -178,6 +194,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: pyData } = await supabase.from('payroll').select('*');
       if (pyData) setPayroll(pyData);
+
+      const { data: coData } = await supabase.from('coupons').select('*');
+      if (coData) setCoupons(coData);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -206,6 +225,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll' }, () => {
         supabase.from('payroll').select('*').then(({ data }) => { if (data) setPayroll(data); });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'holidays' }, () => {
+        supabase.from('holidays').select('*').then(({ data }) => { if (data) setHolidays(data); });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => {
+        supabase.from('coupons').select('*').then(({ data }) => { if (data) setCoupons(data); });
       })
       .subscribe();
 
@@ -1024,7 +1049,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Import Complete: ${successCount} processed, ${failCount} failed.`);
   };
 
-  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance: number = 0) => {
+  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance: number = 0, discount: number = 0) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
     const user = users.find(u => u.id === userId);
@@ -1048,7 +1073,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `sale-${Date.now()}`,
       invoiceNo: generateInvoiceNo(branchId),
       date: new Date().toISOString().split('T')[0],
-      amount: plan.price,
+      amount: plan.price - discount,
+      discount: discount,
       memberId: userId,
       planId: planId,
       staffId: currentUser?.id || 'self',
@@ -1294,12 +1320,144 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else showToast('Failed to resume membership', 'error');
   };
 
+  const addHoliday = async (holiday: Omit<Holiday, 'id' | 'createdAt'>, notify: boolean = false) => {
+    try {
+      const { data, error } = await supabase.from('holidays').insert([holiday]).select();
+      if (error) throw error;
+
+      if (notify) {
+        const { data: branchMembers } = await supabase
+          .from('users')
+          .select('id, phone, name')
+          .eq('branchId', holiday.branchId);
+
+        if (branchMembers && branchMembers.length > 0) {
+          const notificationBody = holiday.message || `Holiday Announcement: ${holiday.name} on ${holiday.date}`;
+
+          await Promise.all(branchMembers.map(member =>
+            sendNotification({
+              userId: member.id,
+              type: CommType.SMS,
+              recipient: member.phone || '',
+              subject: 'Holiday Announcement',
+              body: `Hello ${member.name}, ${notificationBody}`,
+              category: 'ANNOUNCEMENT',
+              branchId: holiday.branchId
+            })
+          ));
+        }
+      }
+
+      showToast('Holiday added successfully', 'success');
+    } catch (err: any) {
+      console.error('Add holiday error:', err);
+      showToast('Failed to add holiday: ' + err.message, 'error');
+    }
+  };
+
+  const updateHoliday = async (id: string, updates: Partial<Holiday>) => {
+    try {
+      const { error } = await supabase.from('holidays').update(updates).eq('id', id);
+      if (error) throw error;
+      showToast('Holiday updated successfully', 'success');
+    } catch (err: any) {
+      console.error('Update holiday error:', err);
+      showToast('Failed to update holiday: ' + err.message, 'error');
+    }
+  };
+
+  const deleteHoliday = async (id: string) => {
+    try {
+      const { error } = await supabase.from('holidays').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Holiday deleted successfully', 'success');
+    } catch (err: any) {
+      console.error('Delete holiday error:', err);
+      showToast('Failed to delete holiday: ' + err.message, 'error');
+    }
+  };
+
+  const addCoupon = async (coupon: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => {
+    try {
+      const { error } = await supabase.from('coupons').insert({ ...coupon, timesUsed: 0 });
+      if (error) throw error;
+      showToast('Coupon created successfully', 'success');
+    } catch (err: any) {
+      console.error('Add coupon error:', err);
+      showToast('Failed to add coupon: ' + err.message, 'error');
+    }
+  };
+
+  const updateCoupon = async (id: string, updates: Partial<Coupon>) => {
+    try {
+      const { error } = await supabase.from('coupons').update(updates).eq('id', id);
+      if (error) throw error;
+      showToast('Coupon updated successfully', 'success');
+    } catch (err: any) {
+      console.error('Update coupon error:', err);
+      showToast('Failed to update coupon: ' + err.message, 'error');
+    }
+  };
+
+  const deleteCoupon = async (id: string) => {
+    try {
+      const { error } = await supabase.from('coupons').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Coupon deleted successfully', 'success');
+    } catch (err: any) {
+      console.error('Delete coupon error:', err);
+      showToast('Failed to delete coupon: ' + err.message, 'error');
+    }
+  };
+
+  const validateCoupon = async (code: string, planId: string) => {
+    const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase() && c.isActive);
+    const plan = plans.find(p => p.id === planId);
+
+    if (!coupon) return { valid: false, discount: 0, message: 'Invalid or inactive coupon code' };
+    if (!plan) return { valid: false, discount: 0, message: 'Invalid plan' };
+
+    // Check expiry
+    if (coupon.expiryDate && new Date(coupon.expiryDate) < new Date(new Date().setHours(0, 0, 0, 0))) {
+      return { valid: false, discount: 0, message: 'Coupon has expired' };
+    }
+
+    // Check usage limit
+    if (coupon.usageLimit && coupon.timesUsed >= coupon.usageLimit) {
+      return { valid: false, discount: 0, message: 'Coupon usage limit reached' };
+    }
+
+    // Check branch
+    if (coupon.branchId && coupon.branchId !== currentUser?.branchId) {
+      return { valid: false, discount: 0, message: 'Coupon not valid for this branch' };
+    }
+
+    // Check min purchase
+    if (coupon.minPurchase && plan.price < coupon.minPurchase) {
+      return { valid: false, discount: 0, message: `Minimum purchase of ₹${coupon.minPurchase} required` };
+    }
+
+    let discount = 0;
+    if (coupon.type === 'PERCENTAGE') {
+      discount = (plan.price * coupon.value) / 100;
+      if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+        discount = coupon.maxDiscount;
+      }
+    } else {
+      discount = coupon.value;
+    }
+
+    return { valid: true, discount, message: 'Coupon applied successfully!' };
+  };
+
   return (
     <AppContext.Provider value={{
       currentUser, setCurrentUser, branches, users, plans, subscriptions, sales,
       attendance, bookings, feedback, communications, inventory, metrics, offers,
       classSchedules, addClassTemplate, deleteClassTemplate, generateUpcomingClasses, addClassSession, deleteClassSession,
       expenses, addExpense, deleteExpense, payroll, addPayroll, updatePayroll,
+      holidays, addHoliday, updateHoliday, deleteHoliday,
+      coupons, addCoupon, updateCoupon, deleteCoupon, validateCoupon,
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,

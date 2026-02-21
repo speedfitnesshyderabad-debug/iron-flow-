@@ -28,6 +28,8 @@ import Debug from './pages/Debug';
 
 import GateQR from './pages/GateQR';
 import Payroll from './pages/Payroll';
+import Holidays from './pages/Holidays';
+import Coupons from './pages/Coupons';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
   const { currentUser } = useAppContext();
@@ -63,6 +65,16 @@ const AppRoutes: React.FC = () => {
         <Route path="/walk-ins" element={<WalkInManagement />} />
         <Route path="/members" element={<Members />} />
         <Route path="/branches" element={<Branches />} />
+        <Route path="/holidays" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER]}>
+            <Holidays />
+          </ProtectedRoute>
+        } />
+        <Route path="/coupons" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER]}>
+            <Coupons />
+          </ProtectedRoute>
+        } />
 
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/staff" element={

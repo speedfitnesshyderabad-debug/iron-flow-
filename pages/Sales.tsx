@@ -13,7 +13,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Sales: React.FC = () => {
-  const { sales, users, plans, branches, currentUser, generateTransactionCode } = useAppContext();
+  const { sales, users, plans, branches, inventory, currentUser, generateTransactionCode } = useAppContext();
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
   const [generatedPIN, setGeneratedPIN] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -99,7 +99,9 @@ const Sales: React.FC = () => {
               [...filteredSales].reverse().map(sale => {
                 const member = users.find(u => u.id === sale.memberId);
                 const plan = plans.find(p => p.id === sale.planId);
+                const inventoryItem = inventory.find(i => i.id === sale.itemId);
                 const branch = branches.find(b => b.id === sale.branchId);
+                const itemName = plan?.name || inventoryItem?.name || 'Unknown Item';
                 return (
                   <tr key={sale.id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-6 py-4 font-mono text-xs text-blue-600 font-bold">{sale.invoiceNo}</td>
@@ -108,7 +110,7 @@ const Sales: React.FC = () => {
                       <div className="text-[10px] text-gray-400">{sale.date}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-700">{plan?.name}</div>
+                      <div className="text-sm font-medium text-gray-700">{itemName}</div>
                       <div className="text-[10px] text-blue-500 font-bold">{sale.paymentMethod}</div>
                       {sale.transactionCode && (
                         <div className="text-[9px] text-gray-400 font-mono mt-0.5">Code: {sale.transactionCode}</div>
@@ -143,7 +145,7 @@ const Sales: React.FC = () => {
           sale={viewingSale}
           branch={branches.find(b => b.id === viewingSale.branchId)!}
           member={users.find(u => u.id === viewingSale.memberId)!}
-          plan={plans.find(p => p.id === viewingSale.planId)!}
+          item={(plans.find(p => p.id === viewingSale.planId) || inventory.find(i => i.id === viewingSale.itemId))!}
           onClose={closeInvoice}
         />
       )}
