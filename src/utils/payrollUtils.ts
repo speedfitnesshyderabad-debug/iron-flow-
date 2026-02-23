@@ -133,6 +133,7 @@ export const calculateMonthlySalary = (
                 }
 
                 // Calculate Work Hours
+                const hasOpenSession = logs.some(log => !log.timeOut);
                 let totalMinutes = 0;
                 logs.forEach(log => {
                     if (log.timeOut) {
@@ -142,7 +143,9 @@ export const calculateMonthlySalary = (
                     }
                 });
 
-                if (!isExcused && totalMinutes < (5 * 60)) { // Less than 5 hours
+                // Only apply half-day penalty if ALL sessions are closed
+                // (don't penalize someone who is still clocked in)
+                if (!isExcused && !hasOpenSession && totalMinutes < (5 * 60)) {
                     halfDays++;
                 }
             }
