@@ -254,7 +254,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <aside className={`
         fixed inset-y-0 left-0 z-[60] bg-slate-900 text-white transition-transform duration-300 transform 
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:relative md:translate-x-0 md:flex flex-col shadow-2xl shrink-0
+        md:relative md:translate-x-0 flex flex-col shadow-2xl shrink-0
         ${isSidebarOpen ? 'w-72' : 'w-20'}
       `}>
         {/* Sidebar Header */}
