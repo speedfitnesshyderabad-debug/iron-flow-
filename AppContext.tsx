@@ -3,6 +3,7 @@ import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, 
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
+import { todayDateStr, addDays, daysBetween, clamp } from './utils/dates';
 import { createClient } from '@supabase/supabase-js';
 
 interface AppContextType {
@@ -591,7 +592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newSale: Sale = {
       id: `sale-${Date.now()}`,
       invoiceNo: generateInvoiceNo(branchId),
-      date: new Date().toISOString().split('T')[0],
+      date: todayDateStr(),
       amount: saleAmount,
       memberId,
       itemId,
@@ -937,7 +938,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const branchId = userData.branchId || currentUser?.branchId || branches[0]?.id || '';
       const newUserId = authData.user.id; // Use Auth UUID
-      const membershipStartDate = startDate || new Date().toISOString().split('T')[0];
+      const membershipStartDate = startDate || todayDateStr();
 
       const newUser: User = {
         id: newUserId,
@@ -964,7 +965,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           memberId: newUserId,
           planId: plan.id,
           startDate: membershipStartDate,
-          endDate: new Date(new Date(membershipStartDate).getTime() + plan.durationDays * 86400000).toISOString().split('T')[0],
+          endDate: addDays(membershipStartDate, plan.durationDays),
           status: SubscriptionStatus.ACTIVE,
           branchId,
           trainerId,
@@ -976,7 +977,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newSale: Sale = {
           id: `sale-${Date.now()}`,
           invoiceNo: generateInvoiceNo(branchId),
-          date: new Date().toISOString().split('T')[0],
+          date: todayDateStr(),
           amount: finalAmount,
           discount,
           memberId: newUserId,
@@ -1121,8 +1122,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `s-${Date.now()}`,
       memberId: userId,
       planId: planId,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + plan.durationDays * 86400000).toISOString().split('T')[0],
+      startDate: todayDateStr(),
+      endDate: addDays(todayDateStr(), plan.durationDays),
       status: SubscriptionStatus.ACTIVE,
       branchId,
       trainerId,
@@ -1131,7 +1132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newSale: Sale = {
       id: `sale-${Date.now()}`,
       invoiceNo: generateInvoiceNo(branchId),
-      date: new Date().toISOString().split('T')[0],
+      date: todayDateStr(),
       amount: plan.price - discount,
       discount: discount,
       memberId: userId,
@@ -1355,16 +1356,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    const pauseDate = todayDateStr();
     const { error } = await supabase.from('subscriptions').update({
       status: SubscriptionStatus.PAUSED,
-      pauseStartDate: new Date().toISOString().split('T')[0]
+      pauseStartDate: pauseDate
     }).eq('id', subscriptionId);
 
     if (!error) {
       setSubscriptions(prev => prev.map(s => s.id === subscriptionId ? {
         ...s,
         status: SubscriptionStatus.PAUSED,
-        pauseStartDate: new Date().toISOString().split('T')[0]
+        pauseStartDate: pauseDate
       } : s));
       showToast('Membership paused');
     } else showToast('Failed to pause membership', 'error');
@@ -1379,21 +1381,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Use date-only strings to avoid UTC vs local timezone mismatch
-    const pauseStartStr = sub.pauseStartDate; // "YYYY-MM-DD"
-    const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
-
-    // Calculate days using date-only values (no time component)
-    const pauseStartMs = new Date(pauseStartStr + 'T00:00:00').getTime();
-    const todayMs = new Date(todayStr + 'T00:00:00').getTime();
-    const rawPauseDuration = Math.max(0, Math.round((todayMs - pauseStartMs) / 86400000));
+    // Calculate pause duration using timezone-safe utilities
+    const rawPauseDuration = Math.max(0, daysBetween(sub.pauseStartDate, todayDateStr()));
 
     // Cap pause duration to remaining allowance so it never goes negative
     const remainingAllowance = Math.max(0, (sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0));
-    const pauseDuration = Math.min(rawPauseDuration, remainingAllowance);
+    const pauseDuration = clamp(rawPauseDuration, 0, remainingAllowance);
 
-    const currentEndDate = new Date(sub.endDate);
-    const newEndDate = new Date(currentEndDate.getTime() + pauseDuration * 86400000).toISOString().split('T')[0];
+    const newEndDate = addDays(sub.endDate, pauseDuration);
     const newUsedDays = (sub.pausedDaysUsed || 0) + pauseDuration;
 
     const { error } = await supabase.from('subscriptions').update({
