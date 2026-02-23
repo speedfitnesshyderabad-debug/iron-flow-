@@ -150,9 +150,9 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
                                 <input
                                     type="text"
                                     value={transactionCode}
-                                    onChange={(e) => setTransactionCode(e.target.value)}
+                                    onChange={(e) => setTransactionCode(e.target.value.toUpperCase())}
                                     placeholder="Enter 6-digit PIN"
-                                    className="w-full p-4 bg-indigo-50 border-none rounded-2xl font-mono font-bold text-center text-lg tracking-[0.5em] text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-500/20 placeholder:tracking-normal placeholder:text-sm placeholder:font-sans"
+                                    className="w-full p-4 bg-white border-2 border-indigo-100 rounded-2xl font-mono font-black text-center text-xl tracking-[0.3em] text-slate-900 outline-none focus:ring-4 focus:ring-indigo-500/20 placeholder:tracking-normal placeholder:text-sm placeholder:font-sans placeholder:text-slate-300"
                                     maxLength={6}
                                 />
                             </div>
