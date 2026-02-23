@@ -32,7 +32,11 @@ const MembershipStore: React.FC = () => {
   const filteredPlans = filter === 'ALL' ? branchPlans : branchPlans.filter(p => p.type === filter);
   const userBranch = branches.find(b => b.id === currentUser.branchId);
 
-  const branchTrainers = users.filter(u => u.role === UserRole.TRAINER && isRowVisible(u.branchId));
+  const branchTrainers = users.filter(u => {
+    if (u.role !== UserRole.TRAINER) return false;
+    if (currentUser.role === UserRole.MEMBER) return u.branchId === currentUser.branchId;
+    return isRowVisible(u.branchId);
+  });
 
   const memberSubs = subscriptions.filter(s => s.memberId === currentUser.id && s.status === SubscriptionStatus.ACTIVE);
   const hasGymSub = memberSubs.some(s => {
