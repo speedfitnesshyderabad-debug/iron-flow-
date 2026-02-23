@@ -13,7 +13,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const MembershipStore: React.FC = () => {
-  const { plans, currentUser, purchaseSubscription, subscriptions, showToast, branches, users, coupons, updateCoupon, offers } = useAppContext();
+  const { plans, currentUser, purchaseSubscription, subscriptions, showToast, branches, users, coupons, updateCoupon, offers, isRowVisible } = useAppContext();
   const [filter, setFilter] = useState<PlanType | 'ALL'>('ALL');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<Plan | null>(null);
@@ -28,11 +28,11 @@ const MembershipStore: React.FC = () => {
 
   if (!currentUser) return null;
 
-  const branchPlans = plans.filter(p => p.branchId === currentUser.branchId && p.isActive);
+  const branchPlans = plans.filter(p => isRowVisible(p.branchId) && p.isActive);
   const filteredPlans = filter === 'ALL' ? branchPlans : branchPlans.filter(p => p.type === filter);
   const userBranch = branches.find(b => b.id === currentUser.branchId);
 
-  const branchTrainers = users.filter(u => u.role === UserRole.TRAINER && u.branchId === currentUser.branchId);
+  const branchTrainers = users.filter(u => u.role === UserRole.TRAINER && isRowVisible(u.branchId));
 
   const memberSubs = subscriptions.filter(s => s.memberId === currentUser.id && s.status === SubscriptionStatus.ACTIVE);
   const hasGymSub = memberSubs.some(s => {
