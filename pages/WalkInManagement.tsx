@@ -96,7 +96,9 @@ const WalkInManagement: React.FC = () => {
     await updateWalkIn(id, { status: newStatus, updatedAt: new Date().toISOString() });
   };
 
-  const handleConvertToMember = (walkIn: WalkIn) => {
+  const handleConvertToMember = async (walkIn: WalkIn) => {
+    await updateWalkIn(walkIn.id, { status: 'CONVERTED', updatedAt: new Date().toISOString() });
+    showToast(`${walkIn.name} marked as converted`, 'success');
     navigate(`/members?action=enroll&name=${encodeURIComponent(walkIn.name)}&phone=${encodeURIComponent(walkIn.phone)}&assignedTo=${walkIn.assignedTo || ''}`);
   };
 
