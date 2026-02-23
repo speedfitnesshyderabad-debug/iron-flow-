@@ -27,18 +27,25 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     const [discount, setDiscount] = useState(0);
     const [transactionCode, setTransactionCode] = useState('');
 
+    const [prevOpen, setPrevOpen] = useState(false);
+
     useEffect(() => {
-        if (isOpen && currentPlan) {
-            setSelectedPlanId(currentPlan.id);
-        } else if (isOpen && plans.length > 0) {
-            setSelectedPlanId(plans[0].id);
+        // Reset state only when transition from closed to open
+        if (isOpen && !prevOpen) {
+            if (currentPlan) {
+                setSelectedPlanId(currentPlan.id);
+            } else if (plans.length > 0) {
+                setSelectedPlanId(plans[0].id);
+            }
+            // Reset payment method to valid one when first opening
+            if (!allowedPaymentMethods.includes(paymentMethod)) {
+                setPaymentMethod(allowedPaymentMethods[0]);
+            }
+            setTransactionCode('');
+            setDiscount(0);
         }
-        // Reset payment method to valid one when opening
-        if (isOpen && !allowedPaymentMethods.includes(paymentMethod)) {
-            setPaymentMethod(allowedPaymentMethods[0]);
-        }
-        setTransactionCode('');
-    }, [isOpen, currentPlan, plans, allowedPaymentMethods]);
+        setPrevOpen(isOpen);
+    }, [isOpen, currentPlan, plans, allowedPaymentMethods, prevOpen, paymentMethod]);
 
     if (!isOpen) return null;
 

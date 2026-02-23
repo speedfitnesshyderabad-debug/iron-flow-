@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, SubscriptionStatus, User } from '../types';
 import { ImageUploadModal } from '../components/ImageUploadModal';
@@ -365,6 +365,11 @@ const Members: React.FC = () => {
     setRenewModalOpen(false);
     setRenewTarget(null);
   };
+
+  const renewalPlans = useMemo(() => {
+    if (!renewTarget) return [];
+    return plans.filter(p => p.isActive && (p.branchId === renewTarget.member.branchId || p.isMultiBranch));
+  }, [plans, renewTarget]);
 
   return (
     <div className="space-y-6">
@@ -888,7 +893,7 @@ const Members: React.FC = () => {
             onClose={() => setRenewModalOpen(false)}
             member={renewTarget.member}
             currentPlan={renewTarget.currentPlan}
-            plans={plans.filter(p => p.isActive && (p.branchId === renewTarget.member.branchId || p.isMultiBranch))}
+            plans={renewalPlans}
             onRenew={handleProcessRenew}
             requirePin={true} // Admin facing, so require PIN for cash/pos
           />
