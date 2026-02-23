@@ -180,7 +180,8 @@ CREATE TABLE IF NOT EXISTS public.offers (
   "expiryDate" DATE,
   "branchId" TEXT,
   "isActive" BOOLEAN DEFAULT TRUE,
-  "ctaText" TEXT
+  "ctaText" TEXT,
+  "couponCode" TEXT
 );
 
 -- COMMUNICATIONS

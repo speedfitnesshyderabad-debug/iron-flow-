@@ -205,7 +205,7 @@ const Inventory: React.FC = () => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Member (Bill To)</label>
                 <select required className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.memberId} onChange={e => setSellData({ ...sellData, memberId: e.target.value })}>
                   <option value="">Select Member...</option>
-                  {users.filter(u => u.role === 'MEMBER').map(m => <option key={m.id} value={m.id}>{m.name} ({m.memberId})</option>)}
+                  {users.filter(u => u.role === 'MEMBER' && isRowVisible(u.branchId)).map(m => <option key={m.id} value={m.id}>{m.name} ({m.memberId})</option>)}
                 </select>
               </div>
               <div>
