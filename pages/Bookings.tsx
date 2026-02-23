@@ -137,12 +137,14 @@ const Bookings: React.FC = () => {
   };
 
   // PT Booking Functions
+  // Only BOOKED (upcoming) sessions block a time slot.
+  // COMPLETED = already done → slot is free again for future bookings.
   const getTrainerPTBookings = (trainerId: string, date: string) => {
     return bookings.filter(b =>
       b.trainerId === trainerId &&
       b.date === date &&
       b.type === PlanType.PT &&
-      b.status !== 'CANCELLED'
+      b.status === 'BOOKED'
     );
   };
 
@@ -314,6 +316,54 @@ const Bookings: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Session Quota Banner */}
+          {(() => {
+            const activePTSub = subscriptions.find(s => {
+              const p = plans.find(pl => pl.id === s.planId);
+              return s.memberId === currentUser?.id &&
+                s.status === SubscriptionStatus.ACTIVE &&
+                p?.type === PlanType.PT;
+            });
+            if (!activePTSub) return null;
+            const plan = plans.find(p => p.id === activePTSub.planId);
+            if (!plan?.maxSessions) return null;
+            const used = bookings.filter(b =>
+              b.memberId === currentUser?.id &&
+              b.type === PlanType.PT &&
+              b.status !== 'CANCELLED'
+            ).length;
+            const remaining = plan.maxSessions - used;
+            const pct = Math.round((used / plan.maxSessions) * 100);
+            const isLow = remaining <= 2;
+            return (
+              <div className={`p-5 rounded-2xl border flex items-center justify-between gap-4 ${isLow ? 'bg-amber-50 border-amber-200' : 'bg-indigo-50 border-indigo-100'}`}>
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isLow ? 'bg-amber-100 text-amber-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                    <i className="fas fa-dumbbell text-lg"></i>
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-[10px] font-black uppercase tracking-widest ${isLow ? 'text-amber-600' : 'text-indigo-600'}`}>
+                      PT Session Quota — {plan.name}
+                    </p>
+                    <div className="mt-1.5 w-48 bg-white/70 h-2 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${isLow ? 'bg-amber-500' : 'bg-indigo-500'}`}
+                        style={{ width: `${pct}%` }}
+                      ></div>
+                    </div>
+                    <p className={`text-[10px] font-bold mt-1 ${isLow ? 'text-amber-700' : 'text-slate-500'}`}>
+                      {used} of {plan.maxSessions} sessions used
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className={`text-3xl font-black ${isLow ? 'text-amber-600' : 'text-indigo-600'}`}>{remaining}</p>
+                  <p className={`text-[10px] font-black uppercase ${isLow ? 'text-amber-500' : 'text-slate-400'}`}>sessions left</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Time Slot Selection */}
           {selectedTrainer && (
