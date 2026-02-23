@@ -271,7 +271,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
 
         {/* Full Navigation List */}
-        <nav className="flex-1 mt-6 overflow-y-auto">
+        <nav className="flex-1 mt-6 overflow-y-auto sidebar-scroll">
           <div className="pb-32">
             {filteredNav.map(item => {
               const isActive = location.pathname === item.path;
@@ -426,7 +426,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            <form onSubmit={handleUpdateAccount} className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1 scrollbar-hide">
+            <form onSubmit={handleUpdateAccount} className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1">
               {/* Avatar Upload Section */}
               <div className="flex flex-col items-center mb-2">
                 <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
@@ -609,15 +609,31 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </form>
           </div>
         </div>
-      )}
+      )
+      }
 
       <style>{`
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        /* Custom Sidebar Scrollbar */
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 5px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: #334155; /* slate-700 */
+          border-radius: 10px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background: #475569; /* slate-600 */
+        }
+        
         .safe-area-pb { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
       `}</style>
-    </div>
+    </div >
   );
 };
 
