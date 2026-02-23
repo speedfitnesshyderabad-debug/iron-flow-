@@ -45,9 +45,15 @@ const Bookings: React.FC = () => {
     "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM"
   ];
 
-  const trainers = useMemo(() => users.filter(u =>
-    u.role === UserRole.TRAINER && isRowVisible(u.branchId)
-  ), [users, currentUser, isRowVisible]);
+  const trainers = useMemo(() => users.filter(u => {
+    if (u.role !== UserRole.TRAINER) return false;
+    // For members: show trainers from their own branch
+    // For admins/super admins: use isRowVisible (respects global branch filter)
+    if (currentUser?.role === UserRole.MEMBER) {
+      return u.branchId === currentUser.branchId;
+    }
+    return isRowVisible(u.branchId);
+  }), [users, currentUser, isRowVisible]);
 
   const filteredClasses = useMemo(() => {
     return classSchedules
