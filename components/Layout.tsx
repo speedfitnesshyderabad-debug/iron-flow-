@@ -379,7 +379,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
           )}
 
-          <div style={{ transform: isRefreshing ? 'translateY(80px)' : `translateY(${pullDistance * 0.5}px)`, transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none' }}>
+          <div style={{ paddingTop: isRefreshing ? '80px' : `${pullDistance * 0.5}px`, transition: pullDistance === 0 ? 'padding-top 0.3s ease-out' : 'none' }}>
             {children}
           </div>
         </main>
