@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus } from '../types';
 import {
@@ -131,6 +131,43 @@ const Dashboard: React.FC = () => {
     const myMetrics = metrics.filter(m => m.memberId === currentUser.id).sort((a, b) => b.date.localeCompare(a.date));
     const latestMetric = myMetrics[0];
 
+    // Calculate Streak and Progress (Memoized)
+    const { currentStreak, sessionsThisMonth, progressPercent, monthlyGoal } = useMemo(() => {
+      // 1. Calculate Streak
+      const uniqueDates = Array.from(new Set(myAttendance.map(a => a.date))).sort().reverse();
+      let streak = 0;
+      let checkDate = new Date();
+
+      // If today they haven't checked in, start checking from yesterday
+      const todayStr = checkDate.toISOString().split('T')[0];
+      if (!uniqueDates.includes(todayStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+
+      for (let i = 0; i < uniqueDates.length; i++) {
+        const targetStr = checkDate.toISOString().split('T')[0];
+        if (uniqueDates.includes(targetStr)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1); // Go to previous day
+        } else {
+          break;
+        }
+      }
+
+      // 2. Monthly Progress
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const sessions = myAttendance.filter(a => {
+        const d = new Date(a.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      }).length;
+
+      const goal = 20; // Default target
+      const percent = Math.min(100, Math.round((sessions / goal) * 100));
+
+      return { currentStreak: streak, sessionsThisMonth: sessions, progressPercent: percent, monthlyGoal: goal };
+    }, [myAttendance]);
+
     return (
       <div className="space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -186,95 +223,25 @@ const Dashboard: React.FC = () => {
           <div className="relative z-10 max-w-xl">
             <h3 className="text-2xl font-black uppercase tracking-tighter mb-4">Daily Goal Status</h3>
 
-            {/* Logic for Real Data */}
-            {(() => {
-              // 1. Calculate Streak
-              let streak = 0;
-              const today = new Date();
-              // Check up to 365 days back
-              for (let i = 0; i < 365; i++) {
-                const day = new Date(today);
-                day.setDate(today.getDate() - i);
-                const dateStr = day.toISOString().split('T')[0];
+            <p className="text-slate-400 text-sm font-medium mb-8">
+              {currentStreak > 1
+                ? `You're on a ${currentStreak}-day streak! Consistency is key.`
+                : sessionsThisMonth > 0
+                  ? "Great start to the month! Keep showing up to build your streak."
+                  : "Start your streak today! Your transformation waits."}
+            </p>
 
-                // Check if attended on this day
-                const attended = myAttendance.some(a => a.date === dateStr);
+            <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden mb-4">
+              <div
+                className="bg-blue-500 h-full rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all duration-1000"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
 
-                if (attended) {
-                  streak++;
-                } else if (i === 0) {
-                  // If today is missed, don't break streak yet if yesterday was attended (unless strictly today is required)
-                  // but for "current streak", if today isn't done, we check yesterday. 
-                  // If yesterday is missing, streak is 0. 
-                  // Simple approach: if today NOT found, streak starts from 0? 
-                  // No, usually streak includes today if done, or continues from yesterday.
-                  // Let's standard logic: break on first missing day.
-                  // Exception: If i=0 (today) is missing, we don't count it but check i=1. 
-                  // If i=1 is present, streak continues.
-                  continue;
-                } else {
-                  break;
-                }
-              }
-              // If today is present, streak includes it. If today missing, streak is valid if yesterday present.
-              // The loop above counts any valid consecutive days. 
-              // Refined Streak Logic:
-              // Flatten dates
-              const uniqueDates = Array.from(new Set(myAttendance.map(a => a.date))).sort().reverse();
-              let currentStreak = 0;
-              let checkDate = new Date();
-
-              // If today they haven't checked in, start checking from yesterday
-              const todayStr = checkDate.toISOString().split('T')[0];
-              if (!uniqueDates.includes(todayStr)) {
-                checkDate.setDate(checkDate.getDate() - 1);
-              }
-
-              for (let i = 0; i < uniqueDates.length; i++) {
-                const targetStr = checkDate.toISOString().split('T')[0];
-                if (uniqueDates.includes(targetStr)) {
-                  currentStreak++;
-                  checkDate.setDate(checkDate.getDate() - 1); // Go to previous day
-                } else {
-                  break;
-                }
-              }
-
-              // 2. Monthly Progress
-              const currentMonth = new Date().getMonth();
-              const currentYear = new Date().getFullYear();
-              const sessionsThisMonth = myAttendance.filter(a => {
-                const d = new Date(a.date);
-                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-              }).length;
-
-              const monthlyGoal = 20; // Default target
-              const progressPercent = Math.min(100, Math.round((sessionsThisMonth / monthlyGoal) * 100));
-
-              return (
-                <>
-                  <p className="text-slate-400 text-sm font-medium mb-8">
-                    {currentStreak > 1
-                      ? `You're on a ${currentStreak}-day streak! Consistency is key.`
-                      : sessionsThisMonth > 0
-                        ? "Great start to the month! Keep showing up to build your streak."
-                        : "Start your streak today! Your transformation waits."}
-                  </p>
-
-                  <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden mb-4">
-                    <div
-                      className="bg-blue-500 h-full rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all duration-1000"
-                      style={{ width: `${progressPercent}%` }}
-                    ></div>
-                  </div>
-
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
-                    <span>Progress: {sessionsThisMonth}/{monthlyGoal} sessions</span>
-                    <span>{progressPercent}% Monthly Goal</span>
-                  </div>
-                </>
-              );
-            })()}
+            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-60">
+              <span>Progress: {sessionsThisMonth}/{monthlyGoal} sessions</span>
+              <span>{progressPercent}% Monthly Goal</span>
+            </div>
           </div>
           <i className="fas fa-dumbbell absolute -bottom-12 -right-12 text-[200px] text-white/5 rotate-12"></i>
         </div>

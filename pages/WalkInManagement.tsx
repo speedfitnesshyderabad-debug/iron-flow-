@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, WalkIn } from '../types';
-
 import { useNavigate } from 'react-router-dom';
 
 const WalkInManagement: React.FC = () => {
-  const { users, currentUser, branches, showToast } = useAppContext();
+  const { users, currentUser, walkIns, addWalkIn, updateWalkIn, showToast } = useAppContext();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWalkIn, setSelectedWalkIn] = useState<WalkIn | null>(null);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'NEW' | 'FOLLOW_UP' | 'CONVERTED' | 'NOT_INTERESTED'>('ALL');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -22,8 +22,6 @@ const WalkInManagement: React.FC = () => {
     followUpDate: ''
   });
 
-  const [walkIns, setWalkIns] = useState<WalkIn[]>([]);
-
   const staffMembers = users.filter(u =>
     u.role !== UserRole.MEMBER &&
     (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId)
@@ -35,28 +33,32 @@ const WalkInManagement: React.FC = () => {
     return matchesStatus && matchesBranch;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
 
-    const newWalkIn: WalkIn = {
-      id: `walkin-${Date.now()}`,
-      ...formData,
-      status: 'NEW',
-      branchId: currentUser?.branchId || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    if (selectedWalkIn) {
-      setWalkIns(prev => prev.map(w => w.id === selectedWalkIn.id ? { ...w, ...formData, updatedAt: new Date().toISOString() } : w));
-      showToast('Walk-in updated successfully');
-    } else {
-      setWalkIns(prev => [...prev, newWalkIn]);
-      showToast('Walk-in registered successfully');
+    try {
+      if (selectedWalkIn) {
+        await updateWalkIn(selectedWalkIn.id, {
+          ...formData,
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        const newWalkIn: WalkIn = {
+          id: `walkin-${Date.now()}`,
+          ...formData,
+          status: 'NEW',
+          branchId: currentUser?.branchId || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await addWalkIn(newWalkIn);
+      }
+      resetForm();
+      setIsModalOpen(false);
+    } finally {
+      setIsSaving(false);
     }
-
-    resetForm();
-    setIsModalOpen(false);
   };
 
   const resetForm = () => {
@@ -88,11 +90,8 @@ const WalkInManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleStatusChange = (id: string, newStatus: WalkIn['status']) => {
-    setWalkIns(prev => prev.map(w =>
-      w.id === id ? { ...w, status: newStatus, updatedAt: new Date().toISOString() } : w
-    ));
-    showToast(`Status updated to ${newStatus}`);
+  const handleStatusChange = async (id: string, newStatus: WalkIn['status']) => {
+    await updateWalkIn(id, { status: newStatus, updatedAt: new Date().toISOString() });
   };
 
   const handleConvertToMember = (walkIn: WalkIn) => {
@@ -156,8 +155,8 @@ const WalkInManagement: React.FC = () => {
             key={status}
             onClick={() => setFilterStatus(status)}
             className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${filterStatus === status
-                ? 'bg-slate-900 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border'
+              ? 'bg-slate-900 text-white'
+              : 'bg-white text-gray-600 hover:bg-gray-50 border'
               }`}
           >
             {status.replace('_', ' ')}
@@ -363,9 +362,10 @@ const WalkInManagement: React.FC = () => {
               <div className="pt-4 space-y-3">
                 <button
                   type="submit"
-                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors"
+                  disabled={isSaving}
+                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {selectedWalkIn ? 'Update' : 'Register'}
+                  {isSaving ? 'Saving...' : selectedWalkIn ? 'Update' : 'Register'}
                 </button>
                 <button
                   type="button"

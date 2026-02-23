@@ -22,7 +22,7 @@ const MyEarnings: React.FC = () => {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const currentBranch = useMemo(() =>
-    branches.find(b => b.id === currentUser?.branchId) || branches[0],
+    branches.find(b => b.id === currentUser?.branchId) || branches[0] || ({} as any),
     [currentUser, branches]);
 
   // Personal Calculations

@@ -66,7 +66,11 @@ const AppRoutes: React.FC = () => {
         } />
         <Route path="/walk-ins" element={<WalkInManagement />} />
         <Route path="/members" element={<Members />} />
-        <Route path="/branches" element={<Branches />} />
+        <Route path="/branches" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
+            <Branches />
+          </ProtectedRoute>
+        } />
         <Route path="/holidays" element={
           <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER]}>
             <Holidays />

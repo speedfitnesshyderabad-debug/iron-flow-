@@ -604,8 +604,13 @@ const Staff: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
-                <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase" value={formData.branchId} onChange={e => setFormData({ ...formData, branchId: e.target.value })}>
-                  {branches.map(b => (
+                <select 
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase" 
+                  value={formData.branchId} 
+                  onChange={e => setFormData({ ...formData, branchId: e.target.value })}
+                  disabled={currentUser?.role !== UserRole.SUPER_ADMIN}
+                >
+                  {branches.filter(b => currentUser?.role === UserRole.SUPER_ADMIN || b.id === currentUser?.branchId).map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>

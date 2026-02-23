@@ -13,12 +13,12 @@ const GateQR: React.FC = () => {
     // Identify the branch to show
     // KIOSK/MANAGER/RECEPTIONIST -> Their assigned branch
     // SUPER_ADMIN -> First branch or prompts (For now, default to first branch)
-    const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || (branches.length > 0 ? branches[0].id : ''));
+    const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || branches[0]?.id || '');
 
     // Update selected branch if branches load later or user changes
     useEffect(() => {
         if (!selectedBranchId && branches.length > 0) {
-            setSelectedBranchId(branches[0].id);
+            if (branches[0]) setSelectedBranchId(branches[0].id);
         }
     }, [branches, selectedBranchId]);
 

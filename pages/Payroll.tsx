@@ -167,7 +167,7 @@ const Payroll: React.FC = () => {
 
         setSelectedPayslipData({
             user: item.user,
-            branch: branches.find(b => b.id === item.user.branchId) || branches[0],
+            branch: branches.find(b => b.id === item.user.branchId) || branches[0] || ({} as any),
             month: months[selectedMonth],
             year: selectedYear,
             earnings: combinedData

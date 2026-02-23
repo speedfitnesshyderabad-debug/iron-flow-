@@ -264,7 +264,7 @@ const Plans: React.FC = () => {
                   onChange={e => setFormData({...formData, branchId: e.target.value})}
                   disabled={currentUser?.role !== 'SUPER_ADMIN'}
                 >
-                  {branches.map(b => (
+                  {branches.filter(b => currentUser?.role === 'SUPER_ADMIN' || b.id === currentUser?.branchId).map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>

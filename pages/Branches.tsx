@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
-import { Branch } from '../types';
+import { Branch, UserRole } from '../types';
 import { QRCodeSVG } from 'qrcode.react';
 
 const Branches: React.FC = () => {
@@ -168,6 +168,10 @@ const Branches: React.FC = () => {
     }
   })();
 
+  const filteredBranches = currentUser?.role === UserRole.SUPER_ADMIN 
+    ? branches 
+    : branches.filter(b => b.id === currentUser?.branchId);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -175,16 +179,18 @@ const Branches: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Branch Network</h2>
           <p className="text-gray-50">Infrastructure & Multi-Channel Gateway Management</p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
-        >
-          <i className="fas fa-plus"></i> NEW BRANCH
-        </button>
+        {currentUser?.role === UserRole.SUPER_ADMIN && (
+          <button
+            onClick={handleOpenAdd}
+            className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
+          >
+            <i className="fas fa-plus"></i> NEW BRANCH
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {branches.map(branch => {
+        {filteredBranches.map(branch => {
           const stats = getBranchStats(branch.id);
           return (
             <div key={branch.id} className="bg-white rounded-3xl border shadow-sm p-6 hover:shadow-xl transition-all group">

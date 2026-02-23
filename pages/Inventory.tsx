@@ -15,7 +15,7 @@ const Inventory: React.FC = () => {
     category: 'SUPPLEMENT' as const,
     price: 0,
     stock: 0,
-    branchId: currentUser?.branchId || branches[0].id
+    branchId: currentUser?.branchId || branches[0]?.id || ''
   });
 
   const [sellData, setSellData] = useState({
@@ -33,7 +33,7 @@ const Inventory: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
-    setFormData({ name: '', category: 'SUPPLEMENT', price: 0, stock: 0, branchId: currentUser?.branchId || branches[0].id });
+    setFormData({ name: '', category: 'SUPPLEMENT', price: 0, stock: 0, branchId: currentUser?.branchId || branches[0]?.id || '' });
     setModalOpen(true);
   };
 
@@ -176,6 +176,19 @@ const Inventory: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input type="number" placeholder="Price" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
                 <input type="number" placeholder="Stock" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
+                <select
+                  className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-xs uppercase tracking-widest"
+                  value={formData.branchId}
+                  onChange={e => setFormData({ ...formData, branchId: e.target.value })}
+                  disabled={currentUser?.role !== UserRole.SUPER_ADMIN}
+                >
+                  {branches.filter(b => currentUser?.role === UserRole.SUPER_ADMIN || b.id === currentUser?.branchId).map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
               </div>
               <button className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">{selectedItem ? 'UPDATE ITEM' : 'SAVE ITEM'}</button>
               <button type="button" onClick={() => setModalOpen(false)} className="w-full py-2 text-gray-400">CANCEL</button>

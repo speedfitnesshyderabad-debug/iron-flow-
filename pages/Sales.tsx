@@ -26,7 +26,7 @@ const Sales: React.FC = () => {
 
   const closeInvoice = () => setViewingSale(null);
 
-  const [selectedBranchForPIN, setSelectedBranchForPIN] = useState(currentUser?.branchId || branches[0].id);
+  const [selectedBranchForPIN, setSelectedBranchForPIN] = useState(currentUser?.branchId || branches[0]?.id || '');
 
   const handleGeneratePIN = async () => {
     setIsGenerating(true);

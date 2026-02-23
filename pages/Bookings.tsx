@@ -131,7 +131,7 @@ const Bookings: React.FC = () => {
       timeSlot: classFormData.timeSlot,
       title: classFormData.title,
       capacity: classFormData.capacity,
-      branchId: currentUser?.branchId || branches[0].id
+      branchId: currentUser?.branchId || branches[0]?.id || ''
     };
     addClassTemplate(newTemplate);
     setScheduleModalOpen(false);
@@ -191,7 +191,7 @@ const Bookings: React.FC = () => {
       type: PlanType.PT,
       date: selectedDate,
       timeSlot: selectedTimeSlot,
-      branchId: currentUser.branchId || branches[0].id,
+      branchId: currentUser.branchId || branches[0]?.id || '',
       status: 'BOOKED'
     };
 

@@ -13,38 +13,45 @@ const ResetPassword: React.FC = () => {
     const [hasValidRecoverySession, setHasValidRecoverySession] = useState(false);
 
     useEffect(() => {
-        // Check if we have a valid recovery session
-        const checkRecoverySession = async () => {
-            try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-                console.log('Recovery session check:', session, sessionError);
-
-                if (sessionError) {
-                    console.error('Session error:', sessionError);
-                    setError('Failed to verify reset link. Please try again.');
-                    setIsCheckingSession(false);
-                    return;
-                }
-
-                if (!session) {
-                    setError('Invalid or expired reset link. Please request a new one.');
-                    setIsCheckingSession(false);
-                    return;
-                }
-
-                // Valid session exists - allow password reset
-                console.log('Valid recovery session found');
+        // PRIMARY METHOD: Listen for Supabase's PASSWORD_RECOVERY event.
+        // Supabase automatically parses the token from the URL and fires this event.
+        // This is the correct approach for apps using HashRouter.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth event on reset page:', event, session);
+            if (event === 'PASSWORD_RECOVERY') {
+                // Supabase has verified the token — allow the user to set a new password
                 setHasValidRecoverySession(true);
                 setIsCheckingSession(false);
-            } catch (err) {
-                console.error('Error checking session:', err);
-                setError('An error occurred. Please try again.');
+            }
+        });
+
+        // FALLBACK METHOD: Check if a recovery session already exists
+        // (e.g., user refreshed the page after the event fired)
+        const checkExistingSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                setHasValidRecoverySession(true);
                 setIsCheckingSession(false);
+            } else {
+                // Wait up to 4 seconds for the PASSWORD_RECOVERY event before showing an error
+                setTimeout(() => {
+                    setIsCheckingSession(prev => {
+                        if (prev) {
+                            // Still checking — no event fired, link is invalid/expired
+                            setError('Invalid or expired reset link. Please request a new one.');
+                            return false;
+                        }
+                        return prev;
+                    });
+                }, 4000);
             }
         };
 
-        checkRecoverySession();
+        checkExistingSession();
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     const handleResetPassword = async (e: React.FormEvent) => {

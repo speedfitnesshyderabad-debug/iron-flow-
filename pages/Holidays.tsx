@@ -153,8 +153,9 @@ const Holidays: React.FC = () => {
                                             className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 outline-none focus:border-blue-500 transition-all font-bold text-slate-700 uppercase"
                                             value={newHoliday.branchId}
                                             onChange={e => setNewHoliday({ ...newHoliday, branchId: e.target.value })}
+                                            disabled={currentUser?.role !== UserRole.SUPER_ADMIN}
                                         >
-                                            {branches.map(b => (
+                                            {branches.filter(b => currentUser?.role === UserRole.SUPER_ADMIN || b.id === currentUser?.branchId).map(b => (
                                                 <option key={b.id} value={b.id}>{b.name}</option>
                                             ))}
                                         </select>

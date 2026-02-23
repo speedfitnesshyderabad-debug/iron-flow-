@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral, Holiday, Coupon } from './types';
+import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral, Holiday, Coupon, WalkIn } from './types';
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
@@ -25,6 +25,7 @@ interface AppContextType {
   payroll: Payroll[];
   holidays: Holiday[];
   coupons: Coupon[];
+  walkIns: WalkIn[];
 
   settlementRate: number;
   setSettlementRate: (rate: number) => void;
@@ -84,6 +85,8 @@ interface AppContextType {
   revokeSession: (userId: string, fingerprint?: string) => Promise<void>;
   getSessions: (userId: string) => Promise<ActiveSession[]>;
   importMembers: (importedUsers: Partial<User>[]) => Promise<void>;
+  addWalkIn: (walkIn: WalkIn) => Promise<void>;
+  updateWalkIn: (id: string, updates: Partial<WalkIn>) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -119,6 +122,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [payroll, setPayroll] = useState<Payroll[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [walkIns, setWalkIns] = useState<WalkIn[]>([]);
 
   const [settlementRate, setSettlementRate] = useState<number>(250);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -141,10 +145,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: uData } = await supabase.from('users').select('*');
       if (uData && uData.length > 0) setUsers(uData);
-      else {
-        const { error } = await supabase.from('users').insert(MOCK_USERS);
-        if (!error) setUsers(MOCK_USERS);
-      }
+      // Removed auto-population of MOCK_USERS to prevent conflict with real user setup
 
       const { data: pData } = await supabase.from('plans').select('*');
       if (pData && pData.length > 0) setPlans(pData);
@@ -197,6 +198,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: coData } = await supabase.from('coupons').select('*');
       if (coData) setCoupons(coData);
+
+      const { data: wiData } = await supabase.from('walk_ins').select('*');
+      if (wiData) setWalkIns(wiData);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -697,7 +701,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const generateTransactionCode = async (targetBranchId?: string): Promise<string> => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const branchToUse = targetBranchId || currentUser?.branchId || branches[0].id;
+    const branchToUse = targetBranchId || currentUser?.branchId || branches[0]?.id || '';
 
     const { error } = await supabase.from('transaction_codes').insert({
       code,
@@ -823,7 +827,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recipient: referrer.phone || referrer.email || 'N/A',
         body: `Congratulations! You earned ${rewardDays} free days because your friend joined IronFlow. Your membership has been extended to ${targetSub ? (new Date(new Date(targetSub.endDate).getTime() + rewardDays * 86400000).toISOString().split('T')[0]) : 'N/A'}.`,
         category: 'ANNOUNCEMENT',
-        branchId: referrer.branchId || branches[0].id
+        branchId: referrer.branchId || branches[0]?.id || ''
       });
 
     } catch (err) {
@@ -876,7 +880,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       console.log('✅ Member Auth User Created:', authData.user.id);
 
-      const branchId = userData.branchId || currentUser?.branchId || branches[0].id;
+      const branchId = userData.branchId || currentUser?.branchId || branches[0]?.id || '';
       const newUserId = authData.user.id; // Use Auth UUID
       const membershipStartDate = startDate || new Date().toISOString().split('T')[0];
 
@@ -1112,6 +1116,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setGlobalLoading(false);
     }
   };
+
+  const addWalkIn = async (walkIn: WalkIn) => {
+    const { error } = await supabase.from('walk_ins').insert(walkIn);
+    if (!error) {
+      setWalkIns(prev => [...prev, walkIn]);
+      showToast('Walk-in registered successfully');
+    } else {
+      console.error('Add walk-in error:', error);
+      showToast('Failed to register walk-in: ' + error.message, 'error');
+    }
+  };
+
+  const updateWalkIn = async (id: string, updates: Partial<WalkIn>) => {
+    const { error } = await supabase.from('walk_ins').update(updates).eq('id', id);
+    if (!error) {
+      setWalkIns(prev => prev.map(w => w.id === id ? { ...w, ...updates } : w));
+      showToast('Walk-in updated successfully');
+    } else {
+      console.error('Update walk-in error:', error);
+      showToast('Failed to update walk-in: ' + error.message, 'error');
+    }
+  };
+
   // --- Session Management ---
 
   const generateDeviceFingerprint = async (): Promise<string> => {
@@ -1462,7 +1489,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
       addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
-      generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers
+      generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers,
+      walkIns, addWalkIn, updateWalkIn
     }}>
       {children}
       {toast && (
