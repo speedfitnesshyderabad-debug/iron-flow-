@@ -1379,10 +1379,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    const pauseStart = new Date(sub.pauseStartDate);
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - pauseStart.getTime());
-    const pauseDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Use date-only strings to avoid UTC vs local timezone mismatch
+    const pauseStartStr = sub.pauseStartDate; // "YYYY-MM-DD"
+    const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+
+    // Calculate days using date-only values (no time component)
+    const pauseStartMs = new Date(pauseStartStr + 'T00:00:00').getTime();
+    const todayMs = new Date(todayStr + 'T00:00:00').getTime();
+    const rawPauseDuration = Math.max(0, Math.round((todayMs - pauseStartMs) / 86400000));
+
+    // Cap pause duration to remaining allowance so it never goes negative
+    const remainingAllowance = Math.max(0, (sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0));
+    const pauseDuration = Math.min(rawPauseDuration, remainingAllowance);
 
     const currentEndDate = new Date(sub.endDate);
     const newEndDate = new Date(currentEndDate.getTime() + pauseDuration * 86400000).toISOString().split('T')[0];
