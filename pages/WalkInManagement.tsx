@@ -4,7 +4,7 @@ import { UserRole, WalkIn } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 const WalkInManagement: React.FC = () => {
-  const { users, currentUser, walkIns, addWalkIn, updateWalkIn, showToast } = useAppContext();
+  const { users, currentUser, walkIns, addWalkIn, updateWalkIn, showToast, branches } = useAppContext();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWalkIn, setSelectedWalkIn] = useState<WalkIn | null>(null);
@@ -19,12 +19,13 @@ const WalkInManagement: React.FC = () => {
     source: 'WALK_IN' as WalkIn['source'],
     notes: '',
     assignedTo: '',
-    followUpDate: ''
+    followUpDate: '',
+    branchId: currentUser?.branchId || branches[0]?.id || ''
   });
 
   const staffMembers = users.filter(u =>
     u.role !== UserRole.MEMBER &&
-    (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId)
+    (currentUser?.role === UserRole.SUPER_ADMIN ? u.branchId === formData.branchId : u.branchId === currentUser?.branchId)
   );
 
   const filteredWalkIns = walkIns.filter(w => {
@@ -48,7 +49,7 @@ const WalkInManagement: React.FC = () => {
           id: `walkin-${Date.now()}`,
           ...formData,
           status: 'NEW',
-          branchId: currentUser?.branchId || '',
+          branchId: formData.branchId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -70,7 +71,8 @@ const WalkInManagement: React.FC = () => {
       source: 'WALK_IN',
       notes: '',
       assignedTo: '',
-      followUpDate: ''
+      followUpDate: '',
+      branchId: currentUser?.branchId || branches[0]?.id || ''
     });
     setSelectedWalkIn(null);
   };
@@ -85,7 +87,8 @@ const WalkInManagement: React.FC = () => {
       source: walkIn.source,
       notes: walkIn.notes || '',
       assignedTo: walkIn.assignedTo || '',
-      followUpDate: walkIn.followUpDate || ''
+      followUpDate: walkIn.followUpDate || '',
+      branchId: walkIn.branchId
     });
     setIsModalOpen(true);
   };
@@ -260,120 +263,139 @@ const WalkInManagement: React.FC = () => {
               {selectedWalkIn ? 'Update Walk-In' : 'Register Walk-In'}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Name</label>
-                <input
-                  required
-                  type="text"
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              {currentUser?.role === UserRole.SUPER_ADMIN && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
+                    value={formData.branchId}
+                    onChange={e => {
+                      setFormData({ ...formData, branchId: e.target.value, assignedTo: '' });
+                    }}
+                  >
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone</label>
-                <input
-                  required
-                  type="tel"
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Name</label>
+                  <input
+                    required
+                    type="text"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email (Optional)</label>
-                <input
-                  type="email"
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone</label>
+                  <input
+                    required
+                    type="tel"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Purpose</label>
-                <select
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.purpose}
-                  onChange={e => setFormData({ ...formData, purpose: e.target.value as WalkIn['purpose'] })}
-                >
-                  <option value="MEMBERSHIP_INQUIRY">Membership Inquiry</option>
-                  <option value="TOUR">Gym Tour</option>
-                  <option value="DAY_PASS">Day Pass</option>
-                  <option value="PT_CONSULTATION">PT Consultation</option>
-                  <option value="CLASS_INQUIRY">Class Inquiry</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email (Optional)</label>
+                  <input
+                    type="email"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Source</label>
-                <select
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.source}
-                  onChange={e => setFormData({ ...formData, source: e.target.value as WalkIn['source'] })}
-                >
-                  <option value="WALK_IN">Walk-In</option>
-                  <option value="REFERRAL">Referral</option>
-                  <option value="SOCIAL_MEDIA">Social Media</option>
-                  <option value="GOOGLE">Google</option>
-                  <option value="JUSTDIAL">JustDial</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Purpose</label>
+                  <select
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.purpose}
+                    onChange={e => setFormData({ ...formData, purpose: e.target.value as WalkIn['purpose'] })}
+                  >
+                    <option value="MEMBERSHIP_INQUIRY">Membership Inquiry</option>
+                    <option value="TOUR">Gym Tour</option>
+                    <option value="DAY_PASS">Day Pass</option>
+                    <option value="PT_CONSULTATION">PT Consultation</option>
+                    <option value="CLASS_INQUIRY">Class Inquiry</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign To</label>
-                <select
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.assignedTo}
-                  onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
-                >
-                  <option value="">-- Select Staff --</option>
-                  {staffMembers.map(staff => (
-                    <option key={staff.id} value={staff.id}>{staff.name}</option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Source</label>
+                  <select
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.source}
+                    onChange={e => setFormData({ ...formData, source: e.target.value as WalkIn['source'] })}
+                  >
+                    <option value="WALK_IN">Walk-In</option>
+                    <option value="REFERRAL">Referral</option>
+                    <option value="SOCIAL_MEDIA">Social Media</option>
+                    <option value="GOOGLE">Google</option>
+                    <option value="JUSTDIAL">JustDial</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Follow-up Date</label>
-                <input
-                  type="date"
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
-                  value={formData.followUpDate}
-                  onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
-                />
-              </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign To</label>
+                  <select
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.assignedTo}
+                    onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
+                  >
+                    <option value="">-- Select Staff --</option>
+                    {staffMembers.map(staff => (
+                      <option key={staff.id} value={staff.id}>{staff.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notes</label>
-                <textarea
-                  rows={3}
-                  className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 resize-none"
-                  value={formData.notes}
-                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                />
-              </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Follow-up Date</label>
+                  <input
+                    type="date"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    value={formData.followUpDate}
+                    onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
+                  />
+                </div>
 
-              <div className="pt-4 space-y-3">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? 'Saving...' : selectedWalkIn ? 'Update' : 'Register'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { resetForm(); setIsModalOpen(false); }}
-                  className="w-full py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notes</label>
+                  <textarea
+                    rows={3}
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 resize-none"
+                    value={formData.notes}
+                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  />
+                </div>
+
+                <div className="pt-4 space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? 'Saving...' : selectedWalkIn ? 'Update' : 'Register'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { resetForm(); setIsModalOpen(false); }}
+                    className="w-full py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </form>
           </div>
