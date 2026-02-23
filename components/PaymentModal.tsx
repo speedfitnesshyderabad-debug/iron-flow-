@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initializePayment, formatAmount, RazorpayResponse } from '../src/lib/razorpay';
 import { useAppContext } from '../AppContext';
 
@@ -13,6 +13,7 @@ interface PaymentModalProps {
   branchId?: string; // Optional: specify which branch to use for payment config
   onSuccess: (paymentId: string) => void;
   onError?: (error: any) => void;
+  showConfirmation?: boolean;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -26,6 +27,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   branchId,
   onSuccess,
   onError,
+  showConfirmation = true,
 }) => {
   const { branches, currentUser } = useAppContext();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -36,7 +38,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const currentBranch = branches.find(b => b.id === effectiveBranchId);
   // Use branch key if available, otherwise fallback to env variable or test key
   const razorpayKey = currentBranch?.paymentApiKey || import.meta.env.VITE_RAZORPAY_KEY_ID || '';
-  
+
   // Debug logging
   console.log('PaymentModal Debug:', {
     effectiveBranchId,
@@ -55,7 +57,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     setIsProcessing(true);
     setError(null);
-    
+
     console.log('Initializing Razorpay payment:', {
       amount,
       key: razorpayKey.substring(0, 10) + '...',
@@ -101,10 +103,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (isOpen && !showConfirmation) {
+      handlePayment();
+    }
+  }, [isOpen, showConfirmation]);
+
   if (!isOpen) return null;
 
+  if (!showConfirmation && isOpen) {
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[300] flex items-center justify-center">
+        <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-bounce">
+          <i className="fas fa-shield-alt text-4xl text-blue-600 animate-pulse"></i>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Securely Connecting to Gateway...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out]">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">

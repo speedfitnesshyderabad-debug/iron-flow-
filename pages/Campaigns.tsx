@@ -4,7 +4,7 @@ import { useAppContext } from '../AppContext';
 import { Offer } from '../types';
 
 const Campaigns: React.FC = () => {
-   const { offers, addOffer, deleteOffer, branches, currentUser, showToast } = useAppContext();
+   const { offers, addOffer, deleteOffer, branches, currentUser, showToast, coupons } = useAppContext();
    const [isModalOpen, setIsModalOpen] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -14,7 +14,8 @@ const Campaigns: React.FC = () => {
       imageUrl: '',
       expiryDate: '',
       branchId: currentUser?.branchId || 'GLOBAL',
-      ctaText: 'CLAIM OFFER'
+      ctaText: 'CLAIM OFFER',
+      couponCode: ''
    });
 
    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +42,7 @@ const Campaigns: React.FC = () => {
       };
       addOffer(newOffer);
       setIsModalOpen(false);
-      setFormData({ title: '', description: '', imageUrl: '', expiryDate: '', branchId: currentUser?.branchId || 'GLOBAL', ctaText: 'CLAIM OFFER' });
+      setFormData({ title: '', description: '', imageUrl: '', expiryDate: '', branchId: currentUser?.branchId || 'GLOBAL', ctaText: 'CLAIM OFFER', couponCode: '' });
       showToast("Campaign broadcasted successfully!");
    };
 
@@ -168,8 +169,23 @@ const Campaigns: React.FC = () => {
                            </select>
                         </div>
                         <div className="space-y-1">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Link to Coupon (Optional)</label>
+                           <select
+                              className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-2xl outline-none font-bold text-xs text-indigo-700"
+                              value={formData.couponCode}
+                              onChange={e => setFormData({ ...formData, couponCode: e.target.value })}
+                           >
+                              <option value="">No Coupon Linked</option>
+                              {coupons
+                                 .filter(c => c.isActive && (!c.branchId || c.branchId === formData.branchId || formData.branchId === 'GLOBAL'))
+                                 .map(c => (
+                                    <option key={c.id} value={c.code}>{c.code} ({c.type === 'PERCENTAGE' ? `${c.value}%` : `₹${c.value}`} OFF)</option>
+                                 ))}
+                           </select>
+                        </div>
+                        <div className="col-span-2 space-y-1">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Button Text</label>
-                           <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" value={formData.ctaText} onChange={e => setFormData({ ...formData, ctaText: e.target.value })} placeholder="e.g. VIEW DETAILS" />
+                           <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" value={formData.ctaText} onChange={e => setFormData({ ...formData, ctaText: e.target.value })} placeholder="e.g. JOIN NOW" />
                         </div>
                      </div>
 

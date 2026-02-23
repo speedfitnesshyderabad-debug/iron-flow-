@@ -215,6 +215,7 @@ const Members: React.FC = () => {
         pauseAllowance: enrollData.pauseAllowance
       });
       setPaymentModalOpen(true);
+      setAddModalOpen(false); // Close enrollment form to prevent multiple windows
       return;
     }
 

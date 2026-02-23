@@ -50,6 +50,7 @@ export interface Offer {
   branchId: string | 'GLOBAL';
   isActive: boolean;
   ctaText?: string;
+  couponCode?: string;
 }
 
 export interface Holiday {

@@ -13,7 +13,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const MembershipStore: React.FC = () => {
-  const { plans, currentUser, purchaseSubscription, subscriptions, showToast, branches, users, coupons, updateCoupon } = useAppContext();
+  const { plans, currentUser, purchaseSubscription, subscriptions, showToast, branches, users, coupons, updateCoupon, offers } = useAppContext();
   const [filter, setFilter] = useState<PlanType | 'ALL'>('ALL');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<Plan | null>(null);
@@ -84,6 +84,7 @@ const MembershipStore: React.FC = () => {
 
     setPendingPlan(selectedPlanForCheckout);
     setIsPaymentModalOpen(true);
+    setSelectedPlanForCheckout(null); // Close checkout modal to prevent overlapping
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -239,43 +240,82 @@ const MembershipStore: React.FC = () => {
                 </div>
               </div>
 
-              {/* Coupon Section */}
-              <div className="space-y-3 p-5 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
-                <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Have a Coupon Code?</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="ENTER CODE"
-                    className="flex-1 p-3 bg-white border border-emerald-100 rounded-xl outline-none font-black text-xs uppercase tracking-widest shadow-inner disabled:opacity-50"
-                    value={couponCode}
-                    onChange={e => {
-                      setCouponCode(e.target.value.toUpperCase());
-                      setCouponDiscount(0); // Reset discount if code changes
-                    }}
-                    disabled={couponDiscount > 0}
-                  />
-                  {couponDiscount > 0 ? (
+              {/* Available Offers / Coupons Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Special Offers For You</label>
+                  {couponDiscount > 0 && (
                     <button
                       onClick={() => { setCouponCode(''); setCouponDiscount(0); }}
-                      className="px-4 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] hover:bg-slate-300"
+                      className="text-[9px] font-black text-red-500 uppercase hover:text-red-700"
                     >
-                      REMOVE
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleApplyCoupon}
-                      disabled={couponLoading || !couponCode}
-                      className="px-4 bg-emerald-600 text-white rounded-xl font-bold text-[10px] hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {couponLoading ? <i className="fas fa-circle-notch fa-spin"></i> : 'APPLY'}
+                      Remove Applied
                     </button>
                   )}
                 </div>
-                {couponDiscount > 0 && (
-                  <p className="text-[9px] text-emerald-600 font-black uppercase text-center flex items-center justify-center gap-1">
-                    <i className="fas fa-gift"></i> Extra ₹{couponDiscount} Saved!
-                  </p>
-                )}
+
+                {/* Horizontal Scroll for Campaign Offers */}
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                  {offers
+                    .filter(o => o.isActive && o.couponCode && (o.branchId === 'GLOBAL' || o.branchId === currentUser.branchId))
+                    .map(offer => (
+                      <button
+                        key={offer.id}
+                        onClick={async () => {
+                          if (offer.couponCode) {
+                            setCouponLoading(true);
+                            const result = await validateCoupon(offer.couponCode, selectedPlanForCheckout.id);
+                            if (result.valid) {
+                              setCouponCode(offer.couponCode);
+                              setCouponDiscount(result.discount);
+                              showToast(`Offer Applied: ${offer.title}`, 'success');
+                            } else {
+                              showToast(result.message, 'error');
+                            }
+                            setCouponLoading(false);
+                          }
+                        }}
+                        className={`flex-shrink-0 w-48 rounded-2xl border-2 transition-all text-left overflow-hidden snap-start ${couponCode === offer.couponCode ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+                      >
+                        <div className="aspect-[2/1] bg-slate-100 relative">
+                          <img src={offer.imageUrl} className="w-full h-full object-cover" alt="" />
+                          {couponCode === offer.couponCode && (
+                            <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center">
+                              <i className="fas fa-check-circle text-emerald-500 text-xl shadow-sm bg-white rounded-full"></i>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <p className="text-[9px] font-black text-slate-900 uppercase truncate mb-1">{offer.title}</p>
+                          <div className="flex items-center gap-1.5">
+                            <i className="fas fa-gift text-emerald-500 text-[10px]"></i>
+                            <span className="text-[10px] font-bold text-emerald-600">TAP TO APPLY</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+
+                  {/* Manual Code Fallback */}
+                  <div className={`flex-shrink-0 w-48 rounded-2xl border-2 p-3 flex flex-col justify-center snap-start ${!couponCode && couponDiscount === 0 ? 'border-slate-100 bg-slate-50' : 'border-dashed border-slate-100 opacity-50'}`}>
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">Other Code?</p>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        placeholder="CODE"
+                        className="w-full p-2 bg-white border border-slate-200 rounded-lg outline-none font-black text-[10px] uppercase tracking-widest"
+                        value={couponCode}
+                        onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={!couponCode || couponLoading}
+                        className="p-2 bg-slate-900 text-white rounded-lg hover:bg-black disabled:opacity-50"
+                      >
+                        <i className={`fas ${couponLoading ? 'fa-spinner fa-spin' : 'fa-arrow-right'} text-[10px]`}></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Trainer Assignment for PT/Group */}
@@ -298,7 +338,7 @@ const MembershipStore: React.FC = () => {
               )}
 
               <div className="space-y-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Options</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Method</p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setSelectedMethod('UPI')}
@@ -350,6 +390,7 @@ const MembershipStore: React.FC = () => {
         customerEmail={currentUser.email}
         onSuccess={handlePaymentSuccess}
         onError={handlePaymentError}
+        showConfirmation={false}
       />
 
       <style>{`
