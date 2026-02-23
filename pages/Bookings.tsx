@@ -501,18 +501,26 @@ const Bookings: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instructor</label>
-                <select
-                  required
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-xs uppercase"
-                  value={classFormData.trainerId}
-                  onChange={e => setClassFormData({ ...classFormData, trainerId: e.target.value })}
-                >
-                  <option value="">Select Instructor...</option>
-                  {trainers.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+                {currentUser?.role === UserRole.TRAINER ? (
+                  // Trainers are always the instructor — no selection needed
+                  <div className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-2xl font-black text-xs uppercase text-indigo-700 flex items-center gap-2">
+                    <i className="fas fa-user-check"></i> {currentUser.name}
+                  </div>
+                ) : (
+                  <select
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-xs uppercase"
+                    value={classFormData.trainerId}
+                    onChange={e => setClassFormData({ ...classFormData, trainerId: e.target.value })}
+                  >
+                    <option value="">Select Instructor...</option>
+                    {trainers.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
+
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
