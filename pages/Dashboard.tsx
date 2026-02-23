@@ -16,7 +16,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Dashboard: React.FC = () => {
-  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible } = useAppContext();
+  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible, bookings } = useAppContext();
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
 
@@ -64,10 +64,45 @@ const Dashboard: React.FC = () => {
 
   // TRAINER DASHBOARD
   if (isTrainer) {
-    // ... (Existing Trainer Dashboard Code - No Changes needed here, but included for context if I were replacing whole file)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const currentTimeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    // Assigned clients = unique members with active PT subscriptions under this trainer
+    const assignedClients = subscriptions.filter(s =>
+      s.trainerId === currentUser.id && s.status === SubscriptionStatus.ACTIVE
+    ).length;
+
+    // Today's sessions = bookings assigned to this trainer today (any status except CANCELLED)
+    const todayBookings = (bookings || []).filter((b: any) =>
+      b.trainerId === currentUser.id &&
+      b.date === todayStr &&
+      b.status !== 'CANCELLED'
+    );
+    const todaySessionCount = todayBookings.length;
+
+    // Next upcoming session (BOOKED, not yet completed, time in future)
+    const now = new Date();
+    const upcomingBookings = todayBookings
+      .filter((b: any) => b.status === 'BOOKED')
+      .sort((a: any, z: any) => {
+        const ta = new Date(`${todayStr} ${a.timeSlot}`).getTime();
+        const tz = new Date(`${todayStr} ${z.timeSlot}`).getTime();
+        return ta - tz;
+      });
+    const nextBooking = upcomingBookings.find((b: any) => {
+      return new Date(`${todayStr} ${b.timeSlot}`).getTime() > now.getTime();
+    });
+    const nextSessionLabel = nextBooking
+      ? `Next: ${nextBooking.timeSlot}`
+      : todaySessionCount > 0 ? 'All sessions done today' : 'No sessions today';
+
+    // Total sessions completed by this trainer
+    const completedSessions = (bookings || []).filter((b: any) =>
+      b.trainerId === currentUser.id && b.status === 'COMPLETED'
+    ).length;
+
     return (
       <div className="space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
-        {/* ... Trainer UI ... */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Coach Dashboard</h2>
@@ -80,43 +115,46 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Assigned Clients */}
           <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-4">
             <div className="bg-blue-50 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600">
               <i className="fas fa-users text-xl"></i>
             </div>
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assigned Clients</p>
-              <p className="text-3xl font-black text-slate-900">{subscriptions.filter(s => s.trainerId === currentUser.id && s.status === 'ACTIVE').length}</p>
+              <p className="text-3xl font-black text-slate-900">{assignedClients}</p>
             </div>
             <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">Active personal training</p>
           </div>
 
+          {/* Today's Sessions */}
           <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-4">
             <div className="bg-emerald-50 w-12 h-12 rounded-2xl flex items-center justify-center text-emerald-600">
               <i className="fas fa-calendar-day text-xl"></i>
             </div>
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Today's Sessions</p>
-              {/* In a real app, filter bookings by date */}
-              <p className="text-3xl font-black text-slate-900">4</p>
+              <p className="text-3xl font-black text-slate-900">{todaySessionCount}</p>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">Next: 2:00 PM - Yoga</p>
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{nextSessionLabel}</p>
           </div>
 
+          {/* Total Completed Sessions */}
           <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-4">
             <div className="bg-amber-50 w-12 h-12 rounded-2xl flex items-center justify-center text-amber-600">
-              <i className="fas fa-star text-xl"></i>
+              <i className="fas fa-check-circle text-xl"></i>
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">My Rating</p>
-              <p className="text-3xl font-black text-slate-900">4.9 <span className="text-sm text-slate-400">/ 5</span></p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sessions Completed</p>
+              <p className="text-3xl font-black text-slate-900">{completedSessions}</p>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">Based on member feedback</p>
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">All time total</p>
           </div>
         </div>
       </div>
     );
   }
+
 
   // MEMBER DASHBOARD (No Changes)
   if (!isAdmin) {
