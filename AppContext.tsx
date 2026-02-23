@@ -155,11 +155,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setGlobalLoading(true);
     try {
       const { data: bData } = await supabase.from('branches').select('*');
-      if (bData && bData.length > 0) setBranches(bData);
-      else {
-        const { error } = await supabase.from('branches').insert(BRANCHES);
-        if (!error) setBranches(BRANCHES);
+      const finalBranches = bData || [];
+
+      // Seed missing branches if any from our constant are not in DB
+      const missingBranches = BRANCHES.filter(mb => !finalBranches.find(b => b.id === mb.id));
+      if (missingBranches.length > 0) {
+        const { data: inserted } = await supabase.from('branches').upsert(missingBranches).select();
+        if (inserted) finalBranches.push(...inserted);
       }
+      setBranches(finalBranches);
 
       const { data: uData } = await supabase.from('users').select('*');
       if (uData && uData.length > 0) setUsers(uData);
@@ -219,6 +223,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: wiData } = await supabase.from('walk_ins').select('*');
       if (wiData) setWalkIns(wiData);
+
+      // Verify and sync Super Admin profile if logged in but profile missing
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser && !uData?.find(u => u.id === authUser.id)) {
+        const { data: profile } = await supabase.from('users').upsert({
+          id: authUser.id,
+          name: authUser.user_metadata?.name || 'Super Admin',
+          email: authUser.email,
+          role: authUser.user_metadata?.role || UserRole.SUPER_ADMIN,
+          phone: authUser.user_metadata?.phone || '',
+          avatar: authUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${authUser.user_metadata?.name || 'Admin'}`
+        }).select().single();
+
+        if (profile) setUsers(prev => [...prev, profile]);
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
