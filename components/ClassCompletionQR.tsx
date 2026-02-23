@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../AppContext';
 import { Booking, ClassCompletionCode, PlanType } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 interface ClassCompletionQRProps {
   isOpen: boolean;
@@ -19,6 +20,22 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [generatedCode, setGeneratedCode] = useState<ClassCompletionCode | null>(null);
   const [qrToken, setQrToken] = useState<string>('');
+  // Live member name map — fetched fresh every time the modal opens to avoid "Unknown"
+  const [memberMap, setMemberMap] = useState<Record<string, string>>({});
+
+  // Fetch fresh member names from Supabase when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    supabase.from('users').select('id, name, phone, email').then(({ data }) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(u => {
+          map[u.id] = u.name || u.email || u.phone || 'Member';
+        });
+        setMemberMap(map);
+      }
+    });
+  }, [isOpen]);
 
   // Generate dynamic QR code that refreshes every 15 seconds
   useEffect(() => {
@@ -52,8 +69,12 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
     return isTrainer && isDate && isBooked && isType;
   });
 
-  const getMemberName = (memberId: string) => {
-    return users.find(u => u.id === memberId)?.name || 'Unknown';
+  // Resolve member name: try local context first, then live memberMap
+  const getMemberName = (memberId: string | null | undefined) => {
+    if (!memberId) return 'Unknown Member';
+    const localUser = users.find(u => u.id === memberId);
+    if (localUser?.name && localUser.name !== 'Unknown') return localUser.name;
+    return memberMap[memberId] || 'Loading...';
   };
 
   const getClassTitle = (booking: Booking) => {
@@ -209,7 +230,7 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
             </div>
 
             <div className="space-y-2 mb-6">
-              <p className="font-bold text-lg text-slate-900">{getMemberName(selectedBooking?.memberId || '')}</p>
+              <p className="font-bold text-lg text-slate-900">{getMemberName(selectedBooking?.memberId)}</p>
               <p className="text-sm text-slate-500">{getClassTitle(selectedBooking!)} • {selectedBooking?.timeSlot}</p>
               <div className="flex items-center justify-center gap-2 mt-3">
                 <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
