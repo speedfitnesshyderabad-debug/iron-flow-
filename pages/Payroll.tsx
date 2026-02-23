@@ -5,7 +5,7 @@ import { UserRole, Payroll as PayrollType, User } from '../types';
 import PayslipModal from '../components/PayslipModal';
 
 const Payroll: React.FC = () => {
-    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays, selectedBranchId: globalBranchId } = useAppContext();
+    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays, selectedBranchId: globalBranchId, bookings, subscriptions, plans } = useAppContext();
 
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -44,6 +44,40 @@ const Payroll: React.FC = () => {
         );
     }, [users, selectedBranchId]);
 
+    // Calculate real commission earned by a staff member for a given month/year
+    // Based on COMPLETED bookings × plan price × commissionPercentage
+    const calculateCommission = (staffId: string, month: number, year: number) => {
+        const completedBookings = bookings.filter(b => {
+            if (b.trainerId !== staffId) return false;
+            if (b.status !== 'COMPLETED') return false;
+            const d = new Date(b.date);
+            return d.getMonth() === month && d.getFullYear() === year;
+        });
+
+        if (completedBookings.length === 0) return 0;
+
+        const staff = users.find(u => u.id === staffId);
+        const commissionRate = (staff?.commissionPercentage || 0) / 100;
+        if (commissionRate === 0) return 0;
+
+        let totalCommission = 0;
+        completedBookings.forEach(b => {
+            // Find the related subscription to get the plan price
+            const sub = subscriptions.find(s =>
+                s.memberId === b.memberId &&
+                s.trainerId === staffId &&
+                s.status === 'ACTIVE'
+            );
+            const plan = sub ? plans.find(p => p.id === sub.planId) : null;
+            const sessionValue = plan?.price && plan?.maxSessions
+                ? plan.price / plan.maxSessions
+                : 0;
+            totalCommission += sessionValue * commissionRate;
+        });
+
+        return Math.round(totalCommission);
+    };
+
     // Combine Live Data with Saved Payroll Records
     const payrollData = useMemo(() => {
         return branchStaff.map(staff => {
@@ -73,13 +107,7 @@ const Payroll: React.FC = () => {
 
             // Calculate Live
             const stats = calculateMonthlySalary(staff, attendance, selectedMonth, selectedYear, branches, holidays);
-            // NOTE: Commissions are NOT in stats yet. We can add a placeholder or simple calc if needed.
-            // For now, let's assume 0 commission in "Live" view or implement it properly? 
-            // The implementation plan said "commissionAmount" in payroll table. 
-            // Let's assume 0 for now to avoid re-implementing complex logic here. 
-            // Or better, we should reuse `MyEarnings` logic? That's hard to duplicate.
-            // Let's keep it 0 for "Live Estimate" and allow manual edit or auto-calc later? 
-            // For this task, we will show 0 commission in estimate.
+            const commission = calculateCommission(staff.id, selectedMonth, selectedYear);
 
             return {
                 user: staff,
@@ -91,13 +119,13 @@ const Payroll: React.FC = () => {
                     baseSalary: stats.baseSalary,
                     deductions: stats.deductions,
                     finalBaseSalary: stats.finalBaseSalary,
-                    netSalary: stats.finalBaseSalary, // + 0 comms
-                    commission: 0,
+                    netSalary: stats.finalBaseSalary + commission,
+                    commission: commission,
                     payableDays: stats.payableDays
                 }
             };
         });
-    }, [branchStaff, payroll, selectedMonth, selectedYear, attendance, branches]);
+    }, [branchStaff, payroll, selectedMonth, selectedYear, attendance, branches, bookings, subscriptions, plans]);
 
     const handleGenerate = async (item: any) => {
         if (processingId) return;
@@ -127,8 +155,8 @@ const Payroll: React.FC = () => {
                 baseSalary: stats.baseSalary,
                 payableDays: stats.payableDays,
                 deductions: stats.deductions,
-                commissionAmount: 0, // Placeholder
-                netSalary: stats.finalBaseSalary, // + 0
+                commissionAmount: calculateCommission(item.user.id, selectedMonth, selectedYear),
+                netSalary: stats.finalBaseSalary + calculateCommission(item.user.id, selectedMonth, selectedYear),
                 status: 'GENERATED',
                 generatedAt: new Date().toISOString(),
                 details: {
