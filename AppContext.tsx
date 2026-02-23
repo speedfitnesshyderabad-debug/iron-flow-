@@ -154,10 +154,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchData = async () => {
     setGlobalLoading(true);
     try {
+      // 1. Sync User Profile EARLY (Required for RLS to allow further fetching/seeding)
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: existingProfile } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+        if (!existingProfile) {
+          const { data: profile } = await supabase.from('users').upsert({
+            id: authUser.id,
+            name: authUser.user_metadata?.name || 'Super Admin',
+            email: authUser.email,
+            role: authUser.user_metadata?.role || UserRole.SUPER_ADMIN,
+            phone: authUser.user_metadata?.phone || '',
+            avatar: authUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${authUser.user_metadata?.name || 'Admin'}`
+          }).select().single();
+          if (profile) setUsers(prev => [...prev, profile]);
+        }
+      }
+
+      // 2. Fetch/Seed Branches
       const { data: bData } = await supabase.from('branches').select('*');
       const finalBranches = bData || [];
-
-      // Seed missing branches if any from our constant are not in DB
       const missingBranches = BRANCHES.filter(mb => !finalBranches.find(b => b.id === mb.id));
       if (missingBranches.length > 0) {
         const { data: inserted } = await supabase.from('branches').upsert(missingBranches).select();
@@ -165,17 +181,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setBranches(finalBranches);
 
+      // 3. Fetch/Seed Users
       const { data: uData } = await supabase.from('users').select('*');
-      if (uData && uData.length > 0) setUsers(uData);
-      // Removed auto-population of MOCK_USERS to prevent conflict with real user setup
+      if (uData) setUsers(uData);
 
+      // 4. Fetch/Seed Plans (Ensuring plans exist for all branches)
       const { data: pData } = await supabase.from('plans').select('*');
-      if (pData && pData.length > 0) setPlans(pData);
-      else {
-        const { error } = await supabase.from('plans').insert(MOCK_PLANS);
-        if (!error) setPlans(MOCK_PLANS);
-      }
+      let finalPlans = pData || [];
 
+      if (finalPlans.length === 0) {
+        // Expand MOCK_PLANS to all branches if table is empty
+        const seededPlans: Plan[] = [];
+        finalBranches.forEach(branch => {
+          MOCK_PLANS.forEach(mockP => {
+            // Add branch-specific plans and global multi-branch plans
+            if (!mockP.isMultiBranch) {
+              seededPlans.push({ ...mockP, id: `${mockP.id}-${branch.id}`, branchId: branch.id });
+            } else if (branch.id === 'b1') {
+              // Only seed one instance of multi-branch plan (usually at HQ)
+              seededPlans.push(mockP);
+            }
+          });
+        });
+        const { data: insertedPlans } = await supabase.from('plans').insert(seededPlans).select();
+        if (insertedPlans) finalPlans = insertedPlans;
+      }
+      setPlans(finalPlans);
+
+      // 5. Fetch other data...
       const { data: sData } = await supabase.from('subscriptions').select('*');
       if (sData) setSubscriptions(sData);
 
@@ -205,8 +238,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { data: oData } = await supabase.from('offers').select('*');
       if (oData && oData.length > 0) setOffers(oData);
       else {
-        const { error } = await supabase.from('offers').insert(MOCK_OFFERS);
-        if (!error) setOffers(MOCK_OFFERS);
+        const { error: oError } = await supabase.from('offers').insert(MOCK_OFFERS);
+        if (!oError) setOffers(MOCK_OFFERS);
       }
 
       const { data: csData } = await supabase.from('class_schedules').select('*');
@@ -223,21 +256,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data: wiData } = await supabase.from('walk_ins').select('*');
       if (wiData) setWalkIns(wiData);
-
-      // Verify and sync Super Admin profile if logged in but profile missing
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser && !uData?.find(u => u.id === authUser.id)) {
-        const { data: profile } = await supabase.from('users').upsert({
-          id: authUser.id,
-          name: authUser.user_metadata?.name || 'Super Admin',
-          email: authUser.email,
-          role: authUser.user_metadata?.role || UserRole.SUPER_ADMIN,
-          phone: authUser.user_metadata?.phone || '',
-          avatar: authUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${authUser.user_metadata?.name || 'Admin'}`
-        }).select().single();
-
-        if (profile) setUsers(prev => [...prev, profile]);
-      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
