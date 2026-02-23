@@ -319,8 +319,7 @@ const Staff: React.FC = () => {
                 staffMembers.map(staff => {
                   const branch = branches.find(b => b.id === staff.branchId);
                   const today = new Date().toISOString().split('T')[0];
-                  const todayLog = attendance.find(a => a.userId === staff.id && a.date === today);
-                  const isCheckedIn = todayLog && !todayLog.timeOut;
+                  const isCheckedIn = attendance.some(a => a.userId === staff.id && a.date === today && !a.timeOut);
 
                   return (
                     <tr key={staff.id} className="hover:bg-gray-50 transition-colors group">
