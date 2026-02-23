@@ -189,14 +189,30 @@ const CheckIn: React.FC = () => {
   };
 
   const handleQRScan = async (decodedText: string) => {
-    try {
-      // Attempt to parse as JSON
-      const parsedData = JSON.parse(decodedText);
+    let parsedData: any = null;
 
-      // Handle Class Completion
+    // Attempt to parse as JSON
+    try {
+      parsedData = JSON.parse(decodedText);
+    } catch (e) {
+      // Not JSON — treat as legacy string format below
+    }
+
+    if (parsedData) {
+      // Handle Class Completion (PT or Group) — completely isolated path
       if (parsedData.type === 'CLASS_COMPLETION' && parsedData.bookingId) {
-        await handleClassCompletion(parsedData);
-        return;
+        try {
+          await handleClassCompletion(parsedData);
+        } catch (err) {
+          console.error('[CheckIn] CLASS_COMPLETION handling failed:', err);
+          playStatusSound('error');
+          setScanResult({
+            success: false,
+            message: 'Failed to complete class session. Please try again.'
+          });
+          setTimeout(() => setScanResult(null), 3000);
+        }
+        return; // Always return after CLASS_COMPLETION — never fall through to branch logic
       }
 
       // Handle Branch Entry (Dynamic)
@@ -230,15 +246,20 @@ const CheckIn: React.FC = () => {
         return;
       }
 
-    } catch (e) {
-      // Not JSON, treat as legacy string format
+      // Unrecognised JSON QR type — show error instead of treating as branch
+      playStatusSound('error');
+      setScanResult({
+        success: false,
+        message: `Unrecognised QR code type: "${parsedData.type || 'unknown'}". Please scan a valid Branch or Class QR.`
+      });
+      setTimeout(() => setScanResult(null), 3000);
+      return;
     }
 
     // Legacy: Check for Pipe Separator (Old Dynamic Format)
     if (decodedText.includes('|')) {
       const parts = decodedText.split('|');
       // Format: branchId|timestamp|random
-      // We'll just take the branchId for now to be nice, or valid it if we cared about the old format
       handleCheckIn(parts[0]);
       return;
     }
@@ -246,6 +267,7 @@ const CheckIn: React.FC = () => {
     // Default: Plain String (Legacy Static)
     handleCheckIn(decodedText);
   };
+
 
   const handleClassCompletion = async (completionData: any) => {
     const { bookingId, trainerId, memberId, classType } = completionData;

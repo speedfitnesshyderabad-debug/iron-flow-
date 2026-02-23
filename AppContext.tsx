@@ -44,6 +44,7 @@ interface AppContextType {
   recordAttendance: (att: Attendance) => Promise<void>;
   updateAttendance: (id: string, updates: Partial<Attendance>) => Promise<void>;
   addBooking: (booking: Booking) => Promise<void>;
+  updateBooking: (id: string, updates: Partial<Booking>) => Promise<void>;
   addFeedback: (fb: Feedback) => Promise<void>;
   updateFeedbackStatus: (id: string, status: Feedback['status']) => Promise<void>;
   addInventory: (item: InventoryItem) => Promise<void>;
@@ -524,6 +525,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setBookings(prev => [...prev, b]);
       showToast('Booking confirmed');
     } else showToast('Booking failed', 'error');
+  };
+
+  const updateBooking = async (id: string, updates: Partial<Booking>) => {
+    const { error } = await supabase.from('bookings').update(updates).eq('id', id);
+    if (!error) {
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+    } else {
+      console.error('Update booking error:', error);
+      showToast('Failed to update booking: ' + error.message, 'error');
+      throw error;
+    }
   };
 
   const addFeedback = async (f: Feedback) => {
@@ -1550,7 +1562,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       coupons, addCoupon, updateCoupon, deleteCoupon, validateCoupon,
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
-      addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
+      addSubscription, addSale, recordAttendance, updateAttendance, addBooking, updateBooking, addFeedback, updateFeedbackStatus,
       addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
       generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers,
       walkIns, addWalkIn,
