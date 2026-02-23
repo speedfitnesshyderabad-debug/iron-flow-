@@ -878,7 +878,7 @@ const Members: React.FC = () => {
         customerName={pendingEnrollment ? enrollData.name : (renewTarget?.member.name || '')}
         customerEmail={pendingEnrollment ? enrollData.email : (renewTarget?.member.email || '')}
         customerPhone={pendingEnrollment ? enrollData.emergencyContact : (renewTarget?.member.emergencyContact || '')}
-        branchId={pendingEnrollment?.branchId || currentUser?.branchId}
+        branchId={pendingEnrollment?.branchId || renewTarget?.member.branchId || currentUser?.branchId}
         onSuccess={handlePaymentSuccess}
         onError={(error) => {
           console.error('Payment error:', error);
