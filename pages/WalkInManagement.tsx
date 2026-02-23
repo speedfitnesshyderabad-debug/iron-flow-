@@ -30,7 +30,7 @@ const WalkInManagement: React.FC = () => {
 
   const filteredWalkIns = walkIns.filter(w =>
     isRowVisible(w.branchId) &&
-    (filterStatus === 'ALL' || w.status === filterStatus)
+    (filterStatus === 'ALL' ? w.status !== 'CONVERTED' && w.status !== 'NOT_INTERESTED' : w.status === filterStatus)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
