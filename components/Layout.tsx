@@ -18,6 +18,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartRef = useRef<number | null>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Stop camera stream
   const stopCamera = () => {
@@ -199,6 +203,42 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (mainContentRef.current && mainContentRef.current.scrollTop === 0) {
+      touchStartRef.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartRef.current !== null && mainContentRef.current && mainContentRef.current.scrollTop === 0) {
+      const currentTouch = e.touches[0].clientY;
+      const distance = currentTouch - touchStartRef.current;
+
+      if (distance > 0) {
+        // Apply resistance
+        const newDistance = Math.min(distance * 0.4, 150);
+        setPullDistance(newDistance);
+        if (newDistance > 80) {
+          // Prevent default scrolling when pulling down enough to refresh
+          if (e.cancelable) e.preventDefault();
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 100) {
+      setIsRefreshing(true);
+      setPullDistance(80); // Snap to threshold
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } else {
+      setPullDistance(0);
+    }
+    touchStartRef.current = null;
+  };
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-gray-50 font-sans">
 
@@ -231,21 +271,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
 
         {/* Full Navigation List */}
-        <nav className="flex-1 mt-6 overflow-y-auto scrollbar-hide">
-          {filteredNav.map(item => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={closeMobileMenu}
-                className={`flex items-center gap-4 px-6 py-4 hover:bg-slate-800 transition-all ${isActive ? 'bg-slate-800 border-l-4 border-blue-500 text-blue-400 font-bold' : 'text-slate-400'}`}
-              >
-                <span className="text-xl w-6 flex justify-center">{item.icon}</span>
-                {(isSidebarOpen || isMobileMenuOpen) && <span className="font-medium text-sm truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 mt-6 overflow-y-auto">
+          <div className="pb-32">
+            {filteredNav.map(item => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={closeMobileMenu}
+                  className={`flex items-center gap-4 px-6 py-4 hover:bg-slate-800 transition-all ${isActive ? 'bg-slate-800 border-l-4 border-blue-500 text-blue-400 font-bold' : 'text-slate-400'}`}
+                >
+                  <span className="text-xl w-6 flex justify-center">{item.icon}</span>
+                  {(isSidebarOpen || isMobileMenuOpen) && <span className="font-medium text-sm truncate">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Sidebar Bottom Actions */}
@@ -317,8 +359,29 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50 pb-24 md:pb-8 scrollbar-hide">
-          {children}
+        <main
+          ref={mainContentRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50 pb-24 md:pb-8 relative"
+        >
+          {/* Pull to Refresh Indicator */}
+          {pullDistance > 0 && (
+            <div
+              className={`absolute top-0 left-0 right-0 flex justify-center items-center pointer-events-none transition-opacity ${isRefreshing ? 'opacity-100' : 'opacity-80'}`}
+              style={{ height: `${pullDistance}px`, transform: `translateY(0)` }}
+            >
+              <div className={`bg-white shadow-xl rounded-full p-2 border border-gray-100 transition-transform ${isRefreshing ? 'animate-spin' : ''}`}
+                style={{ transform: `rotate(${pullDistance * 3}deg)` }}>
+                <i className={`fas ${isRefreshing ? 'fa-sync-alt' : 'fa-arrow-down'} text-blue-600`}></i>
+              </div>
+            </div>
+          )}
+
+          <div style={{ transform: isRefreshing ? 'translateY(80px)' : `translateY(${pullDistance * 0.5}px)`, transition: pullDistance === 0 ? 'transform 0.3s ease-out' : 'none' }}>
+            {children}
+          </div>
         </main>
 
         {/* Bottom Quick-Nav for Mobile */}
