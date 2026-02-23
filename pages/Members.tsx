@@ -888,7 +888,7 @@ const Members: React.FC = () => {
             onClose={() => setRenewModalOpen(false)}
             member={renewTarget.member}
             currentPlan={renewTarget.currentPlan}
-            plans={plans}
+            plans={plans.filter(p => p.isActive && (p.branchId === renewTarget.member.branchId || p.isMultiBranch))}
             onRenew={handleProcessRenew}
             requirePin={true} // Admin facing, so require PIN for cash/pos
           />
