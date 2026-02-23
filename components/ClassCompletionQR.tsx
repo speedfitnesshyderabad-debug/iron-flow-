@@ -22,18 +22,24 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
   const [qrToken, setQrToken] = useState<string>('');
   // Live member name map — fetched fresh every time the modal opens to avoid "Unknown"
   const [memberMap, setMemberMap] = useState<Record<string, string>>({});
+  const [isMembersFetched, setIsMembersFetched] = useState(false);
 
   // Fetch fresh member names from Supabase when modal opens
   useEffect(() => {
     if (!isOpen) return;
-    supabase.from('users').select('id, name, phone, email').then(({ data }) => {
+    setIsMembersFetched(false);
+    supabase.from('users').select('id, name, phone, email, "memberId"').then(({ data }) => {
       if (data) {
         const map: Record<string, string> = {};
         data.forEach(u => {
-          map[u.id] = u.name || u.email || u.phone || 'Member';
+          const displayName = u.name || u.email || u.phone || 'Member';
+          // Index by both auth id AND memberId field to cover all cases
+          if (u.id) map[u.id] = displayName;
+          if (u.memberId) map[u.memberId] = displayName;
         });
         setMemberMap(map);
       }
+      setIsMembersFetched(true);
     });
   }, [isOpen]);
 
@@ -72,9 +78,14 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
   // Resolve member name: try local context first, then live memberMap
   const getMemberName = (memberId: string | null | undefined) => {
     if (!memberId) return 'Unknown Member';
-    const localUser = users.find(u => u.id === memberId);
-    if (localUser?.name && localUser.name !== 'Unknown') return localUser.name;
-    return memberMap[memberId] || 'Loading...';
+    // 1. Try local users context
+    const localUser = users.find(u => u.id === memberId || u.memberId === memberId);
+    if (localUser?.name) return localUser.name;
+    // 2. Try live memberMap
+    if (memberMap[memberId]) return memberMap[memberId];
+    // 3. If fetch is done and still not found, show a short ID reference
+    if (isMembersFetched) return `Member (${memberId.slice(-6)})`;
+    return 'Loading...';
   };
 
   const getClassTitle = (booking: Booking) => {
