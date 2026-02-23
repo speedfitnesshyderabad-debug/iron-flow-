@@ -140,6 +140,8 @@ const Payroll: React.FC = () => {
                     halfDays: stats.halfDays,
                     absentDays: stats.absentDays,
                     penaltyDays: stats.penaltyDays,
+                    forgotCheckoutPenalties: stats.forgotCheckoutPenalties,
+                    forgotCheckoutAmount: stats.forgotCheckoutAmount,
                     dailyRate: stats.dailyRate
                 }
             } as any; // Type cast to avoid ID issue if optional

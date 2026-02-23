@@ -13,6 +13,8 @@ export interface SalaryBreakdown {
     halfDays: number;
     absentDays: number;
     penaltyDays: number;
+    forgotCheckoutPenalties: number;
+    forgotCheckoutAmount: number;
     dailyRate: number;
     breakdown: string;
 }
@@ -162,10 +164,15 @@ export const calculateMonthlySalary = (
 
     const totalPenaltyDays = latePenaltyDays + halfDayPenaltyDays;
 
+    // 4b. Count "Forgot Checkout" flat penalties (₹100 each)
+    const FORGOT_CHECKOUT_PENALTY = 100;
+    const forgotCheckoutPenalties = monthlyLogs.filter(log =>
+        log.notes && log.notes.includes('Penalty')
+    ).length;
+    const forgotCheckoutAmount = forgotCheckoutPenalties * FORGOT_CHECKOUT_PENALTY;
+
     // 5. Calculate Payable Days
-    // Payable = Present + WeekOffs + Holidays
-    // Actually: Payable = TotalDays - (TrueAbsences + Penalties)
-    // Let's count True Absences
+    // Payable = TotalDays - (TrueAbsences + Penalties)
     let absentDaysCount = 0;
     for (let d = 1; d <= daysInMonth; d++) {
         const currentDate = new Date(year, month, d);
@@ -181,13 +188,14 @@ export const calculateMonthlySalary = (
     const totalDeductibleDays = absentDaysCount + totalPenaltyDays;
     const payableDays = Math.max(0, daysInMonth - totalDeductibleDays);
 
-    const deductions = totalDeductibleDays * dailyRate;
-    const finalBaseSalary = Math.max(0, monthlySalary - deductions);
+    const dayBasedDeductions = totalDeductibleDays * dailyRate;
+    const totalDeductions = dayBasedDeductions + forgotCheckoutAmount;
+    const finalBaseSalary = Math.max(0, monthlySalary - totalDeductions);
 
     return {
         baseSalary: monthlySalary,
         finalBaseSalary,
-        deductions,
+        deductions: totalDeductions,
         payableDays,
         presentDays: presentDaysCount,
         totalDays: daysInMonth,
@@ -197,7 +205,9 @@ export const calculateMonthlySalary = (
         halfDays,
         absentDays: absentDaysCount,
         penaltyDays: totalPenaltyDays,
+        forgotCheckoutPenalties,
+        forgotCheckoutAmount,
         dailyRate,
-        breakdown: `Present: ${presentDaysCount}, Lates: ${lateMarks} (-${latePenaltyDays}d), HalfDays: ${halfDays} (-${halfDayPenaltyDays}d), Absent: ${absentDaysCount}`
+        breakdown: `Present: ${presentDaysCount}, Lates: ${lateMarks} (-${latePenaltyDays}d), HalfDays: ${halfDays} (-${halfDayPenaltyDays}d), Absent: ${absentDaysCount}${forgotCheckoutPenalties > 0 ? `, Forgot Checkout: ${forgotCheckoutPenalties} (-₹${forgotCheckoutAmount})` : ''}`
     };
 };
