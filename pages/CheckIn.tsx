@@ -318,11 +318,11 @@ const CheckIn: React.FC = () => {
     playStatusSound('success'); // SUCCESS SOUND
     setScanResult({
       success: true,
-      message: `${classTypeLabel} Completed! ${commission}% commission credited to trainer.`,
+      message: `✅ ${classTypeLabel} Completed! Thank you, see you next session.`,
       subType: classType
     });
 
-    showToast(`Class completed! Commission earned: ${commission}%`, 'success');
+    showToast(`Class completed! Trainer commission: ${commission}%`, 'success');
 
     // Trigger gate for exit
     setIsGateOpen(true);
