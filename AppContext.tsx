@@ -1226,10 +1226,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createSession = async (userId: string): Promise<{ success: boolean; message?: string }> => {
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       const user = users.find(u => u.id === userId);
+
+      // FALLBACK: Use Auth metadata if public profile is missing
+      const userRole = user?.role || authUser?.user_metadata?.role;
+
       // STRICT: Default to 1 device for Staff/Members
       // Exception: Super Admin & Branch Admin have UNLIMITED devices (999) by default
-      const defaultLimit = (user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.BRANCH_ADMIN) ? 999 : 1;
+      const defaultLimit = (userRole === UserRole.SUPER_ADMIN || userRole === UserRole.BRANCH_ADMIN) ? 999 : 1;
       const limit = user?.maxDevices ?? defaultLimit;
 
       const fingerprint = await generateDeviceFingerprint();
