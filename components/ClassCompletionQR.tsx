@@ -254,7 +254,7 @@ export const ClassCompletionQR: React.FC<ClassCompletionQRProps> = ({
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6">
               <p className="text-xs text-amber-700 font-medium">
                 <i className="fas fa-info-circle mr-1"></i>
-                Ask member to scan this QR at reception or check-out gate
+                Ask member to scan this QR
               </p>
             </div>
 
