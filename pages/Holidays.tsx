@@ -31,7 +31,15 @@ const Holidays: React.FC = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (window.confirm('Are you sure you want to remove this holiday?')) {
+        const holiday = holidays.find(h => h.id === id);
+        const today = new Date().toISOString().split('T')[0];
+        const isPast = holiday && holiday.date <= today;
+
+        const message = isPast
+            ? `⚠️ WARNING: "${holiday.name}" (${holiday.date}) has already passed.\n\nDeleting it may affect salary calculations — staff who were off that day will be marked as ABSENT and lose pay.\n\nAre you sure you want to delete this holiday?`
+            : 'Are you sure you want to remove this holiday?';
+
+        if (window.confirm(message)) {
             await deleteHoliday(id);
         }
     };
