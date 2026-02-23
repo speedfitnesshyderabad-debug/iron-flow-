@@ -13,7 +13,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const MembershipStore: React.FC = () => {
-  const { plans, currentUser, purchaseSubscription, subscriptions, showToast, branches, users } = useAppContext();
+  const { plans, currentUser, purchaseSubscription, subscriptions, showToast, branches, users, coupons, updateCoupon } = useAppContext();
   const [filter, setFilter] = useState<PlanType | 'ALL'>('ALL');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<Plan | null>(null);
@@ -86,10 +86,10 @@ const MembershipStore: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = (paymentId: string) => {
+  const handlePaymentSuccess = async (paymentId: string) => {
     if (!pendingPlan) return;
 
-    purchaseSubscription(
+    await purchaseSubscription(
       currentUser.id,
       pendingPlan.id,
       'ONLINE',
@@ -99,10 +99,20 @@ const MembershipStore: React.FC = () => {
       couponDiscount
     );
 
+    // Increment coupon usage if one was applied
+    if (couponCode && couponDiscount > 0) {
+      const usedCoupon = coupons.find(c => c.code.toUpperCase() === couponCode.toUpperCase());
+      if (usedCoupon) {
+        await updateCoupon(usedCoupon.id, { timesUsed: (usedCoupon.timesUsed || 0) + 1 });
+      }
+    }
+
     setIsPaymentModalOpen(false);
     setSelectedPlanForCheckout(null);
     setPendingPlan(null);
     setAssignedTrainerId('');
+    setCouponCode('');
+    setCouponDiscount(0);
     showToast(`Payment successful! ID: ${paymentId}`, 'success');
   };
 
