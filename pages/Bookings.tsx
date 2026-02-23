@@ -114,7 +114,7 @@ const Bookings: React.FC = () => {
       status: 'BOOKED'
     };
 
-    addBooking(newBooking);
+    await addBooking(newBooking);
     setIsSubmitting(false);
     showToast("Class Booked Successfully!", "success");
   };
@@ -194,7 +194,7 @@ const Bookings: React.FC = () => {
       status: 'BOOKED'
     };
 
-    addBooking(newBooking);
+    await addBooking(newBooking);
     setIsSubmitting(false);
     setPTBookingModalOpen(false);
     setSelectedTimeSlot('');

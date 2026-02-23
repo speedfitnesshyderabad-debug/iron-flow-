@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
 import { SubscriptionStatus, PlanType, UserRole } from '../types';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { supabase } from '../src/lib/supabase';
 
 const CheckIn: React.FC = () => {
   const { users, subscriptions, plans, recordAttendance, updateAttendance, attendance, currentUser, branches, showToast, bookings, updateBooking } = useAppContext();
@@ -272,16 +273,28 @@ const CheckIn: React.FC = () => {
   const handleClassCompletion = async (completionData: any) => {
     const { bookingId, trainerId, memberId, classType } = completionData;
 
-    // Find the booking
-    const booking = bookings.find(b => b.id === bookingId);
+    // Find the booking — first check local state, then do live Supabase lookup
+    // (local state may be stale if the booking was just created)
+    let booking = bookings.find(b => b.id === bookingId);
+
     if (!booking) {
-      playStatusSound('error'); // ERROR SOUND
-      setScanResult({
-        success: false,
-        message: "Class session not found."
-      });
-      setTimeout(() => setScanResult(null), 3000);
-      return;
+      // Live fallback: fetch directly from Supabase
+      const { data: liveBooking, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', bookingId)
+        .single();
+
+      if (error || !liveBooking) {
+        playStatusSound('error');
+        setScanResult({
+          success: false,
+          message: `PT session not found. It may have been cancelled or the QR is outdated.`
+        });
+        setTimeout(() => setScanResult(null), 4000);
+        return;
+      }
+      booking = liveBooking;
     }
 
     if (booking.status === 'COMPLETED') {
