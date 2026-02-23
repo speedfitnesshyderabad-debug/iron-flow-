@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../src/lib/supabase';
 
 const Staff: React.FC = () => {
-  const { users, branches, currentUser, addUser, updateUser, deleteUser, attendance } = useAppContext();
+  const { users, branches, currentUser, addUser, updateUser, deleteUser, attendance, isRowVisible } = useAppContext();
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isLogsModalOpen, setLogsModalOpen] = useState(false);
@@ -36,8 +36,7 @@ const Staff: React.FC = () => {
   const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
 
   const staffMembers = users.filter(u =>
-    u.role !== UserRole.MEMBER &&
-    (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId)
+    u.role !== UserRole.MEMBER && isRowVisible(u.branchId)
   );
 
   const handleOpenAdd = () => {
@@ -604,9 +603,9 @@ const Staff: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
-                <select 
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase" 
-                  value={formData.branchId} 
+                <select
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase"
+                  value={formData.branchId}
                   onChange={e => setFormData({ ...formData, branchId: e.target.value })}
                   disabled={currentUser?.role !== UserRole.SUPER_ADMIN}
                 >

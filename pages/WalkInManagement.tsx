@@ -4,7 +4,7 @@ import { UserRole, WalkIn } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 const WalkInManagement: React.FC = () => {
-  const { users, currentUser, walkIns, addWalkIn, updateWalkIn, showToast, branches } = useAppContext();
+  const { users, currentUser, walkIns, addWalkIn, updateWalkIn, showToast, branches, isRowVisible } = useAppContext();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWalkIn, setSelectedWalkIn] = useState<WalkIn | null>(null);
@@ -28,11 +28,10 @@ const WalkInManagement: React.FC = () => {
     (currentUser?.role === UserRole.SUPER_ADMIN ? u.branchId === formData.branchId : u.branchId === currentUser?.branchId)
   );
 
-  const filteredWalkIns = walkIns.filter(w => {
-    const matchesStatus = filterStatus === 'ALL' || w.status === filterStatus;
-    const matchesBranch = currentUser?.role === UserRole.SUPER_ADMIN || w.branchId === currentUser?.branchId;
-    return matchesStatus && matchesBranch;
-  });
+  const filteredWalkIns = walkIns.filter(w =>
+    isRowVisible(w.branchId) &&
+    (filterStatus === 'ALL' || w.status === filterStatus)
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

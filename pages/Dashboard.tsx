@@ -16,7 +16,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Dashboard: React.FC = () => {
-  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast } = useAppContext();
+  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible } = useAppContext();
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
 
@@ -26,13 +26,8 @@ const Dashboard: React.FC = () => {
   const isTrainer = currentUser.role === UserRole.TRAINER;
 
   // Role-based filtering for data
-  const filteredSubs = currentUser?.role === UserRole.SUPER_ADMIN
-    ? subscriptions
-    : subscriptions.filter(s => s.branchId === currentUser?.branchId);
-
-  const filteredSales = currentUser?.role === UserRole.SUPER_ADMIN
-    ? sales
-    : sales.filter(s => s.branchId === currentUser?.branchId);
+  const filteredSubs = subscriptions.filter(s => isRowVisible(s.branchId));
+  const filteredSales = sales.filter(s => isRowVisible(s.branchId));
 
   // RENEWAL LOGIC
   const today = new Date().toISOString().split('T')[0];

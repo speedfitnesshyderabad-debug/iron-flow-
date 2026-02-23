@@ -7,7 +7,7 @@ import { UserRole } from '../types';
 import { supabase } from '../src/lib/supabase';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, setCurrentUser, branches, updateUser } = useAppContext();
+  const { currentUser, setCurrentUser, branches, updateUser, selectedBranchId, setSelectedBranchId } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -336,9 +336,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="bg-blue-600 p-1.5 rounded-lg md:hidden shrink-0">
               <i className="fas fa-dumbbell text-white text-[10px]"></i>
             </div>
-            <h1 className="text-sm md:text-lg font-black text-gray-800 tracking-tight truncate pr-2">
-              {userBranch ? userBranch.name : 'IronFlow Global'}
-            </h1>
+            {currentUser.role === UserRole.SUPER_ADMIN ? (
+              <select
+                className="bg-transparent border-none text-sm md:text-lg font-black text-gray-800 tracking-tight focus:ring-0 cursor-pointer outline-none max-w-[150px] md:max-w-none"
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+              >
+                <option value="all">IronFlow Global</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            ) : (
+              <h1 className="text-sm md:text-lg font-black text-gray-800 tracking-tight truncate pr-2">
+                {userBranch ? userBranch.name : 'IronFlow Global'}
+              </h1>
+            )}
           </div>
 
           {/* Header Right: User Info */}

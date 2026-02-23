@@ -18,7 +18,7 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers } = useAppContext();
+  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible } = useAppContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -147,8 +147,7 @@ const Members: React.FC = () => {
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
 
-  const members = users.filter(u => u.role === UserRole.MEMBER &&
-    (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId));
+  const members = users.filter(u => u.role === UserRole.MEMBER && isRowVisible(u.branchId));
 
   const filteredMembers = members.filter(m => {
     // 1. Search Filter

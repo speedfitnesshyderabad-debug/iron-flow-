@@ -13,14 +13,12 @@ const formatCurrency = (amount: number) => {
 };
 
 const Sales: React.FC = () => {
-  const { sales, users, plans, branches, inventory, currentUser, generateTransactionCode } = useAppContext();
+  const { sales, users, plans, branches, inventory, currentUser, generateTransactionCode, isRowVisible } = useAppContext();
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
   const [generatedPIN, setGeneratedPIN] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const filteredSales = currentUser?.role === 'SUPER_ADMIN'
-    ? sales
-    : sales.filter(s => s.branchId === currentUser?.branchId);
+  const filteredSales = sales.filter(s => isRowVisible(s.branchId));
 
   const totalRev = filteredSales.reduce((acc, s) => acc + s.amount, 0);
 

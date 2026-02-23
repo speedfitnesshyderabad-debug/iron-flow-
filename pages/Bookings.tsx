@@ -5,7 +5,7 @@ import { UserRole, PlanType, SubscriptionStatus, Booking, ClassSession } from '.
 import { ClassCompletionQR } from '../components/ClassCompletionQR';
 
 const Bookings: React.FC = () => {
-  const { currentUser, bookings, users, plans, subscriptions, addBooking, showToast, branches, classSchedules, addClassTemplate, deleteClassSession } = useAppContext();
+  const { currentUser, bookings, users, plans, subscriptions, addBooking, showToast, branches, classSchedules, addClassTemplate, deleteClassSession, isRowVisible } = useAppContext();
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,14 +46,13 @@ const Bookings: React.FC = () => {
   ];
 
   const trainers = useMemo(() => users.filter(u =>
-    u.role === UserRole.TRAINER &&
-    (currentUser?.role === UserRole.SUPER_ADMIN || u.branchId === currentUser?.branchId)
-  ), [users, currentUser]);
+    u.role === UserRole.TRAINER && isRowVisible(u.branchId)
+  ), [users, currentUser, isRowVisible]);
 
   const filteredClasses = useMemo(() => {
     return classSchedules
       .filter(s => s.date === selectedDate)
-      .filter(s => currentUser?.role === 'SUPER_ADMIN' || s.branchId === currentUser?.branchId)
+      .filter(s => isRowVisible(s.branchId))
       .sort((a, b) => {
         const timeA = new Date(`2000-01-01 ${a.timeSlot}`).getTime();
         const timeB = new Date(`2000-01-01 ${b.timeSlot}`).getTime();

@@ -1,15 +1,28 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
 import { calculateMonthlySalary, SalaryBreakdown } from '../src/utils/payrollUtils';
 import { UserRole, Payroll as PayrollType, User } from '../types';
 import PayslipModal from '../components/PayslipModal';
 
 const Payroll: React.FC = () => {
-    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays } = useAppContext();
+    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays, selectedBranchId: globalBranchId } = useAppContext();
 
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-    const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || branches[0]?.id || '');
+    const [selectedBranchId, setSelectedBranchId] = useState<string>(() => {
+        if (currentUser?.role === UserRole.SUPER_ADMIN) {
+            return globalBranchId === 'all' ? 'ALL' : globalBranchId;
+        }
+        return currentUser?.branchId || branches[0]?.id || '';
+    });
+
+    // Sync with global branch selection
+    useEffect(() => {
+        if (currentUser?.role === UserRole.SUPER_ADMIN) {
+            setSelectedBranchId(globalBranchId === 'all' ? 'ALL' : globalBranchId);
+        }
+    }, [globalBranchId, currentUser?.role]);
+
     const [isPayslipOpen, setIsPayslipOpen] = useState(false);
     const [selectedPayslipData, setSelectedPayslipData] = useState<any>(null); // To pass to modal
     const [processingId, setProcessingId] = useState<string | null>(null);

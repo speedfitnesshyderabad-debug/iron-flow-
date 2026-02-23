@@ -87,6 +87,9 @@ interface AppContextType {
   importMembers: (importedUsers: Partial<User>[]) => Promise<void>;
   addWalkIn: (walkIn: WalkIn) => Promise<void>;
   updateWalkIn: (id: string, updates: Partial<WalkIn>) => Promise<void>;
+  selectedBranchId: string | 'all';
+  setSelectedBranchId: (id: string | 'all') => void;
+  isRowVisible: (rowBranchId: string | null | undefined) => boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -123,6 +126,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [walkIns, setWalkIns] = useState<WalkIn[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | 'all'>(() => {
+    return localStorage.getItem('selectedBranchId') || 'all';
+  });
+
+  const isRowVisible = useCallback((rowBranchId: string | null | undefined) => {
+    if (!currentUser) return false;
+    if (currentUser.role === UserRole.SUPER_ADMIN) {
+      return selectedBranchId === 'all' || rowBranchId === selectedBranchId;
+    }
+    return rowBranchId === currentUser.branchId;
+  }, [currentUser, selectedBranchId]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedBranchId', selectedBranchId);
+  }, [selectedBranchId]);
 
   const [settlementRate, setSettlementRate] = useState<number>(250);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -1490,7 +1508,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addSubscription, addSale, recordAttendance, updateAttendance, addBooking, addFeedback, updateFeedbackStatus,
       addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
       generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers,
-      walkIns, addWalkIn, updateWalkIn
+      walkIns, addWalkIn,
+      updateWalkIn,
+      selectedBranchId,
+      setSelectedBranchId,
+      isRowVisible
     }}>
       {children}
       {toast && (

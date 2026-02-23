@@ -5,7 +5,7 @@ import { InventoryItem, UserRole } from '../types';
 import PaymentModal from '../components/PaymentModal';
 
 const Inventory: React.FC = () => {
-  const { inventory, branches, addInventory, updateInventory, deleteInventory, sellInventoryItem, users, currentUser } = useAppContext();
+  const { inventory, branches, addInventory, updateInventory, deleteInventory, sellInventoryItem, users, currentUser, isRowVisible } = useAppContext();
   const [deleteConfirm, setDeleteConfirm] = useState<InventoryItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [isSellModalOpen, setSellModalOpen] = useState(false);
@@ -27,9 +27,7 @@ const Inventory: React.FC = () => {
 
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
-  const filteredInventory = currentUser?.role === UserRole.SUPER_ADMIN
-    ? inventory
-    : inventory.filter(i => i.branchId === currentUser?.branchId);
+  const filteredInventory = inventory.filter(i => isRowVisible(i.branchId));
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
