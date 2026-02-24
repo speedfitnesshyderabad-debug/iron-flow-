@@ -34,10 +34,11 @@ const MembershipStore: React.FC = () => {
 
   const branchTrainers = users.filter(u => {
     if (u.role !== UserRole.TRAINER) return false;
-    // For members, show trainers from their branch, or all if no branch assigned
+
+    // For members, show trainers from their branch + global trainers
     if (currentUser.role === UserRole.MEMBER) {
-      if (!currentUser.branchId) return true;
-      return u.branchId === currentUser.branchId;
+      if (!currentUser.branchId) return true; // Show all if member has no branch
+      return !u.branchId || u.branchId === currentUser.branchId; // Show global or branch match
     }
     return isRowVisible(u.branchId);
   });
@@ -341,6 +342,11 @@ const MembershipStore: React.FC = () => {
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
+                  {branchTrainers.length === 0 && (
+                    <p className="text-[9px] text-red-500 font-bold uppercase text-center mt-1">
+                      <i className="fas fa-exclamation-triangle mr-1"></i> No trainers available for this branch.
+                    </p>
+                  )}
                   <p className="text-[9px] text-indigo-400 font-bold uppercase text-center mt-1">Required for package activation</p>
                 </div>
               )}

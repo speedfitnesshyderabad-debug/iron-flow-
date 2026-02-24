@@ -47,11 +47,11 @@ const Bookings: React.FC = () => {
 
   const trainers = useMemo(() => users.filter(u => {
     if (u.role !== UserRole.TRAINER) return false;
-    // For members: show trainers from their own branch.
+    // For members: show trainers from their own branch + global trainers.
     // If member has no branchId assigned, show all trainers (safety fallback).
     if (currentUser?.role === UserRole.MEMBER) {
       if (!currentUser.branchId) return true;
-      return u.branchId === currentUser.branchId;
+      return !u.branchId || u.branchId === currentUser.branchId;
     }
     return isRowVisible(u.branchId);
   }), [users, currentUser, isRowVisible]);
@@ -60,10 +60,10 @@ const Bookings: React.FC = () => {
     return classSchedules
       .filter(s => s.date === selectedDate)
       .filter(s => {
-        // Members with no branchId see all classes; otherwise filter by their branch
+        // Members with no branchId see all classes; otherwise filter by their branch + global
         if (currentUser?.role === UserRole.MEMBER) {
           if (!currentUser.branchId) return true;
-          return s.branchId === currentUser.branchId;
+          return !s.branchId || s.branchId === currentUser.branchId;
         }
         return isRowVisible(s.branchId);
       })
