@@ -47,9 +47,10 @@ const Bookings: React.FC = () => {
 
   const trainers = useMemo(() => users.filter(u => {
     if (u.role !== UserRole.TRAINER) return false;
-    // For members: show trainers from their own branch
-    // For admins/super admins: use isRowVisible (respects global branch filter)
+    // For members: show trainers from their own branch.
+    // If member has no branchId assigned, show all trainers (safety fallback).
     if (currentUser?.role === UserRole.MEMBER) {
+      if (!currentUser.branchId) return true;
       return u.branchId === currentUser.branchId;
     }
     return isRowVisible(u.branchId);
@@ -58,13 +59,20 @@ const Bookings: React.FC = () => {
   const filteredClasses = useMemo(() => {
     return classSchedules
       .filter(s => s.date === selectedDate)
-      .filter(s => isRowVisible(s.branchId))
+      .filter(s => {
+        // Members with no branchId see all classes; otherwise filter by their branch
+        if (currentUser?.role === UserRole.MEMBER) {
+          if (!currentUser.branchId) return true;
+          return s.branchId === currentUser.branchId;
+        }
+        return isRowVisible(s.branchId);
+      })
       .sort((a, b) => {
         const timeA = new Date(`2000-01-01 ${a.timeSlot}`).getTime();
         const timeB = new Date(`2000-01-01 ${b.timeSlot}`).getTime();
         return timeA - timeB;
       });
-  }, [classSchedules, selectedDate, currentUser]);
+  }, [classSchedules, selectedDate, currentUser, isRowVisible]);
 
   const handleBooking = async (session: ClassSession) => {
     if (!currentUser || isSubmitting) return;

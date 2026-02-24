@@ -137,6 +137,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentUser.role === UserRole.SUPER_ADMIN) {
       return selectedBranchId === 'all' || rowBranchId === selectedBranchId;
     }
+    // Members with no branchId assigned should see all rows (trainers, classes, etc.)
+    if (currentUser.role === UserRole.MEMBER && !currentUser.branchId) return true;
     return rowBranchId === currentUser.branchId;
   }, [currentUser, selectedBranchId]);
 
@@ -524,7 +526,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!error) {
       setBookings(prev => [...prev, b]);
       showToast('Booking confirmed');
-    } else showToast('Booking failed', 'error');
+    } else {
+      console.error('Booking insert error:', error);
+      showToast(`Booking failed: ${error.message}`, 'error');
+    }
   };
 
   const updateBooking = async (id: string, updates: Partial<Booking>) => {
