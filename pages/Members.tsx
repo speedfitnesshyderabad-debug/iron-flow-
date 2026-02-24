@@ -18,7 +18,7 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId } = useAppContext();
+  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, updateSubscription, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId } = useAppContext();
 
   // Trainers available for PT plan assignment
   const availableTrainers = users.filter(u => u.role === UserRole.TRAINER);
@@ -145,7 +145,7 @@ const Members: React.FC = () => {
     }
   }, [searchParams, setSearchParams]);
 
-  const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1 });
+  const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1, trainerId: '' });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isEnrollImageModalOpen, setEnrollImageModalOpen] = useState(false);
   const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
@@ -283,10 +283,24 @@ const Members: React.FC = () => {
     }
   };
 
-  const handleUpdateMember = (e: React.FormEvent) => {
+  const handleUpdateMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedMember) {
-      updateUser(selectedMember.id, manageData);
+      await updateUser(selectedMember.id, {
+        name: manageData.name,
+        email: manageData.email,
+        emergencyContact: manageData.emergencyContact,
+        address: manageData.address,
+        avatar: manageData.avatar,
+        maxDevices: manageData.maxDevices
+      });
+
+      // Update trainer on active subscription if changed
+      const activeSub = subscriptions.find(s => s.memberId === selectedMember.id && s.status === SubscriptionStatus.ACTIVE);
+      if (activeSub && manageData.trainerId !== activeSub.trainerId) {
+        await updateSubscription(activeSub.id, { trainerId: manageData.trainerId || null });
+      }
+
       setActiveModal(null);
       setSelectedMember(null);
     }
@@ -298,6 +312,7 @@ const Members: React.FC = () => {
   };
 
   const openManage = (member: User) => {
+    const activeSub = subscriptions.find(s => s.memberId === member.id && s.status === SubscriptionStatus.ACTIVE);
     setSelectedMember(member);
     setManageData({
       name: member.name,
@@ -305,9 +320,11 @@ const Members: React.FC = () => {
       emergencyContact: member.emergencyContact || '',
       address: member.address || '',
       avatar: member.avatar || '',
-      maxDevices: member.maxDevices || 1
+      maxDevices: member.maxDevices || 1,
+      trainerId: activeSub?.trainerId || ''
     });
-    setActiveModal('manage');
+    setActiveModal(null); // Ensure no other modal is open
+    setTimeout(() => setActiveModal('manage'), 10); // Small delay to ensure state updates
   };
 
   const handleImageUpload = (url: string) => {
@@ -866,6 +883,26 @@ const Members: React.FC = () => {
                     </button>
                   </div>
                   <p className="text-[10px] text-gray-400 font-medium">Restricts simultaneous logins. Default is 1.</p>
+                </div>
+
+                {/* Trainer assignment for management */}
+                <div className="space-y-2 p-4 bg-purple-50 border border-purple-100 rounded-2xl">
+                  <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <i className="fas fa-user-tie"></i> Update Personal Coach
+                  </label>
+                  <select
+                    className="w-full p-3 bg-white border border-purple-100 rounded-xl font-bold text-sm text-slate-800"
+                    value={manageData.trainerId}
+                    onChange={e => setManageData({ ...manageData, trainerId: e.target.value })}
+                  >
+                    <option value="">— No Coach Assigned —</option>
+                    {availableTrainers
+                      .filter(t => !selectedMember?.branchId || t.branchId === selectedMember.branchId)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+                  <p className="text-[10px] text-purple-400 font-medium">Links a dedicated coach to the member's current active subscription.</p>
                 </div>
                 <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-indigo-100 active:scale-95 transition-all">COMMIT CHANGES</button>
               </form>

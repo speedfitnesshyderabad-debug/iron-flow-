@@ -40,6 +40,7 @@ interface AppContextType {
   addPlan: (plan: Plan) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
   addSubscription: (sub: Subscription) => Promise<void>;
+  updateSubscription: (id: string, updates: Partial<Subscription>) => Promise<void>;
   addSale: (sale: Sale) => Promise<void>;
   recordAttendance: (att: Attendance) => Promise<void>;
   updateAttendance: (id: string, updates: Partial<Attendance>) => Promise<void>;
@@ -499,6 +500,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase.from('subscriptions').insert(s);
     if (!error) setSubscriptions(prev => [...prev, s]);
     else showToast('Failed to add subscription', 'error');
+  };
+
+  const updateSubscription = async (id: string, updates: Partial<Subscription>) => {
+    const { error } = await supabase.from('subscriptions').update(updates).eq('id', id);
+    if (!error) {
+      setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    } else {
+      console.error('Update subscription error:', error);
+      showToast('Failed to update subscription');
+    }
   };
 
   const addSale = async (s: Sale) => {
@@ -1567,7 +1578,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       coupons, addCoupon, updateCoupon, deleteCoupon, validateCoupon,
       settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
-      addSubscription, addSale, recordAttendance, updateAttendance, addBooking, updateBooking, addFeedback, updateFeedbackStatus,
+      addSubscription, updateSubscription, addSale, recordAttendance, updateAttendance, addBooking, updateBooking, addFeedback, updateFeedbackStatus,
       addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
       generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers,
       walkIns, addWalkIn,
