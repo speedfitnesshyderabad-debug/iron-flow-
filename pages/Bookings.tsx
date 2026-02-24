@@ -228,7 +228,7 @@ const Bookings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
             {activeTab === 'GROUP' ? 'Class Schedule' : 'Personal Training'}
@@ -237,7 +237,7 @@ const Bookings: React.FC = () => {
             {activeTab === 'GROUP' ? 'Book your next workout' : 'Book 1-on-1 sessions with trainers'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* Tab Switcher */}
           <div className="bg-white p-1 rounded-xl border flex">
             <button
