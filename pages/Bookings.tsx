@@ -298,9 +298,9 @@ const Bookings: React.FC = () => {
       {activeTab === 'PT' && (
         <div className="space-y-4">
           {/* Trainer Selection */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100">
             <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Select Trainer</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {getAvailableTrainers().map(trainer => {
                 const isSelected = selectedTrainer === trainer.id;
                 const availableSlots = allTimeSlots.filter(slot =>

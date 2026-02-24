@@ -705,7 +705,7 @@ const Members: React.FC = () => {
                     >
                       <option value="">— No Coach Assigned —</option>
                       {availableTrainers
-                        .filter(t => !enrollData.branchId || t.branchId === enrollData.branchId)
+                        .filter(t => t.branchId === enrollData.branchId)
                         .map(t => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
@@ -897,7 +897,7 @@ const Members: React.FC = () => {
                   >
                     <option value="">— No Coach Assigned —</option>
                     {availableTrainers
-                      .filter(t => !selectedMember?.branchId || t.branchId === selectedMember.branchId)
+                      .filter(t => t.branchId === selectedMember.branchId)
                       .map(t => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
