@@ -672,13 +672,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteOffer = async (id: string) => {
-    const { error } = await supabase.from('offers').delete().eq('id', id);
-    if (!error) {
+    const { data, error } = await supabase.from('offers').delete().eq('id', id).select();
+    if (error) {
+      console.error('Delete offer error:', error);
+      showToast('Failed to end campaign: ' + error.message, 'error');
+    } else if (!data || data.length === 0) {
+      console.warn('Delete offer blocked by RLS for offer id:', id);
+      showToast('Permission denied: unable to end this campaign', 'error');
+    } else {
       setOffers(prev => prev.filter(o => o.id !== id));
       showToast('Campaign ended successfully');
-    } else {
-      console.error('Delete offer error:', error);
-      showToast('Failed to end campaign', 'error');
     }
   };
 
