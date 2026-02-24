@@ -35,10 +35,10 @@ const MembershipStore: React.FC = () => {
   const branchTrainers = users.filter(u => {
     if (u.role !== UserRole.TRAINER) return false;
 
-    // For members, show trainers from their branch + global trainers
+    // For members, strictly show trainers from their assigned branch
     if (currentUser.role === UserRole.MEMBER) {
-      if (!currentUser.branchId) return true; // Show all if member has no branch
-      return !u.branchId || u.branchId === currentUser.branchId; // Show global or branch match
+      if (!currentUser.branchId) return true; // Fallback: if member has no branch, show all (until assigned)
+      return u.branchId === currentUser.branchId;
     }
     return isRowVisible(u.branchId);
   });
