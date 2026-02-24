@@ -93,6 +93,7 @@ interface AppContextType {
   selectedBranchId: string | 'all';
   setSelectedBranchId: (id: string | 'all') => void;
   isRowVisible: (rowBranchId: string | null | undefined) => boolean;
+  fetchData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -156,7 +157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setGlobalLoading(true);
     try {
       // 1. Sync User Profile EARLY (Required for RLS to allow further fetching/seeding)
@@ -268,7 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setGlobalLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -299,7 +300,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .subscribe();
 
     return () => { supabase.removeChannel(channel); }
-  }, []);
+  }, [fetchData]);
+
+  // Sync data when user logs in
+  useEffect(() => {
+    if (currentUser?.id) {
+      console.log('🔄 User logged in/changed, syncing data...');
+      fetchData();
+    }
+  }, [currentUser?.id, fetchData]);
 
   // Supabase Auth State Listener - Handle recovery sessions and auth state changes
   useEffect(() => {
@@ -1592,7 +1601,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateWalkIn,
       selectedBranchId,
       setSelectedBranchId,
-      isRowVisible
+      isRowVisible,
+      fetchData
     }}>
       {children}
       {toast && (
