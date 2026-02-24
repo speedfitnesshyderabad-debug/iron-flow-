@@ -19,6 +19,9 @@ import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
   const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId } = useAppContext();
+
+  // Trainers available for PT plan assignment
+  const availableTrainers = users.filter(u => u.role === UserRole.TRAINER);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -35,7 +38,7 @@ const Members: React.FC = () => {
   const branchSpecificPlans = plans.filter(p => p.branchId === initialBranchId);
   const initialPlanId = (branchSpecificPlans.length > 0 ? branchSpecificPlans[0].id : plans.find(p => p.isMultiBranch)?.id) || '';
 
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0 });
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED'>('ALL');
 
   const handleExport = () => {
@@ -240,6 +243,9 @@ const Members: React.FC = () => {
   };
 
   const completeEnrollment = (paymentId?: string) => {
+    const selectedPlan = plans.find(p => p.id === enrollData.planId);
+    const trainerIdToAssign = selectedPlan?.type === 'PT' ? (enrollData.trainerId || undefined) : undefined;
+
     enrollMember({
       name: enrollData.name,
       email: enrollData.email,
@@ -248,7 +254,7 @@ const Members: React.FC = () => {
       address: enrollData.address,
       avatar: enrollData.avatar,
       branchId: enrollData.branchId
-    }, enrollData.planId, undefined, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId, enrollData.referralCode, enrollData.pauseAllowance);
+    }, enrollData.planId, trainerIdToAssign, enrollData.password, Number(enrollData.discount), enrollData.paymentMethod, enrollData.startDate, enrollData.assignedStaffId, enrollData.referralCode, enrollData.pauseAllowance);
 
     if (paymentId) {
       showToast(`Payment successful! ID: ${paymentId}`, 'success');
@@ -257,7 +263,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0 });
+    setEnrollData({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -664,10 +670,32 @@ const Members: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
-                  <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value })}>
+                  <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
                     {plans.filter(p => p.branchId === enrollData.branchId).map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
                   </select>
                 </div>
+
+                {/* Trainer assignment - only shown for PT plans */}
+                {plans.find(p => p.id === enrollData.planId)?.type === 'PT' && (
+                  <div className="space-y-2 p-4 bg-purple-50 border border-purple-100 rounded-2xl">
+                    <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <i className="fas fa-user-tie"></i> Assign Expert Coach
+                    </label>
+                    <select
+                      className="w-full p-3 bg-white border border-purple-100 rounded-xl font-bold text-sm text-slate-800"
+                      value={enrollData.trainerId}
+                      onChange={e => setEnrollData({ ...enrollData, trainerId: e.target.value })}
+                    >
+                      <option value="">— No Coach Assigned —</option>
+                      {availableTrainers
+                        .filter(t => !enrollData.branchId || t.branchId === enrollData.branchId)
+                        .map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                    </select>
+                    <p className="text-[10px] text-purple-400 font-medium">Coach will be linked to the member's PT subscription.</p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
