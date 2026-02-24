@@ -374,8 +374,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUsers(prev => [...prev, u]);
       showToast('User added successfully');
     } else {
-      console.error(error);
-      showToast('Failed to add user', 'error');
+      console.error('❌ addUser error:', error);
+      showToast(`Failed to add user: ${error.message}`, 'error');
+      throw error; // Throw so that callers like Staff.tsx can handle it
     }
   };
 
@@ -982,7 +983,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         phone: userData.phone
       };
 
-      await supabase.from('users').insert(newUser);
+      const { error: dbError } = await supabase.from('users').insert(newUser);
+      if (dbError) {
+        console.error('❌ Database Profile Creation Failed:', dbError);
+        // Clean up Auth user if DB profile fails (optional, but safer to error out)
+        throw new Error(`Profile creation failed: ${dbError.message}`);
+      }
+
       setUsers(prev => [...prev, newUser]);
 
       let subEndDate = '';

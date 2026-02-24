@@ -87,7 +87,6 @@ const Login: React.FC = () => {
 
         if (user) {
           console.log('✅ User found:', user.name);
-          // ... rest of the logic ...
           const sessionResult = await createSession(user.id);
           if (sessionResult.success) {
             setCurrentUser(user);
@@ -95,9 +94,37 @@ const Login: React.FC = () => {
             setError(sessionResult.message || 'Maximum devices reached. Contact Admin to switch permission.');
             await supabase.auth.signOut();
           }
-        } else {
-          setError('Login successful, but user profile not found. Please contact support.');
-          await supabase.auth.signOut();
+        } else if (data.user) {
+          // SELF-HEALING FALLBACK: Create missing profile from Auth metadata
+          console.log('🔄 Profile missing, initiating auto-reconstruction for:', data.user.email);
+          const metadata = data.user.user_metadata;
+          const newUserProfile = {
+            id: data.user.id,
+            name: metadata?.name || 'IronFlow Athlete',
+            email: data.user.email!,
+            role: metadata?.role || UserRole.MEMBER,
+            branchId: metadata?.branchId || null,
+            phone: metadata?.phone || '',
+            memberId: `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
+            avatar: metadata?.avatar || `https://ui-avatars.com/api/?name=${metadata?.name || 'User'}`
+          };
+
+          const { error: insertError } = await supabase.from('users').insert(newUserProfile);
+
+          if (!insertError) {
+            console.log('✅ Profile reconstructed successfully');
+            const sessionResult = await createSession(newUserProfile.id);
+            if (sessionResult.success) {
+              setCurrentUser(newUserProfile);
+            } else {
+              setError(sessionResult.message || 'Maximum devices reached.');
+              await supabase.auth.signOut();
+            }
+          } else {
+            console.error('❌ Reconstruction failed:', insertError);
+            setError('Login successful, but profile synchronization failed. Please contact support.');
+            await supabase.auth.signOut();
+          }
         }
       }
     } catch (err: any) {
