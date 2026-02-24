@@ -59,11 +59,13 @@ const Plans: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isGym = formData.type === PlanType.GYM;
     const planPayload = {
       ...formData,
-      maxSessions: formData.maxSessions > 0 ? formData.maxSessions : undefined,
-      sessionDurationMinutes: formData.type !== PlanType.GYM ? formData.sessionDurationMinutes : undefined,
-      groupCapacity: formData.type === PlanType.GROUP ? formData.groupCapacity : undefined
+      // Explicitly null out fields not relevant to the plan type so DB is cleared
+      maxSessions: !isGym && formData.maxSessions > 0 ? formData.maxSessions : null,
+      sessionDurationMinutes: !isGym ? formData.sessionDurationMinutes : null,
+      groupCapacity: formData.type === PlanType.GROUP ? formData.groupCapacity : null
     };
 
     if (selectedPlan) {
@@ -171,7 +173,17 @@ const Plans: React.FC = () => {
                 <select
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-black text-xs uppercase tracking-widest"
                   value={formData.type}
-                  onChange={e => setFormData({ ...formData, type: e.target.value as PlanType })}
+                  onChange={e => {
+                    const newType = e.target.value as PlanType;
+                    setFormData({
+                      ...formData,
+                      type: newType,
+                      // Clear session fields when switching to GYM
+                      maxSessions: newType === PlanType.GYM ? 0 : formData.maxSessions,
+                      sessionDurationMinutes: newType === PlanType.GYM ? 60 : formData.sessionDurationMinutes,
+                      groupCapacity: newType !== PlanType.GROUP ? 15 : formData.groupCapacity,
+                    });
+                  }}
                 >
                   <option value={PlanType.GYM}>Gym Membership</option>
                   <option value={PlanType.PT}>Personal Training</option>
