@@ -242,11 +242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (mData) setMetrics(mData);
 
       const { data: oData } = await supabase.from('offers').select('*');
-      if (oData && oData.length > 0) setOffers(oData);
-      else {
-        const { error: oError } = await supabase.from('offers').insert(MOCK_OFFERS);
-        if (!oError) setOffers(MOCK_OFFERS);
-      }
+      setOffers(oData || []);
 
       const { data: csData } = await supabase.from('class_schedules').select('*');
       if (csData) setClassSchedules(csData);
@@ -677,7 +673,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteOffer = async (id: string) => {
     const { error } = await supabase.from('offers').delete().eq('id', id);
-    if (!error) setOffers(prev => prev.filter(o => o.id !== id));
+    if (!error) {
+      setOffers(prev => prev.filter(o => o.id !== id));
+      showToast('Campaign ended successfully');
+    } else {
+      console.error('Delete offer error:', error);
+      showToast('Failed to end campaign', 'error');
+    }
   };
 
   const addClassTemplate = async (template: any) => {
