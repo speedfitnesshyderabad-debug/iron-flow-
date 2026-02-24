@@ -34,7 +34,11 @@ const MembershipStore: React.FC = () => {
 
   const branchTrainers = users.filter(u => {
     if (u.role !== UserRole.TRAINER) return false;
-    if (currentUser.role === UserRole.MEMBER) return u.branchId === currentUser.branchId;
+    // For members, show trainers from their branch, or all if no branch assigned
+    if (currentUser.role === UserRole.MEMBER) {
+      if (!currentUser.branchId) return true;
+      return u.branchId === currentUser.branchId;
+    }
     return isRowVisible(u.branchId);
   });
 
@@ -213,7 +217,7 @@ const MembershipStore: React.FC = () => {
 
       {selectedPlanForCheckout && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-[400px] rounded-3xl overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+          <div className="bg-white w-full max-w-[400px] rounded-3xl overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-y-auto max-h-[90vh]">
             <div style={{ backgroundColor: branding.color }} className="p-6 text-white flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-2 mb-1">
