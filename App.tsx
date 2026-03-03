@@ -30,7 +30,6 @@ import GateQR from './pages/GateQR';
 import Payroll from './pages/Payroll';
 import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
-import AdminSetup from './pages/AdminSetup';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
   const { currentUser } = useAppContext();
@@ -52,7 +51,6 @@ const AppRoutes: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/admin-setup" element={<AdminSetup />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
