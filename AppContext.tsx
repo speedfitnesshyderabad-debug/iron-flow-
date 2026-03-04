@@ -867,7 +867,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCommunications(prev => [newComm, ...prev]);
 
       // 📧 Real Email Delivery via SendGrid (Supabase Edge Function)
-      if (newComm.recipient && newComm.recipient.includes('@')) {
+      // Use the user's email from the users list — recipient field is typically a phone number
+      const emailTo = user?.email;
+      if (emailTo && emailTo.includes('@') && branch?.emailApiKey) {
         const categorySubjects: Record<string, string> = {
           WELCOME: '👋 Welcome to IronFlow!',
           PAYMENT: '💳 Payment Confirmation – IronFlow',
@@ -875,9 +877,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ANNOUNCEMENT: '📢 Announcement from IronFlow',
         };
         const emailSubject = newComm.subject || categorySubjects[newComm.category] || '🔔 IronFlow Notification';
-        const emailFrom = branch?.emailFromAddress || 'noreply@ironflow.app';
-        const emailFromName = branch?.name ? `${branch.name} – IronFlow` : 'IronFlow Gym';
-        const branchApiKey = branch?.emailApiKey; // From Branch Settings → Email Infrastructure
+        const emailFrom = branch.emailFromAddress || 'noreply@ironflow.app';
+        const emailFromName = branch.name ? `${branch.name} – IronFlow` : 'IronFlow Gym';
 
         // ✅ Supabase Edge Function — no Vercel needed
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
@@ -890,13 +891,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            to: newComm.recipient,
+            to: emailTo,
             subject: emailSubject,
             body: newComm.body,
             category: newComm.category,
             fromEmail: emailFrom,
             fromName: emailFromName,
-            apiKey: branchApiKey, // Branch's SendGrid API key
+            apiKey: branch.emailApiKey, // From Branch Settings → Email Infrastructure
           }),
         }).catch(e => console.warn('📧 Email send failed (non-critical):', e));
       }
