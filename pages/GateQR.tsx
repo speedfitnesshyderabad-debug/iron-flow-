@@ -11,6 +11,9 @@ const GateQR: React.FC = () => {
     const [qrToken, setQrToken] = useState<string>('');
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [scanFeedback, setScanFeedback] = useState<{ success: boolean; message: string } | null>(null);
+    const [showSoundPicker, setShowSoundPicker] = useState(false);
+    const [successSound, setSuccessSound] = useState<string>(() => localStorage.getItem('gate_success_sound') || 'chime');
+    const [failureSound, setFailureSound] = useState<string>(() => localStorage.getItem('gate_failure_sound') || 'buzz');
 
     // Identify the branch to show
     const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || branches[0]?.id || '');
@@ -43,37 +46,88 @@ const GateQR: React.FC = () => {
         return () => clearInterval(interval);
     }, [activeBranchId]);
 
-    // 🔔 Play sound on the kiosk tab
-    const playKioskSound = (type: 'success' | 'error') => {
+    // 🎵 Sound library — multiple styles for success and failure
+    const playSoundById = (id: string) => {
         try {
             const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
             if (!AudioContext) return;
             const ctx = new AudioContext();
-            const oscillator = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(ctx.destination);
 
-            if (type === 'success') {
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.15);
-                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                oscillator.start();
-                oscillator.stop(ctx.currentTime + 0.4);
-            } else {
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(220, ctx.currentTime);
-                oscillator.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.4);
-                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-                oscillator.start();
-                oscillator.stop(ctx.currentTime + 0.5);
+            const beep = (freq: number, type: OscillatorType, start: number, duration: number, gain = 0.3) => {
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.connect(g); g.connect(ctx.destination);
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+                g.gain.setValueAtTime(gain, ctx.currentTime + start);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+                osc.start(ctx.currentTime + start);
+                osc.stop(ctx.currentTime + start + duration);
+            };
+
+            switch (id) {
+                // ✅ SUCCESS SOUNDS
+                case 'chime': // Ascending two-tone chime
+                    beep(880, 'sine', 0, 0.2);
+                    beep(1320, 'sine', 0.18, 0.3);
+                    break;
+                case 'fanfare': // Three ascending notes
+                    beep(523, 'sine', 0, 0.15);
+                    beep(659, 'sine', 0.15, 0.15);
+                    beep(784, 'sine', 0.3, 0.3);
+                    break;
+                case 'bell': // Warm bell tone
+                    beep(1046, 'sine', 0, 0.6, 0.4);
+                    beep(1318, 'sine', 0, 0.3, 0.15);
+                    break;
+                case 'blip': // Quick double blip
+                    beep(1200, 'square', 0, 0.08, 0.15);
+                    beep(1500, 'square', 0.1, 0.08, 0.15);
+                    break;
+                case 'powerup': // Rising power-up
+                    beep(440, 'sine', 0, 0.1);
+                    beep(550, 'sine', 0.1, 0.1);
+                    beep(660, 'sine', 0.2, 0.1);
+                    beep(880, 'sine', 0.3, 0.25);
+                    break;
+                // ❌ FAILURE SOUNDS
+                case 'buzz': // Low sawtooth buzz
+                    beep(200, 'sawtooth', 0, 0.4, 0.35);
+                    break;
+                case 'double-buzz': // Two short buzzes
+                    beep(180, 'sawtooth', 0, 0.2, 0.3);
+                    beep(180, 'sawtooth', 0.25, 0.2, 0.3);
+                    break;
+                case 'descend': // Descending tone
+                    {
+                        const osc = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        osc.connect(g); g.connect(ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(600, ctx.currentTime);
+                        osc.frequency.linearRampToValueAtTime(200, ctx.currentTime + 0.5);
+                        g.gain.setValueAtTime(0.3, ctx.currentTime);
+                        g.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                        osc.start(); osc.stop(ctx.currentTime + 0.5); break;
+                    }
+                case 'alarm': // Rapid high-low alarm
+                    beep(800, 'square', 0, 0.1, 0.2);
+                    beep(400, 'square', 0.12, 0.1, 0.2);
+                    beep(800, 'square', 0.24, 0.1, 0.2);
+                    beep(400, 'square', 0.36, 0.1, 0.2);
+                    break;
+                case 'error-tone': // Classic error beep
+                    beep(330, 'triangle', 0, 0.15);
+                    beep(220, 'triangle', 0.18, 0.3);
+                    break;
             }
         } catch (e) {
             console.error('Kiosk audio failed', e);
         }
+    };
+
+    const playKioskSound = (type: 'success' | 'error') => {
+        playSoundById(type === 'success' ? successSound : failureSound);
     };
 
     // 📡 Subscribe to Supabase Realtime — works cross-device (member mobile → kiosk PC)
@@ -252,25 +306,124 @@ const GateQR: React.FC = () => {
                 )}
 
                 {(currentUser.role !== UserRole.KIOSK || currentUser.role === UserRole.SUPER_ADMIN) && (
-                    <button
-                        onClick={toggleFullScreen}
-                        className="flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-sm"
-                    >
-                        <i className={`fas ${isFullScreen ? 'fa-compress' : 'fa-expand'}`}></i>
-                        {isFullScreen ? 'Exit Full Screen' : 'Full Screen Mode'}
-                    </button>
+                    <>
+                        <button
+                            onClick={toggleFullScreen}
+                            className="flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-sm"
+                        >
+                            <i className={`fas ${isFullScreen ? 'fa-compress' : 'fa-expand'}`}></i>
+                            {isFullScreen ? 'Exit Full Screen' : 'Full Screen Mode'}
+                        </button>
+                        <button
+                            onClick={() => setShowSoundPicker(true)}
+                            className="flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 text-sm"
+                        >
+                            <i className="fas fa-volume-up"></i>
+                            Sound Settings
+                        </button>
+                    </>
                 )}
             </div>
 
             {/* KIOSK Specific Footer */}
             {currentUser.role === UserRole.KIOSK && !isFullScreen && (
-                <div className="fixed bottom-8 right-8 z-50">
+                <div className="fixed bottom-8 right-8 z-50 flex gap-4">
+                    <button
+                        onClick={() => setShowSoundPicker(true)}
+                        className="w-16 h-16 bg-slate-800 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-700 transition-transform hover:scale-110 active:scale-90"
+                    >
+                        <i className="fas fa-volume-up text-xl"></i>
+                    </button>
                     <button
                         onClick={toggleFullScreen}
                         className="w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-transform hover:scale-110 active:scale-90"
                     >
                         <i className="fas fa-expand text-xl"></i>
                     </button>
+                </div>
+            )}
+
+            {/* Sound Picker Modal */}
+            {showSoundPicker && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex justify-center items-center p-4">
+                    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-lg w-full shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Sound Settings</h2>
+                            <button onClick={() => setShowSoundPicker(false)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div className="space-y-8">
+                            {/* Success Sound Picker */}
+                            <div>
+                                <h3 className="text-xs font-black text-green-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i className="fas fa-check-circle"></i> Success Sound
+                                </h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {['chime', 'fanfare', 'bell', 'powerup', 'blip'].map(sound => (
+                                        <div key={sound} className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setSuccessSound(sound);
+                                                    localStorage.setItem('gate_success_sound', sound);
+                                                    playSoundById(sound);
+                                                }}
+                                                className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-left ${successSound === sound ? 'bg-green-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                                            >
+                                                {sound}
+                                            </button>
+                                            <button
+                                                onClick={() => playSoundById(sound)}
+                                                className="w-12 bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-xl flex items-center justify-center transition-colors"
+                                                title={`Preview ${sound}`}
+                                            >
+                                                <i className="fas fa-play text-xs"></i>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <hr className="border-slate-100 border-2" />
+
+                            {/* Failure Sound Picker */}
+                            <div>
+                                <h3 className="text-xs font-black text-red-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i className="fas fa-times-circle"></i> Failure Sound
+                                </h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {['buzz', 'double-buzz', 'descend', 'alarm', 'error-tone'].map(sound => (
+                                        <div key={sound} className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setFailureSound(sound);
+                                                    localStorage.setItem('gate_failure_sound', sound);
+                                                    playSoundById(sound);
+                                                }}
+                                                className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-left ${failureSound === sound ? 'bg-red-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                                            >
+                                                {sound}
+                                            </button>
+                                            <button
+                                                onClick={() => playSoundById(sound)}
+                                                className="w-12 bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-xl flex items-center justify-center transition-colors"
+                                                title={`Preview ${sound}`}
+                                            >
+                                                <i className="fas fa-play text-xs"></i>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-slate-100">
+                            <button onClick={() => setShowSoundPicker(false)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow-lg">
+                                Done
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
