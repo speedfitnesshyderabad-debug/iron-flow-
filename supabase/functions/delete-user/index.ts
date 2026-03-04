@@ -45,16 +45,32 @@ serve(async (req) => {
     let targetUserId = userId;
 
     if (!targetUserId && email) {
-        // Find user by email
-        const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers();
-        if (listError) {
-            return new Response(JSON.stringify({ error: 'Failed to list users' }), {
-                status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
-            });
+        // Find user by email (handling pagination to bypass 50 user limit)
+        let page = 1;
+        let foundUser = null;
+        let hasMore = true;
+
+        while (hasMore && !foundUser) {
+            const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+            if (listError) {
+                return new Response(JSON.stringify({ error: 'Failed to list users' }), {
+                    status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+                });
+            }
+            if (!users || users.length === 0) {
+                hasMore = false;
+            } else {
+                foundUser = users.find(u => u.email === email);
+                if (foundUser || users.length < 1000) {
+                    hasMore = false;
+                } else {
+                    page++;
+                }
+            }
         }
-        const user = users.find(u => u.email === email);
-        if (user) {
-            targetUserId = user.id;
+
+        if (foundUser) {
+            targetUserId = foundUser.id;
         } else {
             return new Response(JSON.stringify({ success: true, note: 'Auth user not found by email, skipped' }), {
                 status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders },
