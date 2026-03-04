@@ -535,6 +535,40 @@ const CheckIn: React.FC = () => {
         return;
       }
 
+      // ⏳ 4-Hour Cooldown Logic for Members
+      const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+      const todaysAttendances = attendance.filter(a => a.userId === currentUser.id && a.date === today && a.type === 'MEMBER');
+
+      if (todaysAttendances.length > 0) {
+        let latestScanTime = 0;
+        todaysAttendances.forEach(a => {
+          let scanTime = 0;
+          if (a.id && a.id.startsWith('att-')) {
+            scanTime = parseInt(a.id.replace('att-', ''));
+          }
+          if (scanTime > latestScanTime) {
+            latestScanTime = scanTime;
+          }
+        });
+
+        if (latestScanTime > 0 && (Date.now() - latestScanTime) < FOUR_HOURS_MS) {
+          const remainingMinutes = Math.ceil((FOUR_HOURS_MS - (Date.now() - latestScanTime)) / (60 * 1000));
+          const hours = Math.floor(remainingMinutes / 60);
+          const minutes = remainingMinutes % 60;
+          const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+          playStatusSound('error');
+          setScanResult({
+            success: false,
+            message: `Checkout or Re-entry not allowed yet. Please wait ${timeString}.`,
+            subType: "4-Hour Cooldown Active"
+          });
+          broadcastToGate(false, `❌ Scanned Recently`, branchIdScanned);
+          setTimeout(() => setScanResult(null), 5000);
+          return;
+        }
+      }
+
       recordAttendance({
         id: `att-${Date.now()}`,
         userId: currentUser.id,
