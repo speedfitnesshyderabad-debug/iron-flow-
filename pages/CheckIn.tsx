@@ -14,6 +14,7 @@ const CheckIn: React.FC = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [isScannerActive, setIsScannerActive] = useState(true); // tracks if camera is on
 
   // Ref for scanner to avoid stale closures
   const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
@@ -165,7 +166,8 @@ const CheckIn: React.FC = () => {
   }, [userLocation]);
 
   useEffect(() => {
-    if (!hasCameraPermission || !userLocation) return; // Wait for both Location & Camera
+    if (!hasCameraPermission || !userLocation) return;
+    if (!isScannerActive) return; // Camera is intentionally off
 
     const scanner = new Html5QrcodeScanner(
       "reader",
@@ -176,16 +178,11 @@ const CheckIn: React.FC = () => {
     scanner.render(onScanSuccess, onScanFailure);
 
     function onScanSuccess(decodedText: string) {
-      // Use the ref to call the latest version of handleQRScan
+      scanner.clear();
+      setIsScannerActive(false); // 🔴 Turn camera OFF after successful scan
       if (handleQRScanRef.current) {
         handleQRScanRef.current(decodedText);
       }
-
-      scanner.clear();
-      // Re-enable after 3 seconds
-      setTimeout(() => {
-        scanner.render(onScanSuccess, onScanFailure);
-      }, 3000);
     }
 
     function onScanFailure(error: any) {
@@ -193,9 +190,9 @@ const CheckIn: React.FC = () => {
     }
 
     return () => {
-      scanner.clear();
+      scanner.clear().catch(() => { });
     };
-  }, [hasCameraPermission, userLocation]); // Re-run if these change (though usually they flip to true once)
+  }, [hasCameraPermission, userLocation, isScannerActive]);
 
   const triggerHardwareGate = async (branchId: string) => {
     const branch = branches.find(b => b.id === branchId);
@@ -653,6 +650,25 @@ const CheckIn: React.FC = () => {
                     className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-colors shadow-lg"
                   >
                     Retry Permission
+                  </button>
+                </div>
+              ) : !isScannerActive ? (
+                // 🔴 Camera Off - shown after a successful scan
+                <div className="bg-green-50 border-2 border-green-200 p-10 rounded-[2.5rem] text-center">
+                  <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl">
+                    <i className="fas fa-check text-white text-3xl"></i>
+                  </div>
+                  <h3 className="text-xl font-black text-green-800 uppercase tracking-tight mb-2">Scan Complete!</h3>
+                  <p className="text-sm text-green-600 font-medium mb-6">Camera has been turned off.</p>
+                  <button
+                    onClick={() => {
+                      setScanResult(null);
+                      setIsScannerActive(true);
+                    }}
+                    className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors shadow-lg flex items-center gap-3 mx-auto"
+                  >
+                    <i className="fas fa-camera"></i>
+                    Scan Next Member
                   </button>
                 </div>
               ) : (
