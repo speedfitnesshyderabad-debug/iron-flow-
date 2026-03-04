@@ -19,7 +19,7 @@ serve(async (req) => {
         });
     }
 
-    let payload: { userId: string };
+    let payload: { userId?: string, email?: string };
     try {
         payload = await req.json();
     } catch {
@@ -28,9 +28,9 @@ serve(async (req) => {
         });
     }
 
-    const { userId } = payload;
-    if (!userId) {
-        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+    const { userId, email } = payload;
+    if (!userId && !email) {
+        return new Response(JSON.stringify({ error: 'Missing userId or email' }), {
             status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
     }
@@ -42,8 +42,28 @@ serve(async (req) => {
         { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    let targetUserId = userId;
+
+    if (!targetUserId && email) {
+        // Find user by email
+        const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers();
+        if (listError) {
+            return new Response(JSON.stringify({ error: 'Failed to list users' }), {
+                status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            });
+        }
+        const user = users.find(u => u.email === email);
+        if (user) {
+            targetUserId = user.id;
+        } else {
+            return new Response(JSON.stringify({ success: true, note: 'Auth user not found by email, skipped' }), {
+                status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            });
+        }
+    }
+
     // Delete from Supabase Auth (this requires service role)
-    const { error } = await adminClient.auth.admin.deleteUser(userId);
+    const { error } = await adminClient.auth.admin.deleteUser(targetUserId!);
 
     if (error) {
         // If user doesn't exist in Auth, that's fine — not a real error

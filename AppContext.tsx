@@ -1022,6 +1022,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const enrollMember = async (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount: number = 0, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS' = 'ONLINE', startDate?: string, staffId?: string, referralCode?: string, pauseAllowance: number = 0) => {
     setGlobalLoading(true);
+
+    // 0. Early check: Prevent enrollment if user already exists in our database
+    if (userData.email) {
+      const existingUser = users.find(u => u.email === userData.email);
+      if (existingUser) {
+        setGlobalLoading(false);
+        showToast('A member with this email already exists.', 'error');
+        return;
+      }
+    }
+
     const plan = planId ? plans.find(p => p.id === planId) : undefined;
     if (planId && !plan) {
       setGlobalLoading(false);
@@ -1066,23 +1077,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn('⚠️ Stale Auth user detected, cleaning up and retrying...');
         const supabaseUrlClean = import.meta.env.VITE_SUPABASE_URL?.trim();
 
-        // Find the stale user's ID by looking up their email in the users table
-        const { data: staleUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', userData.email!)
-          .maybeSingle();
+        // Delete stale Auth user via edge function by email
+        await fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ email: userData.email! }),
+        });
 
-        if (staleUser?.id) {
-          // Delete stale Auth user via edge function
-          await fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({ userId: staleUser.id }),
-          });
-        }
-
-        // Also try finding via Supabase Auth directly by email using admin edge function approach
         // Retry signup after cleanup
         const { data: retryData, error: retryError } = await tempSupabase.auth.signUp({
           email: userData.email!,
