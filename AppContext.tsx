@@ -1602,6 +1602,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { data, error } = await supabase.from('holidays').insert([holiday]).select();
       if (error) throw error;
+      if (data && data[0]) {
+        setHolidays(prev => [...prev, data[0] as Holiday]);
+      }
 
       if (notify) {
         const { data: branchMembers } = await supabase
@@ -1635,8 +1638,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateHoliday = async (id: string, updates: Partial<Holiday>) => {
     try {
-      const { error } = await supabase.from('holidays').update(updates).eq('id', id);
+      const { data, error } = await supabase.from('holidays').update(updates).eq('id', id).select();
       if (error) throw error;
+      if (data && data[0]) {
+        setHolidays(prev => prev.map(h => h.id === id ? (data[0] as Holiday) : h));
+      }
       showToast('Holiday updated successfully', 'success');
     } catch (err: any) {
       console.error('Update holiday error:', err);
@@ -1648,6 +1654,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('holidays').delete().eq('id', id);
       if (error) throw error;
+      setHolidays(prev => prev.filter(h => h.id !== id));
       showToast('Holiday deleted successfully', 'success');
     } catch (err: any) {
       console.error('Delete holiday error:', err);
