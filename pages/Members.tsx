@@ -133,17 +133,31 @@ const Members: React.FC = () => {
       const phone = searchParams.get('phone') || ''; // Mapping phone to emergencyContact temporarily as phone field is not in enrollData top level yet
       const assignedTo = searchParams.get('assignedTo') || '';
 
+      const validPlans = plans.filter(p => p.branchId === initialBranchId || p.isMultiBranch);
+      const fallbackPlanId = validPlans.length > 0 ? validPlans[0].id : '';
+
       setEnrollData(prev => ({
         ...prev,
         name,
         emergencyContact: phone, // Pre-fill phone
-        assignedStaffId: assignedTo
+        assignedStaffId: assignedTo,
+        planId: prev.planId || fallbackPlanId
       }));
       setAddModalOpen(true);
       // Clean up params
       setSearchParams({});
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, plans, initialBranchId]);
+
+  // Sync planId when plans data finally loads from backend
+  React.useEffect(() => {
+    if (!enrollData.planId && plans.length > 0) {
+      const validPlans = plans.filter(p => p.branchId === enrollData.branchId || p.isMultiBranch);
+      if (validPlans.length > 0) {
+        setEnrollData(prev => ({ ...prev, planId: validPlans[0].id }));
+      }
+    }
+  }, [plans, enrollData.branchId, enrollData.planId]);
 
   const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1, trainerId: '' });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
@@ -403,7 +417,12 @@ const Members: React.FC = () => {
           <p className="text-gray-500">Manage athletes from across India</p>
         </div>
         <button
-          onClick={() => setAddModalOpen(true)}
+          onClick={() => {
+            const validPlans = plans.filter(p => p.branchId === initialBranchId || p.isMultiBranch);
+            const defaultPlanId = validPlans.length > 0 ? validPlans[0].id : '';
+            setEnrollData({ name: '', email: '', phone: '', password: '', planId: defaultPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
+            setAddModalOpen(true);
+          }}
           className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200"
         >
           <i className="fas fa-plus"></i> ADD NEW MEMBER
@@ -604,7 +623,7 @@ const Members: React.FC = () => {
                       value={enrollData.branchId}
                       onChange={e => {
                         const newBranchId = e.target.value;
-                        const branchPlans = plans.filter(p => p.branchId === newBranchId);
+                        const branchPlans = plans.filter(p => p.branchId === newBranchId || p.isMultiBranch);
                         setEnrollData({ ...enrollData, branchId: newBranchId, planId: branchPlans[0]?.id || '' });
                       }}
                     >
@@ -689,7 +708,7 @@ const Members: React.FC = () => {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
                   <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
-                    {plans.filter(p => p.branchId === enrollData.branchId).map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
+                    {plans.filter(p => p.branchId === enrollData.branchId || p.isMultiBranch).map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
                   </select>
                 </div>
 
