@@ -1,3 +1,4 @@
+// @ts-nocheck — This file runs on Supabase Deno runtime, not Node.js
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const SENDGRID_API_URL = 'https://api.sendgrid.com/v3/mail/send';
