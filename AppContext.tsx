@@ -887,7 +887,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ANNOUNCEMENT: '📢 Announcement from IronFlow',
         };
         const emailSubject = newComm.subject || categorySubjects[newComm.category] || '🔔 IronFlow Notification';
-        const emailFrom = branch.emailFromAddress || 'noreply@ironflow.app';
+        const emailFrom = branch.emailFromAddress || 'admin@speedfitness.org';
         const emailFromName = branch.name ? `${branch.name} – IronFlow` : 'IronFlow Gym';
 
         // ✅ Supabase Edge Function — no Vercel needed
@@ -1179,8 +1179,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       await sendNotification({
         userId: newUserId,
-        type: CommType.SMS,
-        recipient: userData.phone || userData.email || 'N/A',
+        type: userData.email ? CommType.EMAIL : CommType.SMS,
+        recipient: userData.email || userData.phone || 'N/A',
         body: welcomeBody,
         category: 'WELCOME',
         branchId: branchId
