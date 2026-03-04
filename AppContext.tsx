@@ -849,7 +849,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const sendNotification = async (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => {
+  const sendNotification = async (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>, emailOverride?: string) => {
     const user = users.find(u => u.id === comm.userId);
     const bId = comm.branchId || user?.branchId || branches[0]?.id;
     const branch = branches.find(b => b.id === bId);
@@ -867,8 +867,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCommunications(prev => [newComm, ...prev]);
 
       // 📧 Real Email Delivery via SendGrid (Supabase Edge Function)
-      // Use the user's email from the users list — recipient field is typically a phone number
-      const emailTo = user?.email;
+      // emailOverride is used when the user was just created and isn't yet in the users state array
+      const emailTo = emailOverride || user?.email;
       if (emailTo && emailTo.includes('@') && branch?.emailApiKey) {
         const categorySubjects: Record<string, string> = {
           WELCOME: '👋 Welcome to IronFlow!',
@@ -1140,7 +1140,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: welcomeBody,
         category: 'WELCOME',
         branchId: branchId
-      });
+      }, userData.email); // ✅ emailOverride bypasses stale users state
 
     } catch (e: any) {
       console.error(e);
