@@ -107,6 +107,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      // Request browser push notification permission on login
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('🔔 IronFlow Notifications Enabled', {
+              body: `Hi ${currentUser.name}! You'll now receive real-time alerts for payments, announcements and more.`,
+              icon: '/favicon.ico',
+            });
+          }
+        });
+      }
     } else {
       localStorage.removeItem('currentUser');
     }
@@ -841,6 +852,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sendNotification = async (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => {
     const user = users.find(u => u.id === comm.userId);
     const bId = comm.branchId || user?.branchId || branches[0]?.id;
+    const branch = branches.find(b => b.id === bId);
 
     const newComm: Communication = {
       ...comm,
@@ -851,7 +863,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const { error } = await supabase.from('communications').insert(newComm);
-    if (!error) setCommunications(prev => [newComm, ...prev]);
+    if (!error) {
+      setCommunications(prev => [newComm, ...prev]);
+
+      // 📧 Real Email Delivery via SendGrid (Supabase Edge Function)
+      if (newComm.recipient && newComm.recipient.includes('@')) {
+        const categorySubjects: Record<string, string> = {
+          WELCOME: '👋 Welcome to IronFlow!',
+          PAYMENT: '💳 Payment Confirmation – IronFlow',
+          REMINDER: '⏰ Reminder from IronFlow',
+          ANNOUNCEMENT: '📢 Announcement from IronFlow',
+        };
+        const emailSubject = newComm.subject || categorySubjects[newComm.category] || '🔔 IronFlow Notification';
+        const emailFrom = branch?.emailFromAddress || 'noreply@ironflow.app';
+        const emailFromName = branch?.name ? `${branch.name} – IronFlow` : 'IronFlow Gym';
+        const branchApiKey = branch?.emailApiKey; // From Branch Settings → Email Infrastructure
+
+        // ✅ Supabase Edge Function — no Vercel needed
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+        const emailEndpoint = `${supabaseUrl}/functions/v1/send-email`;
+
+        fetch(emailEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            to: newComm.recipient,
+            subject: emailSubject,
+            body: newComm.body,
+            category: newComm.category,
+            fromEmail: emailFrom,
+            fromName: emailFromName,
+            apiKey: branchApiKey, // Branch's SendGrid API key
+          }),
+        }).catch(e => console.warn('📧 Email send failed (non-critical):', e));
+      }
+
+      // 🔔 Browser Push Notification
+      // Only fire if this notification is for the currently logged-in user
+      if (
+        newComm.userId === currentUser?.id &&
+        typeof Notification !== 'undefined' &&
+        Notification.permission === 'granted'
+      ) {
+        const categoryTitles: Record<string, string> = {
+          WELCOME: '👋 Welcome to IronFlow!',
+          PAYMENT: '💳 Payment Confirmed',
+          REMINDER: '⏰ Reminder',
+          ANNOUNCEMENT: '📢 New Announcement',
+        };
+        const title = categoryTitles[newComm.category] || '🔔 IronFlow Notification';
+        try {
+          new Notification(title, {
+            body: newComm.body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: newComm.id,
+          });
+        } catch (e) {
+          console.warn('Push notification failed:', e);
+        }
+      }
+    }
   };
 
   const processReferralReward = async (refereeId: string, planId: string, providedCode?: string) => {

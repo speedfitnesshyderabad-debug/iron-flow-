@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+import NotificationBell from './NotificationBell';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 import { NAV_ITEMS } from '../constants';
@@ -355,13 +356,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           {/* Header Right: User Info */}
-          <div className="flex items-center gap-3 md:gap-6 shrink-0 ml-auto pl-2">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0 ml-auto pl-2">
             <div className="hidden sm:flex flex-col text-right min-w-0 max-w-[150px]">
               <span className="text-[12px] md:text-sm font-black text-gray-900 truncate">{currentUser.name}</span>
               <span className="text-[8px] md:text-[9px] text-blue-600 font-black uppercase tracking-widest truncate">
                 {currentUser.role.replace('_', ' ')}
               </span>
             </div>
+            <NotificationBell />
             <div
               className="relative group cursor-pointer shrink-0"
               onClick={() => setIsAccountModalOpen(true)}

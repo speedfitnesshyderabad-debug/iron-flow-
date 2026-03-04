@@ -293,12 +293,7 @@ const Login: React.FC = () => {
                 </div>
               </form>
 
-              {/* Production Setup Link */}
-              <div className="mt-8 text-center">
-                <Link to="/admin-setup" className="text-[10px] font-black text-slate-600 uppercase tracking-widest hover:text-blue-500 transition-colors">
-                  Setup Super Admin
-                </Link>
-              </div>
+
             </div>
           )}
 

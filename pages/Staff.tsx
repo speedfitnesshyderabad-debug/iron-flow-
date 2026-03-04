@@ -634,6 +634,38 @@ const Staff: React.FC = () => {
                 </div>
               )}
 
+              {/* Week Off Selector */}
+              <div className="space-y-2 p-4 bg-amber-50 rounded-2xl border border-amber-100 animate-[fadeIn_0.3s_ease-out]">
+                <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <i className="fas fa-calendar-xmark"></i> Week Off Days
+                </label>
+                <p className="text-[9px] text-amber-500 font-bold ml-1">Selected days are paid off (9 hrs credit in payroll)</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => {
+                    const isSelected = formData.weekOffs.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          const updated = isSelected
+                            ? formData.weekOffs.filter(d => d !== day)
+                            : [...formData.weekOffs, day];
+                          setFormData({ ...formData, weekOffs: updated });
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                          isSelected
+                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+                            : 'bg-white text-amber-400 border border-amber-200 hover:bg-amber-100'
+                        }`}
+                      >
+                        {day.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="pt-6 border-t border-gray-100 space-y-4">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Work Shifts (1-3 Max)</label>
