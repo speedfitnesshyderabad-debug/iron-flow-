@@ -18,6 +18,17 @@ const CheckIn: React.FC = () => {
   // Ref for scanner to avoid stale closures
   const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
 
+  // BroadcastChannel to send scan results to the GateQR kiosk tab
+  const gateChannel = React.useRef<BroadcastChannel | null>(null);
+  React.useEffect(() => {
+    gateChannel.current = new BroadcastChannel('gate_scan_result');
+    return () => gateChannel.current?.close();
+  }, []);
+
+  const broadcastToGate = (success: boolean, message: string, memberName?: string) => {
+    gateChannel.current?.postMessage({ success, message, memberName, ts: Date.now() });
+  };
+
   // Helper: Play Sound Feedback
   const playStatusSound = (type: 'success' | 'error') => {
     try {
@@ -405,12 +416,13 @@ const CheckIn: React.FC = () => {
       // ✅ BRANCH VALIDATION: Staff can only check in at their assigned branch
       if (currentUser.branchId && currentUser.branchId !== branchIdScanned) {
         const assignedBranch = branches.find(b => b.id === currentUser.branchId);
-        playStatusSound('error'); // ERROR SOUND
+        playStatusSound('error');
         setScanResult({
           success: false,
           message: `Access Denied: You are assigned to ${assignedBranch?.name || 'another branch'}. Please scan your assigned branch QR.`,
           isCrossBranch: true
         });
+        broadcastToGate(false, `Access Denied: Wrong Branch!`);
         setTimeout(() => setScanResult(null), 4000);
         return;
       }
@@ -425,13 +437,14 @@ const CheckIn: React.FC = () => {
       if (openAttendance) {
         // Normal Checkout
         updateAttendance(openAttendance.id, { timeOut: new Date().toLocaleTimeString() });
-        playStatusSound('success'); // SUCCESS SOUND
+        playStatusSound('success');
         setScanResult({
           success: true,
           message: `Shift Finalized at ${branch.name}. Great work!`,
           subType: currentUser.role.replace('_', ' '),
           isCheckOut: true
         });
+        broadcastToGate(true, `✅ Checked Out: ${currentUser.name}`);
         showToast("Successfully checked out!", "success");
       } else {
         // Check for FORGOTTEN CHECKOUTS from PREVIOUS DAYS
@@ -461,13 +474,14 @@ const CheckIn: React.FC = () => {
           branchId: branch.id,
           type: 'STAFF'
         });
-        playStatusSound('success'); // SUCCESS SOUND
+        playStatusSound('success');
         setScanResult({
           success: true,
           message: `Punch-In Recorded at ${branch.name}. Shift started.`,
           subType: currentUser.role.replace('_', ' '),
           isCheckOut: false
         });
+        broadcastToGate(true, `✅ Checked In: ${currentUser.name}`);
         showToast("Successfully checked in!", "success");
       }
 
@@ -490,9 +504,11 @@ const CheckIn: React.FC = () => {
         if (pausedSub) {
           playStatusSound('error');
           setScanResult({ success: false, message: "Access Denied: Your membership is currently PAUSED." });
+          broadcastToGate(false, `❌ Membership PAUSED`);
         } else {
-          playStatusSound('error'); // ERROR SOUND
+          playStatusSound('error');
           setScanResult({ success: false, message: "Access Denied: No active gym membership found." });
+          broadcastToGate(false, `❌ No Active Membership`);
         }
         setTimeout(() => setScanResult(null), 3000);
         return;
@@ -504,12 +520,13 @@ const CheckIn: React.FC = () => {
 
       if (!isHomeBranch && !allowsMultiBranch) {
         const homeBranch = branches.find(b => b.id === currentUser.branchId);
-        playStatusSound('error'); // ERROR SOUND
+        playStatusSound('error');
         setScanResult({
           success: false,
           message: `Denied: Access restricted to ${homeBranch?.name || 'Home Branch'}.`,
           subType: plan?.name
         });
+        broadcastToGate(false, `❌ Wrong Branch Access`);
         setTimeout(() => setScanResult(null), 4000);
         return;
       }
@@ -523,7 +540,7 @@ const CheckIn: React.FC = () => {
         type: 'MEMBER'
       });
 
-      playStatusSound('success'); // SUCCESS SOUND
+      playStatusSound('success');
       setScanResult({
         success: true,
         message: isHomeBranch ? `Welcome back to ${branch.name}!` : `Guest Access at ${branch.name} Approved.`,
@@ -531,6 +548,7 @@ const CheckIn: React.FC = () => {
         isCheckOut: false,
         isCrossBranch: !isHomeBranch
       });
+      broadcastToGate(true, isHomeBranch ? `✅ Welcome: ${currentUser.name}` : `✅ Guest Access: ${currentUser.name}`, currentUser.name);
       showToast("Successfully checked in!", "success");
 
       setIsGateOpen(true);

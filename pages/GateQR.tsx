@@ -9,10 +9,9 @@ const GateQR: React.FC = () => {
     const navigate = useNavigate();
     const [qrToken, setQrToken] = useState<string>('');
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [scanFeedback, setScanFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
     // Identify the branch to show
-    // KIOSK/MANAGER/RECEPTIONIST -> Their assigned branch
-    // SUPER_ADMIN -> First branch or prompts (For now, default to first branch)
     const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || branches[0]?.id || '');
 
     // Update selected branch if branches load later or user changes
@@ -25,25 +24,72 @@ const GateQR: React.FC = () => {
     const activeBranchId = selectedBranchId;
     const activeBranch = branches.find(b => b.id === activeBranchId);
 
+    // QR Token generation (rotates every 5 seconds)
     useEffect(() => {
         if (!activeBranchId) return;
 
-        // Generate token immediately and then every 5 seconds
         const generateToken = () => {
             const timestamp = Date.now();
             setQrToken(JSON.stringify({
                 type: 'ENTRY',
                 branchId: activeBranchId,
-                // Valid for 10 seconds (5s refresh + 5s buffer)
                 expiresAt: timestamp + 10000
             }));
         };
 
         generateToken();
-        const interval = setInterval(generateToken, 5000); // 5 Seconds Refresh
-
+        const interval = setInterval(generateToken, 5000);
         return () => clearInterval(interval);
     }, [activeBranchId]);
+
+    // 🔔 Play sound on the kiosk tab
+    const playKioskSound = (type: 'success' | 'error') => {
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            if (type === 'success') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                oscillator.start();
+                oscillator.stop(ctx.currentTime + 0.4);
+            } else {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(220, ctx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.4);
+                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(ctx.currentTime + 0.5);
+            }
+        } catch (e) {
+            console.error('Kiosk audio failed', e);
+        }
+    };
+
+    // 📡 Listen for scan results broadcast from CheckIn tab
+    useEffect(() => {
+        const channel = new BroadcastChannel('gate_scan_result');
+
+        channel.onmessage = (event) => {
+            const { success, message } = event.data;
+            setScanFeedback({ success, message });
+            playKioskSound(success ? 'success' : 'error');
+
+            // Auto reset back to QR after 4 seconds
+            setTimeout(() => setScanFeedback(null), 4000);
+        };
+
+        return () => channel.close();
+    }, []);
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
@@ -74,6 +120,52 @@ const GateQR: React.FC = () => {
                     <h1 className="text-3xl font-bold mb-4">No Branch Assigned</h1>
                     <p className="text-slate-400">Please contact administrator to assign a branch to this Kiosk.</p>
                 </div>
+            </div>
+        );
+    }
+
+    // ✅ Full-screen Feedback Overlay
+    if (scanFeedback) {
+        return (
+            <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-all duration-300 ${scanFeedback.success ? 'bg-green-600' : 'bg-red-600'}`}>
+                {/* Radial glow */}
+                <div className={`absolute inset-0 ${scanFeedback.success ? 'bg-green-400/20' : 'bg-red-400/20'} blur-[120px] rounded-full`}></div>
+
+                <div className="relative z-10 text-center px-10 animate-[bounceIn_0.4s_ease-out]">
+                    {/* Big icon */}
+                    <div className="w-40 h-40 mx-auto rounded-full flex items-center justify-center mb-8 shadow-2xl bg-white/20">
+                        <i className={`fas ${scanFeedback.success ? 'fa-check' : 'fa-times'} text-white text-7xl`}></i>
+                    </div>
+
+                    <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-4">
+                        {scanFeedback.success ? 'ACCESS GRANTED' : 'ACCESS DENIED'}
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-white/80 font-semibold max-w-lg mx-auto leading-relaxed">
+                        {scanFeedback.message}
+                    </p>
+
+                    {/* Auto-reset progress bar */}
+                    <div className="mt-10 w-64 mx-auto h-2 bg-white/20 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-white rounded-full"
+                            style={{ animation: 'shrink 4s linear forwards' }}
+                        ></div>
+                    </div>
+                    <p className="text-white/50 text-sm font-bold uppercase tracking-widest mt-3">Next scan ready in 4s</p>
+                </div>
+
+                <style>{`
+                    @keyframes bounceIn {
+                        0% { transform: scale(0.7); opacity: 0; }
+                        60% { transform: scale(1.05); opacity: 1; }
+                        100% { transform: scale(1); }
+                    }
+                    @keyframes shrink {
+                        from { width: 100%; }
+                        to { width: 0%; }
+                    }
+                `}</style>
             </div>
         );
     }
