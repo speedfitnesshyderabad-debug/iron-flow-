@@ -1059,14 +1059,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
-      if (authError) throw authError;
+      // ♻️ Handle "User already registered" — stale Auth user from a previous deletion
+      // Auto-clean the stale Auth record and retry signup
+      let finalAuthData = authData;
+      if (authError?.message?.toLowerCase().includes('already registered') || authError?.message?.toLowerCase().includes('already been registered')) {
+        console.warn('⚠️ Stale Auth user detected, cleaning up and retrying...');
+        const supabaseUrlClean = import.meta.env.VITE_SUPABASE_URL?.trim();
 
-      if (!authData.user) throw new Error('Failed to create auth user');
+        // Find the stale user's ID by looking up their email in the users table
+        const { data: staleUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', userData.email!)
+          .maybeSingle();
 
-      console.log('✅ Member Auth User Created:', authData.user.id);
+        if (staleUser?.id) {
+          // Delete stale Auth user via edge function
+          await fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({ userId: staleUser.id }),
+          });
+        }
+
+        // Also try finding via Supabase Auth directly by email using admin edge function approach
+        // Retry signup after cleanup
+        const { data: retryData, error: retryError } = await tempSupabase.auth.signUp({
+          email: userData.email!,
+          password: memberPassword,
+          options: { data: { name: userData.name, role: UserRole.MEMBER, branchId: userData.branchId } }
+        });
+        if (retryError) throw retryError;
+        if (!retryData.user) throw new Error('Failed to create auth user after cleanup');
+        finalAuthData = retryData;
+      } else if (authError) {
+        throw authError;
+      }
+
+      if (!finalAuthData.user) throw new Error('Failed to create auth user');
 
       const branchId = userData.branchId || currentUser?.branchId || branches[0]?.id || '';
-      const newUserId = authData.user.id; // Use Auth UUID
+      const newUserId = finalAuthData.user!.id; // Use Auth UUID (from original or retry signup)
       const membershipStartDate = startDate || todayDateStr();
 
       const newUser: User = {
