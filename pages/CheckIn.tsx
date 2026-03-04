@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
 import { SubscriptionStatus, PlanType, UserRole } from '../types';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../src/lib/supabase';
 
 const CheckIn: React.FC = () => {
@@ -169,28 +169,57 @@ const CheckIn: React.FC = () => {
     if (!hasCameraPermission || !userLocation) return;
     if (!isScannerActive) return; // Camera is intentionally off
 
-    const scanner = new Html5QrcodeScanner(
-      "reader",
+    const html5QrCode = new Html5Qrcode("reader");
+
+    html5QrCode.start(
+      { facingMode: "environment" },
       { fps: 10, qrbox: { width: 250, height: 250 } },
-      /* verbose= */ false
-    );
-
-    scanner.render(onScanSuccess, onScanFailure);
-
-    function onScanSuccess(decodedText: string) {
-      scanner.clear();
-      setIsScannerActive(false); // 🔴 Turn camera OFF after successful scan
-      if (handleQRScanRef.current) {
-        handleQRScanRef.current(decodedText);
+      (decodedText) => {
+        // Only trigger if scanning is active (prevents double triggers)
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            setIsScannerActive(false); // 🔴 Turn camera OFF after successful scan
+            if (handleQRScanRef.current) {
+              handleQRScanRef.current(decodedText);
+            }
+          }).catch(console.error);
+        }
+      },
+      (error) => {
+        // ignore
       }
-    }
-
-    function onScanFailure(error: any) {
-      // ignore
-    }
+    ).catch((err) => {
+      console.error("Camera start failed, falling back to any camera:", err);
+      // Fallback if device has no "environment" camera (e.g. some laptops)
+      html5QrCode.start(
+        { facingMode: "user" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          if (html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+              html5QrCode.clear();
+              setIsScannerActive(false);
+              if (handleQRScanRef.current) {
+                handleQRScanRef.current(decodedText);
+              }
+            }).catch(console.error);
+          }
+        },
+        () => { }
+      ).catch(console.error);
+    });
 
     return () => {
-      scanner.clear().catch(() => { });
+      try {
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().then(() => html5QrCode.clear()).catch(() => { });
+        } else {
+          html5QrCode.clear();
+        }
+      } catch (e) {
+        // ignore cleanup errors
+      }
     };
   }, [hasCameraPermission, userLocation, isScannerActive]);
 
