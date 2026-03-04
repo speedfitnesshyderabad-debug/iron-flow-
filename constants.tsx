@@ -97,6 +97,7 @@ export const NAV_ITEMS = [
   { label: 'Plans', path: '/plans', icon: <i className="fas fa-tags"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Store', path: '/store', icon: <i className="fas fa-shopping-cart"></i>, roles: [UserRole.MEMBER] },
   { label: 'Check-In', path: '/check-in', icon: <i className="fas fa-qrcode"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST, UserRole.MEMBER, UserRole.STAFF, UserRole.TRAINER] },
+  { label: 'Checkins Log', path: '/checkins-log', icon: <i className="fas fa-list"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
   { label: 'Bookings', path: '/bookings', icon: <i className="fas fa-calendar-check"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.TRAINER, UserRole.MEMBER] },
   { label: 'Coupons', path: '/coupons', icon: <i className="fas fa-ticket-alt"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Communications', path: '/comms', icon: <i className="fas fa-paper-plane"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },

@@ -25,6 +25,7 @@ import TaxCenter from './pages/TaxCenter';
 import MyEarnings from './pages/MyEarnings';
 import WalkInManagement from './pages/WalkInManagement';
 import Debug from './pages/Debug';
+import CheckinsLog from './pages/CheckinsLog';
 
 import GateQR from './pages/GateQR';
 import Payroll from './pages/Payroll';
@@ -95,6 +96,7 @@ const AppRoutes: React.FC = () => {
         } />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/check-in" element={<CheckIn />} />
+        <Route path="/checkins-log" element={<CheckinsLog />} />
         <Route path="/portal" element={<MemberPortal />} />
         <Route path="/store" element={<MembershipStore />} />
         <Route path="/bookings" element={<Bookings />} />
