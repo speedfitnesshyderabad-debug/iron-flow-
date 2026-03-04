@@ -31,10 +31,8 @@ const CheckinsLog: React.FC = () => {
             // Check date filter
             if (dateFilter && a.date !== dateFilter) return false;
 
-            // Check active branch permission (Managers/Admins see their branch/all branch)
-            if (currentUser?.role !== UserRole.SUPER_ADMIN) {
-                if (a.branchId !== activeBranchId) return false;
-            }
+            // Check active branch (Show data ONLY related to the currently selected branch)
+            if (activeBranchId && a.branchId !== activeBranchId) return false;
 
             // Check role filter
             if (roleFilter !== 'ALL' && a.type !== roleFilter) return false;
