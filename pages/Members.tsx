@@ -158,8 +158,9 @@ const Members: React.FC = () => {
 
   const filteredMembers = members.filter(m => {
     // 1. Search Filter
-    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.memberId?.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = (searchTerm || '').toLowerCase();
+    const matchesSearch = (m.name || '').toLowerCase().includes(searchLower) ||
+      (m.memberId || '').toLowerCase().includes(searchLower);
 
     if (!matchesSearch) return false;
 
