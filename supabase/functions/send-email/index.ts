@@ -56,10 +56,11 @@ function buildHtml(body: string, category: string): string {
 }
 
 serve(async (req) => {
-    // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response(null, { status: 204, headers: corsHeaders });
     }
+
+    console.log("==> Incoming Request Method:", req.method);
 
     if (req.method !== 'POST') {
         return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -89,11 +90,14 @@ serve(async (req) => {
 
     const { to, subject, body, category, fromEmail, fromName, apiKey } = payload;
 
+    console.log(`==> Processing email to: ${to}, subject: ${subject}, category: ${category}`);
+
     // ✅ Use API key from Branch Settings → Email Infrastructure (SendGrid API Key field)
     // Falls back to Supabase secret SENDGRID_API_KEY if not provided by the branch
     const SENDGRID_API_KEY = apiKey || Deno.env.get('SENDGRID_API_KEY');
 
     if (!SENDGRID_API_KEY) {
+        console.error("==> SENDGRID_API_KEY is missing! Cannot send email.");
         return new Response(
             JSON.stringify({ error: 'No SendGrid API key. Add it in Branch Settings → Email Infrastructure.' }),
             { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -138,6 +142,8 @@ serve(async (req) => {
             body: JSON.stringify(sgPayload),
         });
 
+        console.log("==> SendGrid Response Status:", sgRes.status);
+
         if (sgRes.ok || sgRes.status === 202) {
             return new Response(JSON.stringify({ success: true }), {
                 status: 200,
@@ -146,12 +152,14 @@ serve(async (req) => {
         }
 
         const errText = await sgRes.text();
+        console.error("==> SendGrid Error:", errText);
         return new Response(JSON.stringify({ error: `SendGrid error ${sgRes.status}`, detail: errText }), {
             status: 502,
             headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        console.error("==> Exception Caught:", message);
         return new Response(JSON.stringify({ error: message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json', ...corsHeaders },
