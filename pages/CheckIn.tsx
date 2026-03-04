@@ -18,16 +18,23 @@ const CheckIn: React.FC = () => {
   // Ref for scanner to avoid stale closures
   const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
 
-  // BroadcastChannel to send scan results to the GateQR kiosk tab
-  const gateChannel = React.useRef<BroadcastChannel | null>(null);
-  React.useEffect(() => {
-    gateChannel.current = new BroadcastChannel('gate_scan_result');
-    return () => gateChannel.current?.close();
+  // Supabase Realtime broadcast — works cross-device (mobile → kiosk PC)
+  const broadcastToGate = React.useCallback((success: boolean, message: string, branchId?: string) => {
+    try {
+      const channel = supabase.channel(`gate-result-${branchId || 'global'}`);
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'scan_result',
+            payload: { success, message, ts: Date.now() }
+          }).then(() => supabase.removeChannel(channel));
+        }
+      });
+    } catch (e) {
+      console.error('Gate broadcast failed', e);
+    }
   }, []);
-
-  const broadcastToGate = (success: boolean, message: string, memberName?: string) => {
-    gateChannel.current?.postMessage({ success, message, memberName, ts: Date.now() });
-  };
 
   // Helper: Play Sound Feedback
   const playStatusSound = (type: 'success' | 'error') => {
@@ -422,7 +429,7 @@ const CheckIn: React.FC = () => {
           message: `Access Denied: You are assigned to ${assignedBranch?.name || 'another branch'}. Please scan your assigned branch QR.`,
           isCrossBranch: true
         });
-        broadcastToGate(false, `Access Denied: Wrong Branch!`);
+        broadcastToGate(false, `Access Denied: Wrong Branch!`, branchIdScanned);
         setTimeout(() => setScanResult(null), 4000);
         return;
       }
@@ -444,7 +451,7 @@ const CheckIn: React.FC = () => {
           subType: currentUser.role.replace('_', ' '),
           isCheckOut: true
         });
-        broadcastToGate(true, `✅ Checked Out: ${currentUser.name}`);
+        broadcastToGate(true, `✅ Checked Out: ${currentUser.name}`, branch.id);
         showToast("Successfully checked out!", "success");
       } else {
         // Check for FORGOTTEN CHECKOUTS from PREVIOUS DAYS
@@ -481,7 +488,7 @@ const CheckIn: React.FC = () => {
           subType: currentUser.role.replace('_', ' '),
           isCheckOut: false
         });
-        broadcastToGate(true, `✅ Checked In: ${currentUser.name}`);
+        broadcastToGate(true, `✅ Checked In: ${currentUser.name}`, branch.id);
         showToast("Successfully checked in!", "success");
       }
 
@@ -504,11 +511,11 @@ const CheckIn: React.FC = () => {
         if (pausedSub) {
           playStatusSound('error');
           setScanResult({ success: false, message: "Access Denied: Your membership is currently PAUSED." });
-          broadcastToGate(false, `❌ Membership PAUSED`);
+          broadcastToGate(false, `❌ Membership PAUSED`, branchIdScanned);
         } else {
           playStatusSound('error');
           setScanResult({ success: false, message: "Access Denied: No active gym membership found." });
-          broadcastToGate(false, `❌ No Active Membership`);
+          broadcastToGate(false, `❌ No Active Membership`, branchIdScanned);
         }
         setTimeout(() => setScanResult(null), 3000);
         return;
@@ -526,7 +533,7 @@ const CheckIn: React.FC = () => {
           message: `Denied: Access restricted to ${homeBranch?.name || 'Home Branch'}.`,
           subType: plan?.name
         });
-        broadcastToGate(false, `❌ Wrong Branch Access`);
+        broadcastToGate(false, `❌ Wrong Branch Access`, branchIdScanned);
         setTimeout(() => setScanResult(null), 4000);
         return;
       }
@@ -548,7 +555,7 @@ const CheckIn: React.FC = () => {
         isCheckOut: false,
         isCrossBranch: !isHomeBranch
       });
-      broadcastToGate(true, isHomeBranch ? `✅ Welcome: ${currentUser.name}` : `✅ Guest Access: ${currentUser.name}`, currentUser.name);
+      broadcastToGate(true, isHomeBranch ? `✅ Welcome: ${currentUser.name}` : `✅ Guest Access: ${currentUser.name}`, branch.id);
       showToast("Successfully checked in!", "success");
 
       setIsGateOpen(true);

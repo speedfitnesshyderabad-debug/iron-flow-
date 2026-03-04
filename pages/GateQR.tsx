@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
-import { QRCodeSVG } from 'qrcode.react'; // Using the SVG component directly like in BranchQR
+import { QRCodeSVG } from 'qrcode.react';
 import { UserRole } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../src/lib/supabase';
 
 const GateQR: React.FC = () => {
     const { currentUser, branches } = useAppContext();
@@ -75,21 +76,21 @@ const GateQR: React.FC = () => {
         }
     };
 
-    // 📡 Listen for scan results broadcast from CheckIn tab
+    // 📡 Subscribe to Supabase Realtime — works cross-device (member mobile → kiosk PC)
     useEffect(() => {
-        const channel = new BroadcastChannel('gate_scan_result');
+        if (!activeBranchId) return;
 
-        channel.onmessage = (event) => {
-            const { success, message } = event.data;
-            setScanFeedback({ success, message });
-            playKioskSound(success ? 'success' : 'error');
+        const channel = supabase.channel(`gate-result-${activeBranchId}`)
+            .on('broadcast', { event: 'scan_result' }, ({ payload }) => {
+                const { success, message } = payload;
+                setScanFeedback({ success, message });
+                playKioskSound(success ? 'success' : 'error');
+                setTimeout(() => setScanFeedback(null), 4000);
+            })
+            .subscribe();
 
-            // Auto reset back to QR after 4 seconds
-            setTimeout(() => setScanFeedback(null), 4000);
-        };
-
-        return () => channel.close();
-    }, []);
+        return () => { supabase.removeChannel(channel); };
+    }, [activeBranchId]);
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
