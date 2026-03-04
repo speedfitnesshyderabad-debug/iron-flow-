@@ -448,11 +448,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ];
 
       await Promise.all(deletePromises);
-
       // C. DELETE USER
       const { error } = await supabase.from('users').delete().eq('id', id);
 
       if (!error) {
+        // Also delete from Supabase Auth so the email can be re-used for enrollment
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+        fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ userId: id }),
+        }).catch(e => console.warn('Auth user cleanup failed (non-critical):', e));
+
         // Update Local State strictly
         setUsers(prev => prev.filter(u => u.id !== id));
 

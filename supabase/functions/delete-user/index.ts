@@ -1,0 +1,63 @@
+// @ts-nocheck — This file runs on Supabase Deno runtime, not Node.js
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+    if (req.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    if (req.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+            status: 405, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+    }
+
+    let payload: { userId: string };
+    try {
+        payload = await req.json();
+    } catch {
+        return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+    }
+
+    const { userId } = payload;
+    if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+    }
+
+    // Use Supabase Admin client — SUPABASE_SERVICE_ROLE_KEY is auto-injected by Supabase
+    const adminClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Delete from Supabase Auth (this requires service role)
+    const { error } = await adminClient.auth.admin.deleteUser(userId);
+
+    if (error) {
+        // If user doesn't exist in Auth, that's fine — not a real error
+        if (error.message?.includes('not found') || error.status === 404) {
+            return new Response(JSON.stringify({ success: true, note: 'Auth user not found, skipped' }), {
+                status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            });
+        }
+        return new Response(JSON.stringify({ error: error.message }), {
+            status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+});
