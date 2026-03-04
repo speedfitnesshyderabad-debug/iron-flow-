@@ -879,7 +879,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 📧 Real Email Delivery via SendGrid (Supabase Edge Function)
       // emailOverride is used when the user was just created and isn't yet in the users state array
       const emailTo = emailOverride || user?.email;
-      if (emailTo && emailTo.includes('@') && branch?.emailApiKey) {
+      if (emailTo && emailTo.includes('@')) {
         const categorySubjects: Record<string, string> = {
           WELCOME: '👋 Welcome to IronFlow!',
           PAYMENT: '💳 Payment Confirmation – IronFlow',
