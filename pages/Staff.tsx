@@ -132,14 +132,45 @@ const Staff: React.FC = () => {
         }
       });
 
-      if (authError) throw authError;
+      let finalAuthData = authData;
 
-      if (authData.user) {
-        console.log('✅ Staff Auth User Created:', authData.user.id);
+      if (authError?.message?.toLowerCase().includes('already registered') || authError?.message?.toLowerCase().includes('already been registered')) {
+        console.warn('⚠️ Stale Auth user detected, cleaning up and retrying...');
+        const supabaseUrlClean = import.meta.env.VITE_SUPABASE_URL?.trim();
+
+        // Delete stale Auth user via edge function by email
+        await fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ email: formData.email }),
+        });
+
+        // Retry signup
+        const { data: retryData, error: retryError } = await tempSupabase.auth.signUp({
+          email: formData.email,
+          password: staffPassword,
+          options: {
+            data: {
+              name: formData.name,
+              role: formData.role,
+              branchId: formData.branchId
+            }
+          }
+        });
+
+        if (retryError) throw retryError;
+        if (!retryData.user) throw new Error('Failed to create staff auth user after cleanup');
+        finalAuthData = retryData;
+      } else if (authError) {
+        throw authError;
+      }
+
+      if (finalAuthData.user) {
+        console.log('✅ Staff Auth User Created:', finalAuthData.user.id);
 
         // 3. Create the public user record with the Auth ID
         const newStaff: User = {
-          id: authData.user.id, // Use the Auth UID!
+          id: finalAuthData.user.id, // Use the Auth UID!
           name: formData.name,
           email: formData.email,
           // password: staffPassword, // ❌ SECURITY: Do NOT store the password!
@@ -653,11 +684,10 @@ const Staff: React.FC = () => {
                             : [...formData.weekOffs, day];
                           setFormData({ ...formData, weekOffs: updated });
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                          isSelected
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isSelected
                             ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
                             : 'bg-white text-amber-400 border border-amber-200 hover:bg-amber-100'
-                        }`}
+                          }`}
                       >
                         {day.slice(0, 3)}
                       </button>

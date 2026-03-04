@@ -8,7 +8,7 @@ import { UserRole } from '../types';
 import { supabase } from '../src/lib/supabase';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, setCurrentUser, branches, updateUser, selectedBranchId, setSelectedBranchId } = useAppContext();
+  const { currentUser, setCurrentUser, branches, updateUser, selectedBranchId, setSelectedBranchId, attendance, recordAttendance, updateAttendance, showToast } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,6 +23,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStartRef = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
+
+
 
   // Stop camera stream
   const stopCamera = () => {
@@ -357,7 +359,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
           {/* Header Right: User Info */}
           <div className="flex items-center gap-3 md:gap-4 shrink-0 ml-auto pl-2">
-            <div className="hidden sm:flex flex-col text-right min-w-0 max-w-[150px]">
+
+
+
+            <div className="hidden sm:flex flex-col text-right min-w-0 max-w-[150px] ml-2">
               <span className="text-[12px] md:text-sm font-black text-gray-900 truncate">{currentUser.name}</span>
               <span className="text-[8px] md:text-[9px] text-blue-600 font-black uppercase tracking-widest truncate">
                 {currentUser.role.replace('_', ' ')}

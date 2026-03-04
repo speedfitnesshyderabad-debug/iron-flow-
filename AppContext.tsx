@@ -1244,11 +1244,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           });
 
-          if (authError) throw authError;
-          if (!authData.user) throw new Error('No user returned from auth');
+          let finalAuthData = authData;
+          if (authError?.message?.toLowerCase().includes('already registered') || authError?.message?.toLowerCase().includes('already been registered')) {
+            const supabaseUrlClean = import.meta.env.VITE_SUPABASE_URL?.trim();
+            await fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ email: data.email }),
+            });
+            const { data: retryData, error: retryError } = await tempSupabase.auth.signUp({
+              email: data.email,
+              password: password,
+              options: { data: { name: data.name, role: UserRole.MEMBER, branchId: data.branchId || currentUser?.branchId } }
+            });
+            if (retryError) throw retryError;
+            if (!retryData.user) throw new Error('No user returned from auth retry');
+            finalAuthData = retryData;
+          } else if (authError) {
+            throw authError;
+          }
+
+          if (!finalAuthData.user) throw new Error('No user returned from auth');
 
           // B. Create DB User
-          const newUserId = authData.user.id;
+          const newUserId = finalAuthData.user.id;
           const newUser: User = {
             id: newUserId,
             name: data.name,

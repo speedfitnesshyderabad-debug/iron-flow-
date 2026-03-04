@@ -432,6 +432,7 @@ const CheckIn: React.FC = () => {
           subType: currentUser.role.replace('_', ' '),
           isCheckOut: true
         });
+        showToast("Successfully checked out!", "success");
       } else {
         // Check for FORGOTTEN CHECKOUTS from PREVIOUS DAYS
         const forgottenShift = attendance.find(a =>
@@ -467,6 +468,7 @@ const CheckIn: React.FC = () => {
           subType: currentUser.role.replace('_', ' '),
           isCheckOut: false
         });
+        showToast("Successfully checked in!", "success");
       }
 
       setIsGateOpen(true);
@@ -529,6 +531,7 @@ const CheckIn: React.FC = () => {
         isCheckOut: false,
         isCrossBranch: !isHomeBranch
       });
+      showToast("Successfully checked in!", "success");
 
       setIsGateOpen(true);
       triggerHardwareGate(branch.id);
