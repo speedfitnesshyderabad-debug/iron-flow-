@@ -45,7 +45,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const { currentUser } = useAppContext();
-  const canUpload = ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MANAGER', 'MEMBER'].includes(currentUser?.role || '');
+  const canUpload = ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MANAGER'].includes(currentUser?.role || '');
 
   // Stop camera stream
   const stopCamera = () => {
@@ -241,18 +241,20 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
                 </div>
               )}
 
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40"
-                onClick={startCamera}
-              >
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <i className="fas fa-camera text-xl text-blue-600"></i>
+              {canUpload && (
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40"
+                  onClick={startCamera}
+                >
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i className="fas fa-camera text-xl text-blue-600"></i>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-700">Take Photo</p>
+                    <p className="text-[10px] text-gray-400">Use camera</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-700">Take Photo</p>
-                  <p className="text-[10px] text-gray-400">Use camera</p>
-                </div>
-              </div>
+              )}
             </div>
             <input
               ref={fileInputRef}

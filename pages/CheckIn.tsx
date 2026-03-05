@@ -18,6 +18,8 @@ const CheckIn: React.FC = () => {
 
   // Ref for scanner to avoid stale closures
   const handleQRScanRef = React.useRef<((text: string) => void) | null>(null);
+  const lastScanTextRef = React.useRef<string>('');
+  const clearScanTextTimeout = React.useRef<any>(null);
 
   // Supabase Realtime broadcast — works cross-device (mobile → kiosk PC)
   const broadcastToGate = React.useCallback((success: boolean, message: string, branchId?: string) => {
@@ -39,6 +41,9 @@ const CheckIn: React.FC = () => {
 
   // Helper: Play Sound Feedback
   const playStatusSound = (type: 'success' | 'error') => {
+    // Disable sounds for regular users checking in via phone
+    if (currentUser?.role !== UserRole.KIOSK) return;
+
     try {
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContext) return;
@@ -175,35 +180,29 @@ const CheckIn: React.FC = () => {
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 250, height: 250 } },
       (decodedText) => {
-        // Only trigger if scanning is active (prevents double triggers)
-        if (html5QrCode.isScanning) {
-          html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            setIsScannerActive(false); // 🔴 Turn camera OFF after successful scan
-            if (handleQRScanRef.current) {
-              handleQRScanRef.current(decodedText);
-            }
-          }).catch(console.error);
+        if (lastScanTextRef.current === decodedText) return; // Prevent double scans
+        lastScanTextRef.current = decodedText;
+        if (clearScanTextTimeout.current) clearTimeout(clearScanTextTimeout.current);
+        clearScanTextTimeout.current = setTimeout(() => { lastScanTextRef.current = ''; }, 5000);
+
+        if (handleQRScanRef.current) {
+          handleQRScanRef.current(decodedText);
         }
       },
-      (error) => {
-        // ignore
-      }
+      (error) => { }
     ).catch((err) => {
       console.error("Camera start failed, falling back to any camera:", err);
-      // Fallback if device has no "environment" camera (e.g. some laptops)
       html5QrCode.start(
         { facingMode: "user" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
-          if (html5QrCode.isScanning) {
-            html5QrCode.stop().then(() => {
-              html5QrCode.clear();
-              setIsScannerActive(false);
-              if (handleQRScanRef.current) {
-                handleQRScanRef.current(decodedText);
-              }
-            }).catch(console.error);
+          if (lastScanTextRef.current === decodedText) return; // Prevent double scans
+          lastScanTextRef.current = decodedText;
+          if (clearScanTextTimeout.current) clearTimeout(clearScanTextTimeout.current);
+          clearScanTextTimeout.current = setTimeout(() => { lastScanTextRef.current = ''; }, 5000);
+
+          if (handleQRScanRef.current) {
+            handleQRScanRef.current(decodedText);
           }
         },
         () => { }
@@ -367,6 +366,7 @@ const CheckIn: React.FC = () => {
     });
 
     showToast(`Class completed! Trainer commission: ${commission}%`, 'success');
+    setIsScannerActive(false);
 
     // Trigger gate for exit
     setIsGateOpen(true);
@@ -471,6 +471,7 @@ const CheckIn: React.FC = () => {
         // Normal Checkout
         updateAttendance(openAttendance.id, { timeOut: new Date().toLocaleTimeString() });
         playStatusSound('success');
+        setIsScannerActive(false);
         setScanResult({
           success: true,
           message: `Shift Finalized at ${branch.name}. Great work!`,
@@ -508,6 +509,7 @@ const CheckIn: React.FC = () => {
           type: 'STAFF'
         });
         playStatusSound('success');
+        setIsScannerActive(false);
         setScanResult({
           success: true,
           message: `Punch-In Recorded at ${branch.name}. Shift started.`,
@@ -587,6 +589,7 @@ const CheckIn: React.FC = () => {
           const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
           playStatusSound('error');
+          setIsScannerActive(false);
           setScanResult({
             success: false,
             message: `Checkout or Re-entry not allowed yet. Please wait ${timeString}.`,
@@ -608,6 +611,7 @@ const CheckIn: React.FC = () => {
       });
 
       playStatusSound('success');
+      setIsScannerActive(false);
       setScanResult({
         success: true,
         message: isHomeBranch ? `Welcome back to ${branch.name}!` : `Guest Access at ${branch.name} Approved.`,
@@ -716,13 +720,18 @@ const CheckIn: React.FC = () => {
                   </button>
                 </div>
               ) : !isScannerActive ? (
-                // 🔴 Camera Off - shown after a successful scan
-                <div className="bg-green-50 border-2 border-green-200 p-10 rounded-[2.5rem] text-center">
-                  <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl">
-                    <i className="fas fa-check text-white text-3xl"></i>
+                // 🔴 Camera Off - shown after a successful scan (or specific failure that stopped camera)
+                <div className={`${scanResult?.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border-2 p-10 rounded-[2.5rem] text-center`}>
+                  <div className={`w-20 h-20 ${scanResult?.success ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl`}>
+                    <i className={`fas ${scanResult?.success ? 'fa-check' : 'fa-times'} text-white text-3xl`}></i>
                   </div>
-                  <h3 className="text-xl font-black text-green-800 uppercase tracking-tight mb-2">Scan Complete!</h3>
-                  <p className="text-sm text-green-600 font-medium mb-6">Camera has been turned off.</p>
+                  <h3 className={`text-xl font-black ${scanResult?.success ? 'text-green-800' : 'text-red-800'} uppercase tracking-tight mb-2`}>
+                    {scanResult?.success ? 'Scan Complete!' : 'Access Denied'}
+                  </h3>
+                  <p className={`text-sm ${scanResult?.success ? 'text-green-600' : 'text-red-600'} font-bold mb-2 leading-tight max-w-[250px] mx-auto`}>
+                    {scanResult?.message}
+                  </p>
+                  <p className={`text-xs ${scanResult?.success ? 'text-green-600' : 'text-red-600'} font-medium mb-6 opacity-70`}>Camera has been turned off.</p>
                   <button
                     onClick={() => {
                       setScanResult(null);
@@ -731,7 +740,7 @@ const CheckIn: React.FC = () => {
                     className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors shadow-lg flex items-center gap-3 mx-auto"
                   >
                     <i className="fas fa-camera"></i>
-                    Scan Next Member
+                    Scan Again
                   </button>
                 </div>
               ) : (
@@ -753,7 +762,7 @@ const CheckIn: React.FC = () => {
           )}
         </div>
 
-        {scanResult && !isGateOpen && (
+        {scanResult && isScannerActive && !isGateOpen && (
           <div className={`p-6 rounded-[2rem] border-2 flex items-center gap-4 animate-[slideUp_0.3s_ease-out] ${!scanResult.success ? 'bg-red-50 border-red-100 text-red-700' : 'bg-blue-50 border-blue-100 text-blue-700'
             }`}>
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${!scanResult.success ? 'bg-red-600' : 'bg-blue-600'} text-white shadow-lg`}>
