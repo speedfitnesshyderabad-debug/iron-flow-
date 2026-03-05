@@ -307,7 +307,7 @@ const Members: React.FC = () => {
         emergencyContact: manageData.emergencyContact,
         address: manageData.address,
         avatar: manageData.avatar,
-        maxDevices: manageData.maxDevices
+        maxDevices: Number(manageData.maxDevices) || 1
       });
 
       // Update trainer on active subscription if changed
@@ -891,7 +891,7 @@ const Members: React.FC = () => {
                       max="10"
                       className="w-full p-4 bg-gray-50 border rounded-xl font-bold"
                       value={manageData.maxDevices}
-                      onChange={e => setManageData({ ...manageData, maxDevices: parseInt(e.target.value) || 1 })}
+                      onChange={e => setManageData({ ...manageData, maxDevices: e.target.value ? parseInt(e.target.value) : ('' as any) })}
                     />
                     <button
                       type="button"

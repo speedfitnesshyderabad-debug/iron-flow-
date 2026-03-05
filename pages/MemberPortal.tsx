@@ -6,26 +6,7 @@ import { QuickRenewModal } from '../components/QuickRenewModal';
 import { PaymentModal } from '../components/PaymentModal';
 import { ImageUploadModal } from '../components/ImageUploadModal';
 
-const TERMS_CONTENT = (
-   <div className="prose prose-slate max-w-none space-y-6 text-sm text-slate-600 leading-relaxed font-medium">
-      <section>
-         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">1. Health and Safety Disclaimer</h4>
-         <p>By using IronFlow facilities, you acknowledge that physical exercise carries inherent risks. You represent that you are in good physical condition and have no medical reason that would prevent you from using the equipment. Always consult a physician before starting a new program.</p>
-      </section>
-      <section>
-         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">2. AI Coaching and Personal Data</h4>
-         <p>The "Smart AI Coach" utilizes Google Gemini. AI-generated workouts are for informational purposes only. You are responsible for executing exercises with proper form. IronFlow logs metrics (weight, goals) to provide a personalized experience.</p>
-      </section>
-      <section>
-         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">3. Membership Rules</h4>
-         <p>Your unique QR Gate Key (IF-ID) is non-transferable. Sharing credentials results in immediate suspension. Members must follow gym etiquette and re-rack weights after use.</p>
-      </section>
-      <section>
-         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">4. Liability Waiver</h4>
-         <p>IronFlow Gym shall not be liable for any injury, loss, or damage to person or property arising out of the use of gym facilities or participation in training sessions.</p>
-      </section>
-   </div>
-);
+
 
 const MemberPortal: React.FC = () => {
    const { currentUser, subscriptions, plans, bookings, addFeedback, feedback, showToast, updateUser, sales, branches, askGemini, metrics, addMetric, offers, users, purchaseSubscription } = useAppContext();
@@ -68,8 +49,29 @@ const MemberPortal: React.FC = () => {
          return;
       }
       updateUser(currentUser.id, { hasAcceptedTerms: true });
-      showToast('Agreement Signed. Welcome to IronFlow Portal!', 'success');
+      showToast(`Agreement Signed. Welcome to ${currentBranch?.name || 'Portal'}!`, 'success');
    };
+
+   const TERMS_CONTENT = (
+      <div className="prose prose-slate max-w-none space-y-6 text-sm text-slate-600 leading-relaxed font-medium">
+         <section>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">1. Health and Safety Disclaimer</h4>
+            <p>By using {currentBranch?.name || 'our'} facilities, you acknowledge that physical exercise carries inherent risks. You represent that you are in good physical condition and have no medical reason that would prevent you from using the equipment. Always consult a physician before starting a new program.</p>
+         </section>
+         <section>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">2. AI Coaching and Personal Data</h4>
+            <p>The "Smart AI Coach" utilizes Google Gemini. AI-generated workouts are for informational purposes only. You are responsible for executing exercises with proper form. {currentBranch?.name || 'Our system'} logs metrics (weight, goals) to provide a personalized experience.</p>
+         </section>
+         <section>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">3. Membership Rules</h4>
+            <p>Your unique QR Gate Key (ID) is non-transferable. Sharing credentials results in immediate suspension. Members must follow gym etiquette and re-rack weights after use.</p>
+         </section>
+         <section>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">4. Liability Waiver</h4>
+            <p>{currentBranch?.name || 'We'} shall not be liable for any injury, loss, or damage to person or property arising out of the use of gym facilities or participation in training sessions.</p>
+         </section>
+      </div>
+   );
 
    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -87,7 +89,7 @@ const MemberPortal: React.FC = () => {
                      <div className="bg-blue-600 p-3 rounded-2xl shrink-0">
                         <i className="fas fa-file-contract text-xl md:text-2xl"></i>
                      </div>
-                     <h2 className="text-xl md:text-3xl font-black uppercase tracking-tight">Portal Activation</h2>
+                     <h2 className="text-xl md:text-3xl font-black uppercase tracking-tight">{currentBranch?.name || 'Portal Activation'}</h2>
                   </div>
                   <p className="text-slate-400 text-xs md:text-sm font-medium">Review and sign the membership agreement to proceed.</p>
                </div>
