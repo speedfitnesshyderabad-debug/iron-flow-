@@ -449,38 +449,42 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <form onSubmit={handleUpdateAccount} className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1">
               {/* Avatar Upload Section */}
               <div className="flex flex-col items-center mb-2">
-                <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                <div className={`relative group ${currentUser.role !== UserRole.MEMBER ? 'cursor-pointer' : ''}`} onClick={currentUser.role !== UserRole.MEMBER ? handleAvatarClick : undefined}>
                   <img
                     src={currentUser.avatar || "https://ui-avatars.com/api/?name=" + currentUser.name}
                     alt="Profile"
                     className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg group-hover:opacity-75 transition-opacity"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    <i className="fas fa-camera text-white text-2xl"></i>
-                  </div>
+                  {currentUser.role !== UserRole.MEMBER && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i className="fas fa-camera text-white text-2xl"></i>
+                    </div>
+                  )}
                   {isUploading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
                       <i className="fas fa-spinner fa-spin text-white text-2xl"></i>
                     </div>
                   )}
                 </div>
-                <div className="flex gap-4 mt-3">
-                  <button
-                    type="button"
-                    onClick={handleAvatarClick}
-                    className="text-[10px] text-blue-500 font-bold uppercase tracking-widest hover:text-blue-600 flex items-center gap-1"
-                  >
-                    <i className="fas fa-upload"></i> Upload
-                  </button>
-                  <span className="text-slate-300">|</span>
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className="text-[10px] text-blue-500 font-bold uppercase tracking-widest hover:text-blue-600 flex items-center gap-1"
-                  >
-                    <i className="fas fa-camera"></i> Take Photo
-                  </button>
-                </div>
+                {currentUser.role !== UserRole.MEMBER && (
+                  <div className="flex gap-4 mt-3">
+                    <button
+                      type="button"
+                      onClick={handleAvatarClick}
+                      className="text-[10px] text-blue-500 font-bold uppercase tracking-widest hover:text-blue-600 flex items-center gap-1"
+                    >
+                      <i className="fas fa-upload"></i> Upload
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="text-[10px] text-blue-500 font-bold uppercase tracking-widest hover:text-blue-600 flex items-center gap-1"
+                    >
+                      <i className="fas fa-camera"></i> Take Photo
+                    </button>
+                  </div>
+                )}
 
                 <input
                   type="file"
