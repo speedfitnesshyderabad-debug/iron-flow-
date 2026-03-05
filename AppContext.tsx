@@ -109,9 +109,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
       // Request browser push notification permission on login
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        const bName = currentUser.branchId ? branches.find(b => b.id === currentUser.branchId)?.name || 'IronFlow' : 'IronFlow';
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            new Notification('🔔 IronFlow Notifications Enabled', {
+            new Notification(`🔔 ${bName} Notifications Enabled`, {
               body: `Hi ${currentUser.name}! You'll now receive real-time alerts for payments, announcements and more.`,
               icon: '/favicon.ico',
             });
@@ -880,15 +881,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // emailOverride is used when the user was just created and isn't yet in the users state array
       const emailTo = emailOverride || user?.email;
       if (emailTo && emailTo.includes('@')) {
+        const bName = branch?.name || 'IronFlow';
         const categorySubjects: Record<string, string> = {
-          WELCOME: '👋 Welcome to IronFlow!',
-          PAYMENT: '💳 Payment Confirmation – IronFlow',
-          REMINDER: '⏰ Reminder from IronFlow',
-          ANNOUNCEMENT: '📢 Announcement from IronFlow',
+          WELCOME: `👋 Welcome to ${bName}!`,
+          PAYMENT: `💳 Payment Confirmation – ${bName}`,
+          REMINDER: `⏰ Reminder from ${bName}`,
+          ANNOUNCEMENT: `📢 Announcement from ${bName}`,
         };
-        const emailSubject = newComm.subject || categorySubjects[newComm.category] || '🔔 IronFlow Notification';
-        const emailFrom = branch.emailFromAddress || 'admin@speedfitness.org';
-        const emailFromName = branch.name ? `${branch.name} – IronFlow` : 'IronFlow Gym';
+        const emailSubject = newComm.subject || categorySubjects[newComm.category] || `🔔 ${bName} Notification`;
+        const emailFrom = branch?.emailFromAddress || 'admin@speedfitness.org';
+        const emailFromName = branch?.name || 'IronFlow Gym';
 
         // ✅ Supabase Edge Function — no Vercel needed
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
@@ -907,7 +909,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             category: newComm.category,
             fromEmail: emailFrom,
             fromName: emailFromName,
-            apiKey: branch.emailApiKey, // From Branch Settings → Email Infrastructure
+            branchName: bName,
+            apiKey: branch?.emailApiKey, // From Branch Settings → Email Infrastructure
           }),
         }).catch(e => console.warn('📧 Email send failed (non-critical):', e));
       }
@@ -919,13 +922,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         typeof Notification !== 'undefined' &&
         Notification.permission === 'granted'
       ) {
+        const bName = branch?.name || 'IronFlow';
         const categoryTitles: Record<string, string> = {
-          WELCOME: '👋 Welcome to IronFlow!',
+          WELCOME: `👋 Welcome to ${bName}!`,
           PAYMENT: '💳 Payment Confirmed',
           REMINDER: '⏰ Reminder',
           ANNOUNCEMENT: '📢 New Announcement',
         };
-        const title = categoryTitles[newComm.category] || '🔔 IronFlow Notification';
+        const title = categoryTitles[newComm.category] || `🔔 ${bName} Notification`;
         try {
           new Notification(title, {
             body: newComm.body,
@@ -1006,11 +1010,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Note: If you want to track referrals in local state, add a state variable.
 
       // 5. Notify the referrer
+      const bName = referrer.branchId ? branches.find(b => b.id === referrer.branchId)?.name || 'IronFlow' : 'IronFlow';
       await sendNotification({
         userId: referrer.id,
         type: CommType.SMS,
         recipient: referrer.phone || referrer.email || 'N/A',
-        body: `Congratulations! You earned ${rewardDays} free days because your friend joined IronFlow. Your membership has been extended to ${targetSub ? (new Date(new Date(targetSub.endDate).getTime() + rewardDays * 86400000).toISOString().split('T')[0]) : 'N/A'}.`,
+        body: `Congratulations! You earned ${rewardDays} free days because your friend joined ${bName}. Your membership has been extended to ${targetSub ? (new Date(new Date(targetSub.endDate).getTime() + rewardDays * 86400000).toISOString().split('T')[0]) : 'N/A'}.`,
         category: 'ANNOUNCEMENT',
         branchId: referrer.branchId || branches[0]?.id || ''
       });
@@ -1173,9 +1178,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast('Member registered successfully!');
       }
 
+      const bName = branchId ? branches.find(b => b.id === branchId)?.name || 'IronFlow' : 'IronFlow';
       const welcomeBody = plan
-        ? `Welcome to IronFlow! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nValid until ${subEndDate}.`
-        : `Welcome to IronFlow! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nPlease purchase a plan from your dashboard.`;
+        ? `Welcome to ${bName}! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nValid until ${subEndDate}.`
+        : `Welcome to ${bName}! Your login:\nID: ${userData.email}\nPass: ${memberPassword}\nPlease purchase a plan from your dashboard.`;
 
       await sendNotification({
         userId: newUserId,
@@ -1229,7 +1235,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           successCount++;
         } else {
           // Create New
-          const password = data.password || 'IronFlow@2026'; // Default password
+          const bName = data.branchId ? branches.find(b => b.id === data.branchId)?.name || 'IronFlow' : 'IronFlow';
+          const password = data.password || `${bName.replace(/\s+/g, '')}@2026`; // Default password using branch name
 
           // A. Create Auth User
           const { data: authData, error: authError } = await tempSupabase.auth.signUp({
@@ -1766,7 +1773,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[10000] flex items-center justify-center">
           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-bounce">
             <i className="fas fa-dumbbell text-4xl text-blue-600 animate-spin"></i>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing with IronFlow Cloud...</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Cloud Data...</p>
           </div>
         </div>
       )}

@@ -9,7 +9,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function buildHtml(body: string, category: string): string {
+function buildHtml(body: string, category: string, branchName: string = 'IronFlow'): string {
     const colors: Record<string, string> = {
         WELCOME: '#10b981',
         PAYMENT: '#3b82f6',
@@ -30,7 +30,7 @@ function buildHtml(body: string, category: string): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IronFlow Notification</title></head>
+<title>${branchName} Notification</title></head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
     <tr><td align="center">
@@ -40,12 +40,12 @@ function buildHtml(body: string, category: string): string {
           <div style="color:#fff;font-size:11px;font-weight:900;letter-spacing:3px;text-transform:uppercase;opacity:0.8;">${category}</div>
         </td></tr>
         <tr><td style="background:#0f172a;padding:12px 40px;text-align:center;">
-          <span style="color:#fff;font-size:14px;font-weight:900;letter-spacing:4px;text-transform:uppercase;">⚡ IRONFLOW</span>
+          <span style="color:#fff;font-size:14px;font-weight:900;letter-spacing:4px;text-transform:uppercase;">⚡ ${branchName.toUpperCase()}</span>
         </td></tr>
         <tr><td style="padding:40px;color:#374151;font-size:15px;line-height:1.7;">${htmlBody}</td></tr>
         <tr><td style="padding:24px 40px;border-top:1px solid #f1f5f9;text-align:center;">
           <p style="margin:0;color:#9ca3af;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
-            IronFlow Gym Management &nbsp;•&nbsp; This is an automated message
+            ${branchName} Gym Management &nbsp;•&nbsp; This is an automated message
           </p>
         </td></tr>
       </table>
@@ -76,6 +76,7 @@ serve(async (req) => {
         category?: string;
         fromEmail?: string;
         fromName?: string;
+        branchName?: string;
         apiKey?: string; // Branch's SendGrid API key from Branch Settings
     };
 
@@ -88,7 +89,7 @@ serve(async (req) => {
         });
     }
 
-    const { to, subject, body, category, fromEmail, fromName, apiKey } = payload;
+    const { to, subject, body, category, fromEmail, fromName, branchName, apiKey } = payload;
 
     console.log(`==> Processing email to: ${to}, subject: ${subject}, category: ${category}`);
 
@@ -119,16 +120,17 @@ serve(async (req) => {
     }
 
     const cat = category || 'ANNOUNCEMENT';
+    const bName = branchName || 'IronFlow';
     const sgPayload = {
         personalizations: [{ to: [{ email: to }] }],
         from: {
             email: fromEmail || 'noreply@ironflow.app',
-            name: fromName || 'IronFlow Gym',
+            name: fromName || `${bName} Gym`,
         },
-        subject: subject || 'IronFlow Notification',
+        subject: subject || `${bName} Notification`,
         content: [
             { type: 'text/plain', value: body },
-            { type: 'text/html', value: buildHtml(body, cat) },
+            { type: 'text/html', value: buildHtml(body, cat, bName) },
         ],
     };
 
