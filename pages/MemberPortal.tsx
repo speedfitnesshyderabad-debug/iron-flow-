@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
 import { PlanType, SubscriptionStatus, Feedback, Sale, BodyMetric, Offer } from '../types';
 import InvoiceModal from '../components/InvoiceModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
 import { PaymentModal } from '../components/PaymentModal';
+import { ImageUploadModal } from '../components/ImageUploadModal';
 
 const TERMS_CONTENT = (
    <div className="prose prose-slate max-w-none space-y-6 text-sm text-slate-600 leading-relaxed font-medium">
@@ -39,6 +39,7 @@ const MemberPortal: React.FC = () => {
    const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
    const [pendingRenewal, setPendingRenewal] = useState<{ planId: string, amount: number, paymentMethod: any, discount: number } | null>(null);
+   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
    const [aiPrompt, setAiPrompt] = useState('');
    const [aiResponse, setAiResponse] = useState('');
@@ -179,6 +180,11 @@ const MemberPortal: React.FC = () => {
       setRenewModalOpen(true);
    };
 
+   const handleImageUpload = async (url: string) => {
+      await updateUser(currentUser.id, { avatar: url });
+      showToast('Profile picture updated successfully!', 'success');
+   };
+
    return (
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
          {/* ... (rest of the file remains, I need to be careful with replacement context) ... */}
@@ -213,7 +219,12 @@ const MemberPortal: React.FC = () => {
          {/* Profile Header */}
          <div className="bg-slate-900 text-white rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden shadow-xl">
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-8 text-center md:text-left">
-               <img src={currentUser.avatar} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-4 border-blue-500/30 shadow-2xl shrink-0" alt="" />
+               <div className="relative group cursor-pointer" onClick={() => setIsImageModalOpen(true)}>
+                  <img src={currentUser.avatar || 'https://i.pravatar.cc/150'} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-4 border-blue-500/30 shadow-2xl shrink-0 object-cover" alt="Profile" />
+                  <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                     <i className="fas fa-camera text-white text-xl"></i>
+                  </div>
+               </div>
                <div className="flex-1 min-w-0">
                   <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
                      <h1 className="text-xl md:text-3xl font-black tracking-tight uppercase truncate">{currentUser.name}</h1>
@@ -523,6 +534,13 @@ const MemberPortal: React.FC = () => {
                console.error('Payment Error', error);
                showToast('Payment Failed. Please try again.', 'error');
             }}
+         />
+
+         <ImageUploadModal
+            isOpen={isImageModalOpen}
+            onClose={() => setIsImageModalOpen(false)}
+            onUpload={handleImageUpload}
+            title="Update Profile Picture"
          />
 
          <style>{`

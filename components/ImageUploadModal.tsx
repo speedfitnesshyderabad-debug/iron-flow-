@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { supabase } from '../src/lib/supabase';
+import { useAppContext } from '../AppContext';
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -42,6 +43,9 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const { currentUser } = useAppContext();
+  const canUpload = ['SUPER_ADMIN', 'BRANCH_ADMIN', 'MANAGER', 'MEMBER'].includes(currentUser?.role || '');
 
   // Stop camera stream
   const stopCamera = () => {
@@ -167,6 +171,10 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       return;
     }
 
+    if (!window.confirm("Are you sure you want to save this profile picture?")) {
+      return;
+    }
+
     setIsUploading(true);
     try {
       const croppedBlob = await getCroppedImg(imgRef.current, completedCrop);
@@ -217,19 +225,21 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
 
         {!imgSrc ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <i className="fas fa-cloud-upload-alt text-xl text-blue-600"></i>
+            <div className={`grid grid-cols-1 ${canUpload ? 'md:grid-cols-2' : ''} gap-4`}>
+              {canUpload && (
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i className="fas fa-cloud-upload-alt text-xl text-blue-600"></i>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-700">Upload Photo</p>
+                    <p className="text-[10px] text-gray-400">Select from device</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-700">Upload Photo</p>
-                  <p className="text-[10px] text-gray-400">Select from device</p>
-                </div>
-              </div>
+              )}
 
               <div
                 className="border-2 border-dashed border-gray-300 rounded-2xl p-4 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40"
