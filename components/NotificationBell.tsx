@@ -143,7 +143,7 @@ const NotificationBell: React.FC = () => {
                                                     {formatTime(notif.timestamp)}
                                                 </span>
                                             </div>
-                                            <p className="text-xs font-semibold text-slate-700 leading-snug line-clamp-2">
+                                            <p className="text-xs font-semibold text-slate-700 leading-snug whitespace-pre-wrap break-words mt-1">
                                                 {notif.body}
                                             </p>
                                         </div>
