@@ -82,6 +82,32 @@ export const calculateMonthlySalary = (
         return branchHolidays.includes(dateString);
     };
 
+    // Helper: A week off is ONLY paid if the staff worked (or had a paid holiday/another weekoff)
+    // for the 6 continuous days immediately preceding the week off.
+    const isPaidWeekOff = (offDate: Date) => {
+        let checkDate = new Date(offDate);
+        for (let i = 1; i <= 6; i++) {
+            checkDate.setDate(checkDate.getDate() - 1);
+
+            // Format checkDate to local YYYY-MM-DD reliably
+            const _y = checkDate.getFullYear();
+            const _m = String(checkDate.getMonth() + 1).padStart(2, '0');
+            const _d = String(checkDate.getDate()).padStart(2, '0');
+            const checkDateStr = `${_y}-${_m}-${_d}`;
+
+            if (isHoliday(checkDateStr)) continue; // Holiday counts as a paid day
+            if (isWeekOff(checkDate)) continue;    // Another week off? counts as paid day
+
+            // Make sure they have a punch-in for this day
+            const wasPresent = attendanceLogs.some(
+                a => a.userId === user.id && a.date === checkDateStr
+            );
+
+            if (!wasPresent) return false; // Streak broken! Unpaid week off.
+        }
+        return true;
+    };
+
     // 3. Process Attendance & Calculate Metrics
     let presentDaysCount = 0;
     let lateMarks = 0;
@@ -182,8 +208,16 @@ export const calculateMonthlySalary = (
 
         } else {
             // Not Present
-            if (isOff) weekOffCount++;
-            else if (isHol) holidayCount++;
+            if (isOff) {
+                if (isPaidWeekOff(currentDate)) {
+                    weekOffCount++;
+                } else {
+                    // Unpaid week off due to not working 6 continuous days
+                    // We don't increment weekOffCount, it will fall into absent logic below
+                }
+            } else if (isHol) {
+                holidayCount++;
+            }
             // Else: Absent
         }
     }
@@ -207,14 +241,26 @@ export const calculateMonthlySalary = (
     // 5. Calculate Payable Days
     // Only count elapsed days (up to today) as absent — future days are excluded
     let absentDaysCount = 0;
+    let unpaidWeekOffsCount = 0;
     for (let d = 1; d <= lastEligibleDay; d++) {
         const currentDate = new Date(year, month, d);
         const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const isOFF = isWeekOff(currentDate) || isHoliday(dateString);
+
+        const isOFF = isWeekOff(currentDate);
+        const isHol = isHoliday(dateString);
         const isPresent = daysPresentSet.has(dateString);
 
-        if (!isPresent && !isOFF) {
-            absentDaysCount++;
+        if (!isPresent) {
+            if (isOFF) {
+                // If it's a week off but NOT paid, it counts as absent
+                if (!isPaidWeekOff(currentDate)) {
+                    absentDaysCount++;
+                    unpaidWeekOffsCount++;
+                }
+            } else if (!isHol) {
+                // True absence (not off, not holiday)
+                absentDaysCount++;
+            }
         }
     }
 
@@ -245,6 +291,6 @@ export const calculateMonthlySalary = (
         forgotCheckoutPenalties,
         forgotCheckoutAmount,
         dailyRate,
-        breakdown: `Present: ${presentDaysCount}, Lates: ${lateMarks} (-${latePenaltyDays}d), HalfDays: ${halfDays} (-${halfDayPenaltyDays}d), Absent: ${absentDaysCount}${forgotCheckoutPenalties > 0 ? `, Forgot Checkout: ${forgotCheckoutPenalties} (-₹${forgotCheckoutAmount})` : ''}`
+        breakdown: `Present: ${presentDaysCount}, Lates: ${lateMarks} (-${latePenaltyDays}d), HalfDays: ${halfDays} (-${halfDayPenaltyDays}d), Absent: ${absentDaysCount}${unpaidWeekOffsCount > 0 ? ` (incl ${unpaidWeekOffsCount} unpaid week-offs)` : ''}${forgotCheckoutPenalties > 0 ? `, Forgot Checkout: ${forgotCheckoutPenalties} (-₹${forgotCheckoutAmount})` : ''}`
     };
 };
