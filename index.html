@@ -87,6 +87,15 @@
 
 <body class="bg-gray-50 text-gray-900">
     <div id="root"></div>
+    <!-- CRITICAL: Capture URL state BEFORE any JS modules run.
+         Supabase's createClient() calls history.replaceState() during init
+         to clean auth tokens from the URL. We must save them here first. -->
+    <script>
+      window.__ironflowInitialUrl = {
+        search: window.location.search,
+        hash: window.location.hash
+      };
+    </script>
     <script type="module" src="/index.tsx"></script>
 </body>
 

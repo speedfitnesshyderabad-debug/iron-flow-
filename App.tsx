@@ -34,22 +34,29 @@ import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
 
 // -----------------------------------------------------------------------------
-// Detect if the current URL contains Supabase auth tokens.
-// This can happen in two ways:
-//   1. Implicit flow:  #access_token=...&type=recovery  (token in hash)
-//   2. PKCE flow:      ?code=...                        (code in search params)
-// Both indicate we're in the middle of an auth redirect (password reset, magic link, etc.)
+// Detect if the page was loaded with Supabase auth tokens.
+// IMPORTANT: We read from window.__ironflowInitialUrl which is set by an
+// inline script in index.html BEFORE any JS modules run. Supabase's
+// createClient() calls history.replaceState() to clean the URL during
+// its own initialization, so by the time this function runs, the tokens
+// may already be gone from window.location.
 // -----------------------------------------------------------------------------
 function hasPendingAuthParams(): boolean {
-  const hash = window.location.hash;
-  const search = window.location.search;
+  const initial = (window as any).__ironflowInitialUrl || {
+    search: window.location.search,
+    hash: window.location.hash,
+  };
   return (
-    hash.includes('access_token=') ||
-    hash.includes('type=recovery') ||
-    search.includes('code=') ||
-    search.includes('type=recovery')
+    initial.hash.includes('access_token=') ||
+    initial.hash.includes('type=recovery') ||
+    initial.search.includes('code=') ||
+    initial.search.includes('type=recovery')
   );
 }
+
+// Module-level capture — evaluated exactly once when this module first loads.
+// This is a safety net in case the inline script in index.html didn't run.
+const INITIAL_AUTH_PENDING = hasPendingAuthParams();
 
 // -----------------------------------------------------------------------------
 // AuthGate — blocks routing until Supabase has processed any pending auth tokens.
@@ -58,29 +65,44 @@ function hasPendingAuthParams(): boolean {
 // -----------------------------------------------------------------------------
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
-  // Only activate the gate if we actually have pending auth params in the URL
-  const [gating, setGating] = useState(hasPendingAuthParams);
+  const [gating, setGating] = useState(INITIAL_AUTH_PENDING);
 
   useEffect(() => {
     if (!gating) return;
 
-    console.log('🔐 AuthGate: pending auth params detected — waiting for Supabase...');
+    console.log('🔐 AuthGate active — waiting for Supabase auth event...');
 
+    let released = false;
+    const release = (goToReset = false) => {
+      if (released) return;
+      released = true;
+      setGating(false);
+      if (goToReset) navigate('/reset-password', { replace: true });
+    };
+
+    // Listen FIRST (before async check), so we don't miss the event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      console.log('🔐 AuthGate event:', event);
+      console.log('🔐 AuthGate auth event:', event);
       if (event === 'PASSWORD_RECOVERY') {
-        setGating(false);
-        navigate('/reset-password', { replace: true });
-      } else if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        // Some other auth event resolved — stop gating and let the router take over
-        setGating(false);
+        release(true);
+      } else if (['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED', 'INITIAL_SESSION'].includes(event)) {
+        release(false);
       }
     });
 
-    // Safety timeout: if nothing fires after 12 seconds, release the gate
+    // Also check immediately in case the event fired before our listener registered
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return; // No session yet — wait for the event
+      // We have a session. If the original URL had type=recovery, go to reset page.
+      const initial = (window as any).__ironflowInitialUrl || {};
+      const wasRecovery = (initial.hash || '').includes('type=recovery') ||
+        (initial.search || '').includes('type=recovery');
+      release(wasRecovery);
+    });
+
     const timer = setTimeout(() => {
-      console.warn('🔐 AuthGate: timeout reached, releasing gate');
-      setGating(false);
+      console.warn('🔐 AuthGate: timeout — releasing gate');
+      release(false);
     }, 12000);
 
     return () => {
@@ -88,6 +110,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       clearTimeout(timer);
     };
   }, [gating, navigate]);
+
 
   if (gating) {
     return (

@@ -10,4 +10,9 @@ if (!supabaseUrl || !supabaseKey) {
   console.log('🌐 Supabase Client Initialized with URL:', supabaseUrl);
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
+  auth: {
+    flowType: 'implicit',
+    detectSessionInUrl: true,
+  }
+});
