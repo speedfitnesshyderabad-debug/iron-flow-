@@ -80,23 +80,25 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       if (goToReset) navigate('/reset-password', { replace: true });
     };
 
+    const initialUrl = (window as any).__ironflowInitialUrl || {};
+    const wasRecovery = (initialUrl.hash || '').includes('type=recovery') ||
+      (initialUrl.search || '').includes('type=recovery');
+
     // Listen FIRST (before async check), so we don't miss the event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       console.log('🔐 AuthGate auth event:', event);
       if (event === 'PASSWORD_RECOVERY') {
         release(true);
       } else if (['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED', 'INITIAL_SESSION'].includes(event)) {
-        release(false);
+        // Even if we just see SIGNED_IN, if the original URL was a recovery link,
+        // we MUST go to reset-password because Supabase automatically logs them in.
+        release(wasRecovery);
       }
     });
 
     // Also check immediately in case the event fired before our listener registered
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return; // No session yet — wait for the event
-      // We have a session. If the original URL had type=recovery, go to reset page.
-      const initial = (window as any).__ironflowInitialUrl || {};
-      const wasRecovery = (initial.hash || '').includes('type=recovery') ||
-        (initial.search || '').includes('type=recovery');
+      if (!session && !wasRecovery) return; // Wait for event
       release(wasRecovery);
     });
 
