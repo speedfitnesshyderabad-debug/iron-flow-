@@ -521,7 +521,15 @@ const CheckIn: React.FC = () => {
       }
 
       setIsGateOpen(true);
-      setTimeout(() => { setIsGateOpen(false); setScanResult(null); }, 5000);
+      if (currentUser.role === UserRole.KIOSK) {
+        setTimeout(() => {
+          setIsScannerActive(true);
+          setScanResult(null);
+          setIsGateOpen(false);
+        }, 5000);
+      } else {
+        setTimeout(() => { setIsGateOpen(false); setScanResult(null); }, 5000);
+      }
       return;
     }
 
@@ -624,9 +632,48 @@ const CheckIn: React.FC = () => {
 
       setIsGateOpen(true);
       triggerHardwareGate(branch.id);
-      setTimeout(() => { setIsGateOpen(false); setScanResult(null); }, 4000);
+
+      // ✅ Kiosk Mode Auto-Reset: Restart camera automatically for the next user
+      if (currentUser.role === UserRole.KIOSK) {
+        setTimeout(() => {
+          setIsScannerActive(true);
+          setScanResult(null);
+          setIsGateOpen(false);
+        }, 5000);
+      } else {
+        setTimeout(() => { setIsGateOpen(false); setScanResult(null); }, 4000);
+      }
     }
   };
+
+  // 🕯️ Screen Wake Lock — prevents tablet sleep while on this page
+  useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.warn('Wake Lock failed:', err);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (wakeLock) {
+        try { wakeLock.release(); } catch (e) { }
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Update the ref with the latest handleQRScan function
   useEffect(() => {

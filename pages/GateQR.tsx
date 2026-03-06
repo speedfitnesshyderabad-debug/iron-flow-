@@ -28,6 +28,35 @@ const GateQR: React.FC = () => {
     const activeBranchId = selectedBranchId;
     const activeBranch = branches.find(b => b.id === activeBranchId);
 
+    // 🕯️ Screen Wake Lock — prevents tablet sleep while on this page
+    useEffect(() => {
+        let wakeLock: any = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await (navigator as any).wakeLock.request('screen');
+                    console.log('✅ Wake Lock Active: Screen will not sleep');
+                }
+            } catch (err) {
+                console.warn('❌ Wake Lock failed:', err);
+            }
+        };
+
+        requestWakeLock();
+
+        // Re-request if page becomes visible again
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') requestWakeLock();
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            if (wakeLock) wakeLock.release();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
     // QR Token generation (rotates every 5 seconds)
     useEffect(() => {
         if (!activeBranchId) return;
