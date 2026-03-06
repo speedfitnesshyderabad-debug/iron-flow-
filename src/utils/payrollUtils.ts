@@ -222,9 +222,11 @@ export const calculateMonthlySalary = (
     // payableDays out of elapsed days (lastEligibleDay), not the full calendar month
     const payableDays = Math.max(0, lastEligibleDay - totalDeductibleDays);
 
-    const dayBasedDeductions = totalDeductibleDays * dailyRate;
-    const totalDeductions = dayBasedDeductions + forgotCheckoutAmount;
-    const finalBaseSalary = Math.max(0, monthlySalary - totalDeductions);
+    // Instead of subtracting elapsed deductions from the full month (which assumes future days are worked),
+    // calculate actual earned salary based on accumulated payable days.
+    const earnedBaseSalary = payableDays * dailyRate;
+    const finalBaseSalary = Math.max(0, earnedBaseSalary - forgotCheckoutAmount);
+    const totalDeductions = Math.max(0, monthlySalary - finalBaseSalary);
 
     return {
         baseSalary: monthlySalary,
