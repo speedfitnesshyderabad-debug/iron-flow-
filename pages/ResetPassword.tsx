@@ -14,37 +14,48 @@ const ResetPassword: React.FC = () => {
 
     useEffect(() => {
         // PRIMARY METHOD: Listen for Supabase's PASSWORD_RECOVERY event.
-        // Supabase automatically parses the token from the URL and fires this event.
-        // This is the correct approach for apps using HashRouter.
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             console.log('Auth event on reset page:', event, session);
-            if (event === 'PASSWORD_RECOVERY') {
-                // Supabase has verified the token — allow the user to set a new password
+            if (event === 'PASSWORD_RECOVERY' || session) {
                 setHasValidRecoverySession(true);
                 setIsCheckingSession(false);
             }
         });
 
-        // FALLBACK METHOD: Check if a recovery session already exists
-        // (e.g., user refreshed the page after the event fired)
         const checkExistingSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
+            // Check if we already have a recovery session
+            const { data: { session: existingSession } } = await supabase.auth.getSession();
+            if (existingSession) {
                 setHasValidRecoverySession(true);
                 setIsCheckingSession(false);
-            } else {
-                // Wait up to 4 seconds for the PASSWORD_RECOVERY event before showing an error
-                setTimeout(() => {
-                    setIsCheckingSession(prev => {
-                        if (prev) {
-                            // Still checking — no event fired, link is invalid/expired
-                            setError('Invalid or expired reset link. Please request a new one.');
-                            return false;
-                        }
-                        return prev;
-                    });
-                }, 4000);
+                return;
             }
+
+            // FALLBACK: Manual hash parsing for HashRouter environments
+            // Sometimes the PASSWORD_RECOVERY event is missed or delayed
+            const hash = window.location.hash;
+            if (hash.includes('access_token=') && (hash.includes('type=recovery') || hash.includes('type=signup'))) {
+                console.log('🔄 Secondary recovery detection active...');
+                // Wait briefly to let the Supabase client catch up
+                setTimeout(async () => {
+                    const { data: { session: refetchSession } } = await supabase.auth.getSession();
+                    if (refetchSession) {
+                        setHasValidRecoverySession(true);
+                        setIsCheckingSession(false);
+                    }
+                }, 1500);
+            }
+
+            // Wait up to 10 seconds (increased from 4) before erroring
+            setTimeout(() => {
+                setIsCheckingSession(prev => {
+                    if (prev) {
+                        setError('Invalid or expired reset link. Please request a new one.');
+                        return false;
+                    }
+                    return prev;
+                });
+            }, 10000);
         };
 
         checkExistingSession();
