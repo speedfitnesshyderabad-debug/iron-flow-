@@ -380,8 +380,18 @@ const Staff: React.FC = () => {
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
                           <span className="text-sm font-black text-emerald-600">₹{staff.monthlySalary || 15000}<span className="text-[8px] opacity-60">/mo</span></span>
-                          {(staff.role === UserRole.TRAINER || staff.role === UserRole.MANAGER) && (
-                            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.commissionPercentage || 0}% Comm.</span>
+                          {staff.role === UserRole.MANAGER && (
+                            <div className="flex flex-col mt-0.5">
+                              {(staff.salesCommissionPercentage || 0) > 0 && <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.salesCommissionPercentage}% Gym Comm.</span>}
+                              {(staff.ptCommissionPercentage || 0) > 0 && <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.ptCommissionPercentage}% PT Comm.</span>}
+                              {(staff.groupCommissionPercentage || 0) > 0 && <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.groupCommissionPercentage}% Group Comm.</span>}
+                            </div>
+                          )}
+                          {staff.role === UserRole.TRAINER && (
+                            <div className="flex flex-col mt-0.5">
+                              {(staff.commissionPercentage || 0) > 0 && <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.commissionPercentage}% Session Comm.</span>}
+                              {(staff.salesCommissionPercentage || 0) > 0 && <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{staff.salesCommissionPercentage}% Sales Comm.</span>}
+                            </div>
                           )}
                         </div>
                       </td>
