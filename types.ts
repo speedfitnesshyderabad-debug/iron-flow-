@@ -131,6 +131,7 @@ export interface User {
   groupCommissionPercentage?: number; // Specific commission for Group Class Sales
   maxDevices?: number; // For multi-device restriction
   referralCode?: string;
+  isActive?: boolean;
 }
 
 export interface Plan {

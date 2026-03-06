@@ -86,6 +86,14 @@ const Login: React.FC = () => {
         }
 
         if (user) {
+          if (user.isActive === false) {
+            console.warn('❌ Account disabled:', user.email);
+            setError('This account has been disabled. Please contact the administrator.');
+            await supabase.auth.signOut();
+            setIsAuthenticating(false);
+            return;
+          }
+
           console.log('✅ User found:', user.name);
           const sessionResult = await createSession(user.id);
           if (sessionResult.success) {

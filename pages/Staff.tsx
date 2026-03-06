@@ -30,7 +30,8 @@ const Staff: React.FC = () => {
     emergencyContact: '',
     phone: '',
     avatar: '',
-    maxDevices: 1
+    maxDevices: 1,
+    isActive: true
   });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
@@ -56,7 +57,8 @@ const Staff: React.FC = () => {
       emergencyContact: '',
       phone: '',
       avatar: '',
-      maxDevices: 1
+      maxDevices: 1,
+      isActive: true
     });
     setAddModalOpen(true);
   };
@@ -79,7 +81,8 @@ const Staff: React.FC = () => {
       emergencyContact: staff.emergencyContact || '',
       phone: staff.phone || '',
       avatar: staff.avatar || '',
-      maxDevices: staff.maxDevices || 1
+      maxDevices: staff.maxDevices || 1,
+      isActive: staff.isActive !== false // defaults to true if undefined
     });
     setEditModalOpen(true);
   };
@@ -185,7 +188,8 @@ const Staff: React.FC = () => {
           groupCommissionPercentage: formData.groupCommissionPercentage,
           emergencyContact: formData.emergencyContact,
           phone: formData.phone,
-          avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`
+          avatar: formData.avatar || `https://i.pravatar.cc/150?u=${Date.now()}`,
+          isActive: formData.isActive
         };
 
         await addUser(newStaff);
@@ -358,8 +362,15 @@ const Staff: React.FC = () => {
                         <img src={staff.avatar} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow-sm mx-auto" alt="" />
                       </td>
                       <td className="px-6 py-5">
-                        <span className="font-black text-slate-900 block leading-tight uppercase tracking-tight truncate max-w-[150px]">{staff.name}</span>
-                        <span className="text-[10px] text-gray-400 font-bold truncate max-w-[150px] block">{staff.email}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-slate-900 block leading-tight uppercase tracking-tight truncate max-w-[150px]">{staff.name}</span>
+                          {staff.isActive === false && (
+                            <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">
+                              INACTIVE
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-bold truncate max-w-[150px] block mt-0.5">{staff.email}</span>
                       </td>
                       <td className="px-6 py-5">
                         <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest whitespace-nowrap inline-block">
@@ -665,6 +676,30 @@ const Staff: React.FC = () => {
                 </div>
               )}
 
+              {/* Login Access Control Toggle */}
+              {isEditModalOpen && (
+                <div className="space-y-1 p-4 bg-red-50 rounded-2xl border border-red-100 animate-[fadeIn_0.3s_ease-out]">
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-black text-red-600 uppercase tracking-widest ml-1">
+                      Account Access
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 ${formData.isActive ? 'bg-red-500' : 'bg-red-200'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                    <p className="text-xs text-red-700 font-bold">Enable Login Access for Staff</p>
+                  </div>
+                  <p className="text-[9px] text-red-500 font-medium ml-1 mt-1">
+                    Disable this to instantly revoke the staff member's ability to log in.
+                  </p>
+                </div>
+              )}
+
               {/* Week Off Selector */}
               <div className="space-y-2 p-4 bg-amber-50 rounded-2xl border border-amber-100 animate-[fadeIn_0.3s_ease-out]">
                 <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest ml-1 flex items-center gap-2">
@@ -685,8 +720,8 @@ const Staff: React.FC = () => {
                           setFormData({ ...formData, weekOffs: updated });
                         }}
                         className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isSelected
-                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
-                            : 'bg-white text-amber-400 border border-amber-200 hover:bg-amber-100'
+                          ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+                          : 'bg-white text-amber-400 border border-amber-200 hover:bg-amber-100'
                           }`}
                       >
                         {day.slice(0, 3)}
