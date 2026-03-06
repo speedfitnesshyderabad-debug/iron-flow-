@@ -42,13 +42,8 @@ const MyEarnings: React.FC = () => {
       // Use Finalized Data
       salaryStats = {
         baseSalary: finalizedRecord.baseSalary,
-        finalBaseSalary: finalizedRecord.netSalary, // In payroll table, netSalary is the final amount (but wait, comms might be separate? Let's check logic)
-        // In Payroll Table: netSalary = base - deductions + commissions. 
-        // But here we calc commissions separately? 
-        // If finalized, commissions should be IN the record? 
-        // The record has `commissionAmount`.
-        // So we should use that.
-
+        // finalBaseSalary = base after deductions (commissions are shown separately)
+        finalBaseSalary: finalizedRecord.baseSalary - finalizedRecord.deductions,
         deductions: finalizedRecord.deductions,
         payableDays: finalizedRecord.payableDays,
         presentDays: finalizedRecord.details?.presentDays || 0,

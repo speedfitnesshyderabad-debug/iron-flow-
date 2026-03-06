@@ -5,7 +5,7 @@ import { UserRole, Payroll as PayrollType, User } from '../types';
 import PayslipModal from '../components/PayslipModal';
 
 const Payroll: React.FC = () => {
-    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays, selectedBranchId: globalBranchId, bookings, subscriptions, plans } = useAppContext();
+    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays, selectedBranchId: globalBranchId, bookings, subscriptions, plans, sales } = useAppContext();
 
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -44,35 +44,50 @@ const Payroll: React.FC = () => {
         );
     }, [users, selectedBranchId]);
 
-    // Calculate real commission earned by a staff member for a given month/year
-    // Based on COMPLETED bookings × plan price × commissionPercentage
+    // Calculate real commission earned — trainer session commissions + sales commissions
     const calculateCommission = (staffId: string, month: number, year: number) => {
-        const completedBookings = bookings.filter(b => {
-            if (b.trainerId !== staffId) return false;
-            if (b.status !== 'COMPLETED') return false;
-            const d = new Date(b.date);
-            return d.getMonth() === month && d.getFullYear() === year;
-        });
-
-        if (completedBookings.length === 0) return 0;
-
         const staff = users.find(u => u.id === staffId);
-        const commissionRate = (staff?.commissionPercentage || 0) / 100;
-        if (commissionRate === 0) return 0;
+        if (!staff) return 0;
 
         let totalCommission = 0;
-        completedBookings.forEach(b => {
-            // Find the related subscription to get the plan price
-            const sub = subscriptions.find(s =>
-                s.memberId === b.memberId &&
-                s.trainerId === staffId &&
-                s.status === 'ACTIVE'
-            );
-            const plan = sub ? plans.find(p => p.id === sub.planId) : null;
-            const sessionValue = plan?.price && plan?.maxSessions
-                ? plan.price / plan.maxSessions
-                : 0;
-            totalCommission += sessionValue * commissionRate;
+
+        // A. Trainer Session Commissions (only for trainers with completed bookings)
+        if (staff.role === UserRole.TRAINER) {
+            const commissionRate = (staff.commissionPercentage || 0) / 100;
+            if (commissionRate > 0) {
+                const completedBookings = bookings.filter(b => {
+                    if (b.trainerId !== staffId) return false;
+                    if (b.status !== 'COMPLETED') return false;
+                    const d = new Date(b.date);
+                    return d.getMonth() === month && d.getFullYear() === year;
+                });
+                completedBookings.forEach(b => {
+                    const sub = subscriptions.find(s =>
+                        s.memberId === b.memberId &&
+                        s.trainerId === staffId &&
+                        s.status === 'ACTIVE'
+                    );
+                    const plan = sub ? plans.find(p => p.id === sub.planId) : null;
+                    const sessionValue = plan?.price && plan?.maxSessions
+                        ? plan.price / plan.maxSessions : 0;
+                    totalCommission += sessionValue * commissionRate;
+                });
+            }
+        }
+
+        // B. Sales Commissions (Managers & Trainers via staffId on sales)
+        const mySales = sales.filter(s => {
+            const d = new Date(s.date);
+            return s.staffId === staffId && d.getMonth() === month && d.getFullYear() === year;
+        });
+        mySales.forEach(sale => {
+            const plan = plans.find(p => p.id === sale.planId);
+            if (!plan) return;
+            let rate = 0;
+            if (plan.type === 'GYM') rate = staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0;
+            else if (plan.type === 'PT') rate = staff.ptCommissionPercentage ?? staff.salesCommissionPercentage ?? 0;
+            else if (plan.type === 'GROUP') rate = staff.groupCommissionPercentage ?? staff.salesCommissionPercentage ?? 0;
+            totalCommission += sale.amount * (rate / 100);
         });
 
         return Math.round(totalCommission);
@@ -97,7 +112,8 @@ const Payroll: React.FC = () => {
                     data: {
                         baseSalary: existingRecord.baseSalary,
                         deductions: existingRecord.deductions,
-                        finalBaseSalary: existingRecord.baseSalary - existingRecord.deductions, // Approx logic for display
+                        // finalBaseSalary = base pay after deductions (before commissions)
+                        finalBaseSalary: existingRecord.baseSalary - existingRecord.deductions,
                         netSalary: existingRecord.netSalary,
                         commission: existingRecord.commissionAmount,
                         payableDays: existingRecord.payableDays
@@ -287,8 +303,8 @@ const Payroll: React.FC = () => {
                                             {formatCurrency(item.data.baseSalary)}
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            <span className="font-black text-slate-900">{formatCurrency(item.data.payableDays).replace('₹', '')}</span>
-                                            <span className="text-[10px] text-slate-400"> / {item.isLive ? item.stats.totalDays : item.record?.details?.totalDays || 30}</span>
+                                            <span className="font-black text-slate-900">{item.data.payableDays}</span>
+                                            <span className="text-[10px] text-slate-400"> / {item.isLive ? item.stats.totalDays : item.record?.details?.totalDays || 30}d</span>
                                         </td>
                                         <td className="px-6 py-5 text-right font-bold text-red-500">
                                             {item.data.deductions > 0 ? `-${formatCurrency(item.data.deductions)}` : '-'}
