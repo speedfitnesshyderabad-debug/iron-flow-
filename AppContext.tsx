@@ -408,52 +408,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteUser = async (id: string) => {
     try {
-      showToast('Processing cascading delete...');
+      showToast('Processing complete data purge...');
 
-      // A. UPDATE ORPHANED REFERENCES (Set to NULL)
-      // These are records we want to keep but unlink from the user
-      const updatePromises = [
-        supabase.from('walk_ins').update({ convertedToMemberId: null }).eq('convertedToMemberId', id),
-        supabase.from('walk_ins').update({ assignedTo: null }).eq('assignedTo', id),
-        supabase.from('sales').update({ staffId: null }).eq('staffId', id),
-        supabase.from('sales').update({ trainerId: null }).eq('trainerId', id),
-        supabase.from('subscriptions').update({ trainerId: null }).eq('trainerId', id),
-        supabase.from('bookings').update({ trainerId: null }).eq('trainerId', id),
-        supabase.from('class_templates').update({ trainerId: null }).eq('trainerId', id),
-        supabase.from('class_schedules').update({ trainerId: null }).eq('trainerId', id),
-        supabase.from('expenses').update({ recordedBy: null }).eq('recordedBy', id),
-        supabase.from('transaction_codes').update({ generatedBy: null }).eq('generatedBy', id),
-        supabase.from('class_completion_codes').update({ trainerId: null }).eq('trainerId', id),
-        supabase.from('payroll').update({ staffId: null }).eq('staffId', id)
-      ];
+      // A. DELETE ALL RELATED RECORDS (Child before Parent)
 
-      await Promise.all(updatePromises);
-
-      // B. DELETE PERSONAL DATA
-      // CRITICAL: Delete Child records BEFORE Parent records to avoid FK violations!
-
-      // 1. Class Completion Codes (Dependent on Bookings)
+      // 1. Child-most records
       await supabase.from('class_completion_codes').delete().eq('memberId', id);
+      await supabase.from('class_completion_codes').delete().eq('trainerId', id);
 
-      // 2. Bookings (Dependent on Users, Parent of Codes)
+      // 2. Bookings (Parents to completion codes)
       await supabase.from('bookings').delete().eq('memberId', id);
+      await supabase.from('bookings').delete().eq('trainerId', id);
 
-      // 3. Other Independent Records (Order doesn't matter for these)
+      // 3. Other interdependent records
       const deletePromises = [
+        // As a member
         supabase.from('attendance').delete().eq('userId', id),
-        supabase.from('subscriptions').delete().eq('memberId', id),
-        supabase.from('sales').delete().eq('memberId', id),
+        supabase.from('metrics').delete().eq('memberId', id),
         supabase.from('feedback').delete().eq('memberId', id),
         supabase.from('communications').delete().eq('userId', id),
-        supabase.from('metrics').delete().eq('memberId', id)
+        supabase.from('subscriptions').delete().eq('memberId', id),
+        supabase.from('subscriptions').delete().eq('trainerId', id),
+        supabase.from('sales').delete().eq('memberId', id),
+        supabase.from('sales').delete().eq('staffId', id),
+        supabase.from('sales').delete().eq('trainerId', id),
+
+        // Staff specific
+        supabase.from('payroll').delete().eq('staffId', id),
+        supabase.from('walk_ins').delete().eq('staffId', id),
+        supabase.from('walk_ins').delete().eq('assignedTo', id),
+        supabase.from('walk_ins').delete().eq('convertedToMemberId', id),
+        supabase.from('class_templates').delete().eq('trainerId', id),
+        supabase.from('class_schedules').delete().eq('trainerId', id),
+        supabase.from('expenses').delete().eq('recordedBy', id),
+        supabase.from('transaction_codes').delete().eq('generatedBy', id),
       ];
 
       await Promise.all(deletePromises);
-      // C. DELETE USER
+
+      // B. DELETE THE USER PROFILE
       const { error } = await supabase.from('users').delete().eq('id', id);
 
       if (!error) {
-        // Also delete from Supabase Auth so the email can be re-used for enrollment
+        // C. DELETE FROM SUPABASE AUTH so the email can be re-used
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
         fetch(`${supabaseUrl}/functions/v1/delete-user`, {
           method: 'POST',
@@ -464,47 +461,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           body: JSON.stringify({ userId: id }),
         }).catch(e => console.warn('Auth user cleanup failed (non-critical):', e));
 
-        // Update Local State strictly
+        // D. UPDATE LOCAL STATE - Remove EVERYTHING related
         setUsers(prev => prev.filter(u => u.id !== id));
-
-        // Unlink records in state (Preserve History)
-        setSales(prev => prev.map(s => {
-          if (s.memberId === id) return { ...s, memberId: null }; // Should have been deleted but if it exists
-          let updates: Partial<Sale> = {};
-          if (s.staffId === id) updates.staffId = null;
-          if (s.trainerId === id) updates.trainerId = null;
-          return Object.keys(updates).length > 0 ? { ...s, ...updates } : s;
-        }));
-
-        setSubscriptions(prev => prev.map(s => {
-          if (s.memberId === id) return { ...s, memberId: null };
-          if (s.trainerId === id) return { ...s, trainerId: null };
-          return s;
-        }));
-
-        setBookings(prev => prev.map(b => {
-          if (b.memberId === id) return { ...b, memberId: null };
-          if (b.trainerId === id) return { ...b, trainerId: null };
-          return b;
-        }));
-
-        setExpenses(prev => prev.map(e => e.recordedBy === id ? { ...e, recordedBy: null } : e));
-        setPayroll(prev => prev.map(p => p.staffId === id ? { ...p, staffId: null } : p));
-
-        // Remove personal records
+        setSales(prev => prev.filter(s => s.memberId !== id && s.staffId !== id && s.trainerId !== id));
+        setSubscriptions(prev => prev.filter(s => s.memberId !== id && s.trainerId !== id));
+        setBookings(prev => prev.filter(b => b.memberId !== id && b.trainerId !== id));
+        setExpenses(prev => prev.filter(e => e.recordedBy !== id));
+        setPayroll(prev => prev.filter(p => p.staffId !== id));
         setAttendance(prev => prev.filter(a => a.userId !== id));
-        setFeedback(prev => prev.filter(f => f.memberId !== id));
+        setFeedback(prev => prev.filter(f => f.memberId !== id)); // userId wasn't in type, memberId only
         setCommunications(prev => prev.filter(c => c.userId !== id));
         setMetrics(prev => prev.filter(m => m.memberId !== id));
 
-        showToast('User deleted successfully', 'success');
+        showToast('User and all associated data deleted successfully', 'success');
       } else {
         console.error('Delete user error:', error);
         showToast('Failed to delete user: ' + error.message, 'error');
       }
     } catch (err: any) {
-      console.error('Delete operation failed:', err);
-      showToast('Delete operation failed: ' + err.message, 'error');
+      console.error('Delete user cascade error:', err);
+      showToast('Failed to process deletion', 'error');
     }
   };
 
