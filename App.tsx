@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './src/lib/supabase';
 import { UserRole } from './types';
@@ -33,36 +33,105 @@ import Payroll from './pages/Payroll';
 import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
-  const { currentUser } = useAppContext();
+// -----------------------------------------------------------------------------
+// Detect if the current URL contains Supabase auth tokens.
+// This can happen in two ways:
+//   1. Implicit flow:  #access_token=...&type=recovery  (token in hash)
+//   2. PKCE flow:      ?code=...                        (code in search params)
+// Both indicate we're in the middle of an auth redirect (password reset, magic link, etc.)
+// -----------------------------------------------------------------------------
+function hasPendingAuthParams(): boolean {
+  const hash = window.location.hash;
+  const search = window.location.search;
+  return (
+    hash.includes('access_token=') ||
+    hash.includes('type=recovery') ||
+    search.includes('code=') ||
+    search.includes('type=recovery')
+  );
+}
 
-  if (!currentUser || !allowedRoles.includes(currentUser.role)) {
-    return <Navigate to="/" replace />;
+// -----------------------------------------------------------------------------
+// AuthGate — blocks routing until Supabase has processed any pending auth tokens.
+// Without this, the router's `*` catch-all fires immediately and redirects to
+// /login before the PASSWORD_RECOVERY event can be received.
+// -----------------------------------------------------------------------------
+const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  // Only activate the gate if we actually have pending auth params in the URL
+  const [gating, setGating] = useState(hasPendingAuthParams);
+
+  useEffect(() => {
+    if (!gating) return;
+
+    console.log('🔐 AuthGate: pending auth params detected — waiting for Supabase...');
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log('🔐 AuthGate event:', event);
+      if (event === 'PASSWORD_RECOVERY') {
+        setGating(false);
+        navigate('/reset-password', { replace: true });
+      } else if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        // Some other auth event resolved — stop gating and let the router take over
+        setGating(false);
+      }
+    });
+
+    // Safety timeout: if nothing fires after 12 seconds, release the gate
+    const timer = setTimeout(() => {
+      console.warn('🔐 AuthGate: timeout reached, releasing gate');
+      setGating(false);
+    }, 12000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [gating, navigate]);
+
+  if (gating) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#020617',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '16px'
+      }}>
+        <div style={{
+          width: 56, height: 56,
+          border: '4px solid #1e40af',
+          borderTopColor: '#3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <p style={{ color: '#94a3b8', fontFamily: 'sans-serif', fontSize: 14, margin: 0 }}>
+          Verifying reset link...
+        </p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   return <>{children}</>;
 };
 
-// Listens for Supabase PASSWORD_RECOVERY event at the app root level.
-// When a user clicks the reset email link (which points to the base origin),
-// Supabase parses the #access_token=...&type=recovery from the URL hash and
-// fires this event. We then redirect to the reset-password page.
-const RecoveryWatcher: React.FC = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        console.log('🔐 PASSWORD_RECOVERY event detected — redirecting to reset page');
-        navigate('/reset-password', { replace: true });
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  return null;
+// -----------------------------------------------------------------------------
+// ProtectedRoute
+// -----------------------------------------------------------------------------
+const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
+  const { currentUser } = useAppContext();
+  if (!currentUser || !allowedRoles.includes(currentUser.role)) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
 };
 
+// -----------------------------------------------------------------------------
+// AppRoutes
+// -----------------------------------------------------------------------------
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAppContext();
 
@@ -140,12 +209,16 @@ const AppRoutes: React.FC = () => {
   );
 };
 
+// -----------------------------------------------------------------------------
+// App
+// -----------------------------------------------------------------------------
 const App: React.FC = () => {
   return (
     <AppProvider>
       <Router>
-        <RecoveryWatcher />
-        <AppRoutes />
+        <AuthGate>
+          <AppRoutes />
+        </AuthGate>
       </Router>
     </AppProvider>
   );
