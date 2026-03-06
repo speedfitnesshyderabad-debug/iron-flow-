@@ -98,17 +98,26 @@ const Login: React.FC = () => {
           // SELF-HEALING FALLBACK: Create missing profile from Auth metadata
           console.log('🔄 Profile missing, initiating auto-reconstruction for:', data.user.email);
           const metadata = data.user.user_metadata;
+
+          // Fetch a valid branchId — metadata may be empty for re-created accounts
+          let resolvedBranchId = metadata?.branchId || null;
+          if (!resolvedBranchId) {
+            const { data: branches } = await supabase.from('branches').select('id').limit(1).single();
+            resolvedBranchId = branches?.id || null;
+          }
+
           const newUserProfile = {
             id: data.user.id,
-            name: metadata?.name || 'IronFlow Athlete',
+            name: metadata?.name || data.user.email?.split('@')[0] || 'Gym Member',
             email: data.user.email!,
             role: metadata?.role || UserRole.MEMBER,
-            branchId: metadata?.branchId || null,
+            branchId: resolvedBranchId,
             phone: metadata?.phone || '',
             memberId: `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
-            avatar: metadata?.avatar || `https://ui-avatars.com/api/?name=${metadata?.name || 'User'}`
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
           };
 
+          console.log('🔄 Reconstructing profile with branchId:', resolvedBranchId);
           const { error: insertError } = await supabase.from('users').insert(newUserProfile);
 
           if (!insertError) {
@@ -121,8 +130,8 @@ const Login: React.FC = () => {
               await supabase.auth.signOut();
             }
           } else {
-            console.error('❌ Reconstruction failed:', insertError);
-            setError('Login successful, but profile synchronization failed. Please contact support.');
+            console.error('❌ Reconstruction failed:', insertError.message, insertError.details, insertError.hint);
+            setError(`Profile sync failed: ${insertError.message}. Please try again or contact support.`);
             await supabase.auth.signOut();
           }
         }
