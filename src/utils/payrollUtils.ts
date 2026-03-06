@@ -32,7 +32,36 @@ export const calculateMonthlySalary = (
 
     // 1. Calculate Total Days in Month
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const dailyRate = monthlySalary / daysInMonth; // Simple daily rate
+    const dailyRate = monthlySalary / daysInMonth; // Daily rate based on full month (unchanged)
+
+    // Boundary: never count days after today — future days are unknown, not absent
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // include all of today
+    const lastEligibleDay = new Date(year, month, daysInMonth) > today
+        ? today.getDate() : daysInMonth;
+    const isSelectedMonthInFuture = new Date(year, month, 1) > today;
+
+    // For fully future months — nothing to compute yet
+    if (isSelectedMonthInFuture) {
+        return {
+            baseSalary: monthlySalary,
+            finalBaseSalary: monthlySalary,
+            deductions: 0,
+            payableDays: 0,
+            presentDays: 0,
+            totalDays: daysInMonth,
+            weekOffs: 0,
+            holidays: 0,
+            lateDays: 0,
+            halfDays: 0,
+            absentDays: 0,
+            penaltyDays: 0,
+            forgotCheckoutPenalties: 0,
+            forgotCheckoutAmount: 0,
+            dailyRate,
+            breakdown: 'Month not started yet'
+        };
+    }
 
     // 2. Identify Week Offs & Holidays
     let weekOffCount = 0;
@@ -71,11 +100,12 @@ export const calculateMonthlySalary = (
         dailyLogsMap.set(log.date, [...existing, log]);
     });
 
-    // Iterate through all days in the month to classify them
-    for (let d = 1; d <= daysInMonth; d++) {
+    // Iterate through elapsed days only (never count future days as absent)
+    for (let d = 1; d <= lastEligibleDay; d++) {
         const currentDate = new Date(year, month, d);
-        const dateString = currentDate.toISOString().split('T')[0];
+        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
+        // Skip today if it's still in progress (optional — punch-in already handles open sessions)
         // Check Status
         const isOff = isWeekOff(currentDate);
         const isHol = isHoliday(dateString);
@@ -175,11 +205,11 @@ export const calculateMonthlySalary = (
     const forgotCheckoutAmount = forgotCheckoutPenalties * FORGOT_CHECKOUT_PENALTY;
 
     // 5. Calculate Payable Days
-    // Payable = TotalDays - (TrueAbsences + Penalties)
+    // Only count elapsed days (up to today) as absent — future days are excluded
     let absentDaysCount = 0;
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (let d = 1; d <= lastEligibleDay; d++) {
         const currentDate = new Date(year, month, d);
-        const dateString = currentDate.toISOString().split('T')[0];
+        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isOFF = isWeekOff(currentDate) || isHoliday(dateString);
         const isPresent = daysPresentSet.has(dateString);
 
@@ -189,7 +219,8 @@ export const calculateMonthlySalary = (
     }
 
     const totalDeductibleDays = absentDaysCount + totalPenaltyDays;
-    const payableDays = Math.max(0, daysInMonth - totalDeductibleDays);
+    // payableDays out of elapsed days (lastEligibleDay), not the full calendar month
+    const payableDays = Math.max(0, lastEligibleDay - totalDeductibleDays);
 
     const dayBasedDeductions = totalDeductibleDays * dailyRate;
     const totalDeductions = dayBasedDeductions + forgotCheckoutAmount;
@@ -201,7 +232,8 @@ export const calculateMonthlySalary = (
         deductions: totalDeductions,
         payableDays,
         presentDays: presentDaysCount,
-        totalDays: daysInMonth,
+        // totalDays = elapsed days in the selected period (not the full calendar month)
+        totalDays: lastEligibleDay,
         weekOffs: weekOffCount,
         holidays: holidayCount,
         lateDays: lateMarks,

@@ -188,6 +188,8 @@ const MyEarnings: React.FC = () => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
   };
 
+  const isFutureMonth = new Date(selectedYear, selectedMonth, 1) > new Date();
+
   if (!currentUser) return null;
 
   return (
@@ -255,6 +257,15 @@ const MyEarnings: React.FC = () => {
               </div>
             </div>
             <div className="p-8">
+              {isFutureMonth && (
+                <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                  <i className="fas fa-clock text-amber-500 text-lg"></i>
+                  <div>
+                    <p className="text-sm font-black text-amber-700 uppercase">Future Month Selected</p>
+                    <p className="text-xs text-amber-600 font-medium mt-0.5">{months[selectedMonth]} {selectedYear} hasn't started yet. No earnings data available.</p>
+                  </div>
+                </div>
+              )}
               <div className="space-y-6">
                 <div className="flex items-center justify-between group">
                   <div className="flex items-center gap-4">
