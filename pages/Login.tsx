@@ -149,8 +149,12 @@ const Login: React.FC = () => {
 
     try {
       const origin = window.location.origin;
+      // IMPORTANT: Do NOT include a hash (#) in redirectTo.
+      // Supabase appends its own #access_token=...&type=recovery to this URL.
+      // Two # in a URL is invalid — Supabase's client can't parse the token.
+      // The App-level PASSWORD_RECOVERY listener will redirect to /reset-password.
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${origin}/#/reset-password`,
+        redirectTo: `${origin}/`,
       });
 
       if (error) throw error;

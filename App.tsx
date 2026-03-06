@@ -1,6 +1,7 @@
 
-import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { supabase } from './src/lib/supabase';
 import { UserRole } from './types';
 import { AppProvider, useAppContext } from './AppContext';
 import Layout from './components/Layout';
@@ -40,6 +41,26 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: UserRo
   }
 
   return <>{children}</>;
+};
+
+// Listens for Supabase PASSWORD_RECOVERY event at the app root level.
+// When a user clicks the reset email link (which points to the base origin),
+// Supabase parses the #access_token=...&type=recovery from the URL hash and
+// fires this event. We then redirect to the reset-password page.
+const RecoveryWatcher: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('🔐 PASSWORD_RECOVERY event detected — redirecting to reset page');
+        navigate('/reset-password', { replace: true });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  return null;
 };
 
 const AppRoutes: React.FC = () => {
@@ -123,6 +144,7 @@ const App: React.FC = () => {
   return (
     <AppProvider>
       <Router>
+        <RecoveryWatcher />
         <AppRoutes />
       </Router>
     </AppProvider>
