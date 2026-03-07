@@ -8,6 +8,7 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [generatedCreds, setGeneratedCreds] = useState<{ email: string, password: string } | null>(null);
@@ -101,20 +102,36 @@ const Register: React.FC = () => {
             {step === 1 && (
               <div className="animate-[slideUp_0.3s_ease-out] flex flex-col min-h-0 flex-1">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center mb-4 shrink-0">Where will you be training?</p>
+
+                {/* Search Bar */}
+                <div className="mb-4 shrink-0 relative">
+                  <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                  <input
+                    type="text"
+                    placeholder="Search branches..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white py-3 pl-10 pr-4 rounded-xl outline-none focus:border-blue-500 transition-all text-sm font-medium"
+                  />
+                </div>
+
                 {/* Scrollable branch list */}
                 <div className="flex-1 overflow-y-auto min-h-0 pr-1 scrollbar-hide">
                   <div className="grid grid-cols-1 gap-3 md:gap-4 pb-2">
-                    {branches.filter(b => !b.isHidden).map(branch => (
-                      <button
-                        key={branch.id}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, branchId: branch.id })}
-                        className={`p-5 md:p-6 rounded-2xl md:rounded-3xl border-2 text-left transition-all shrink-0 ${formData.branchId === branch.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-800/50 hover:border-slate-700'}`}
-                      >
-                        <h4 className={`font-black text-base md:text-lg ${formData.branchId === branch.id ? 'text-white' : 'text-slate-300'}`}>{branch.name}</h4>
-                        <p className="text-[10px] md:text-xs text-slate-500 mt-1"><i className="fas fa-map-marker-alt mr-2"></i>{branch.address}</p>
-                      </button>
-                    ))}
+                    {branches
+                      .filter(b => !b.isHidden)
+                      .filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase()) || b.address.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map(branch => (
+                        <button
+                          key={branch.id}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, branchId: branch.id })}
+                          className={`p-5 md:p-6 rounded-2xl md:rounded-3xl border-2 text-left transition-all shrink-0 ${formData.branchId === branch.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-800/50 hover:border-slate-700'}`}
+                        >
+                          <h4 className={`font-black text-base md:text-lg ${formData.branchId === branch.id ? 'text-white' : 'text-slate-300'}`}>{branch.name}</h4>
+                          <p className="text-[10px] md:text-xs text-slate-500 mt-1"><i className="fas fa-map-marker-alt mr-2"></i>{branch.address}</p>
+                        </button>
+                      ))}
                   </div>
                 </div>
                 {/* Always-visible button */}
