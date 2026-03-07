@@ -68,20 +68,20 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 md:p-8 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-slate-950 flex items-start justify-center p-4 md:p-8 relative overflow-x-hidden font-sans">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px]"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600 rounded-full blur-[150px]"></div>
       </div>
 
-      <div className="w-full max-w-2xl bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 relative z-10 animate-[fadeIn_0.5s_ease-out]">
+      <div className="w-full max-w-2xl bg-slate-900 rounded-[3rem] shadow-2xl border border-white/5 relative z-10 animate-[fadeIn_0.5s_ease-out] my-auto">
         {/* Progress Bar */}
         <div className="h-1.5 w-full bg-slate-800 flex">
           <div className={`h-full bg-blue-500 transition-all duration-500 ${step === 1 ? 'w-1/2' : 'w-full'}`}></div>
         </div>
 
-        <div className="p-8 md:p-12">
+        <div className="p-6 md:p-10">
           {/* Header */}
           <div className="mb-10 text-center">
             <div className="flex items-center justify-center gap-3 mb-6">
@@ -99,22 +99,24 @@ const Register: React.FC = () => {
           <form onSubmit={handleSubmit}>
             {/* Step 1: Branch Selection */}
             {step === 1 && (
-              <div className="space-y-4 animate-[slideUp_0.3s_ease-out]">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center mb-6">Where will you be training?</p>
-                <div className="grid grid-cols-1 gap-4">
+              <div className="animate-[slideUp_0.3s_ease-out] flex flex-col">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center mb-4">Where will you be training?</p>
+                {/* Scrollable branch list */}
+                <div className="grid grid-cols-1 gap-4 overflow-y-auto max-h-[42vh] md:max-h-[50vh] pr-1 scrollbar-hide pb-2">
                   {branches.filter(b => !b.isHidden).map(branch => (
                     <button
                       key={branch.id}
                       type="button"
                       onClick={() => setFormData({ ...formData, branchId: branch.id })}
-                      className={`p-6 rounded-3xl border-2 text-left transition-all ${formData.branchId === branch.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-800/50 hover:border-slate-700'}`}
+                      className={`p-6 rounded-3xl border-2 text-left transition-all shrink-0 ${formData.branchId === branch.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-800/50 hover:border-slate-700'}`}
                     >
                       <h4 className={`font-black text-lg ${formData.branchId === branch.id ? 'text-white' : 'text-slate-300'}`}>{branch.name}</h4>
                       <p className="text-xs text-slate-500 mt-1"><i className="fas fa-map-marker-alt mr-2"></i>{branch.address}</p>
                     </button>
                   ))}
                 </div>
-                <div className="pt-8">
+                {/* Always-visible button */}
+                <div className="pt-6">
                   <button
                     type="button"
                     onClick={handleNextStep}
@@ -130,49 +132,53 @@ const Register: React.FC = () => {
 
             {/* Step 2: Detailed Info & Security */}
             {step === 2 && (
-              <div className="space-y-6 animate-[slideUp_0.3s_ease-out]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
-                    <input required className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Arjun Sharma" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contact Phone</label>
-                    <input required type="tel" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
-                  <input required type="email" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="athlete@ironflow.in" />
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2">Security</p>
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-start gap-3">
-                    <i className="fas fa-shield-alt text-blue-400 mt-0.5"></i>
-                    <div>
-                      <p className="text-sm font-bold text-white">Secure Token Generation</p>
-                      <p className="text-xs text-slate-400 mt-1">A unique, secure password will be generated for you and shown on the next screen.</p>
+              <div className="animate-[slideUp_0.3s_ease-out] flex flex-col">
+                {/* Scrollable form fields */}
+                <div className="space-y-5 overflow-y-auto max-h-[48vh] md:max-h-[55vh] pr-1 scrollbar-hide pb-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
+                      <input required className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Arjun Sharma" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contact Phone</label>
+                      <input required type="tel" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
                     </div>
                   </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
+                    <input required type="email" className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="athlete@ironflow.in" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2">Security</p>
+                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-start gap-3">
+                      <i className="fas fa-shield-alt text-blue-400 mt-0.5"></i>
+                      <div>
+                        <p className="text-sm font-bold text-white">Secure Token Generation</p>
+                        <p className="text-xs text-slate-400 mt-1">A unique, secure password will be generated for you and shown on the next screen.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
+                    <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <i className="fas fa-life-ring"></i> Emergency Contact
+                    </label>
+                    <input required className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-red-500 transition-all" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} placeholder="Name & Phone" />
+                  </div>
+
+                  <div className="space-y-1 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
+                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <i className="fas fa-gift"></i> Referral Code (Optional)
+                    </label>
+                    <input className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-indigo-500 transition-all font-mono tracking-wider uppercase placeholder:text-slate-600" value={formData.referralCode} onChange={e => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })} placeholder="IF-ADMIN-1234" />
+                  </div>
                 </div>
 
-                <div className="space-y-1 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                  <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <i className="fas fa-life-ring"></i> Emergency Contact
-                  </label>
-                  <input required className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-red-500 transition-all" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} placeholder="Name & Phone" />
-                </div>
-
-                <div className="space-y-1 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
-                  <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <i className="fas fa-gift"></i> Referral Code (Optional)
-                  </label>
-                  <input className="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl outline-none focus:border-indigo-500 transition-all font-mono tracking-wider uppercase placeholder:text-slate-600" value={formData.referralCode} onChange={e => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })} placeholder="IF-ADMIN-1234" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4">
+                {/* Always-visible action buttons */}
+                <div className="grid grid-cols-2 gap-4 pt-5">
                   <button
                     type="button"
                     onClick={handlePrevStep}
