@@ -3,7 +3,7 @@ import { useAppContext } from '../AppContext';
 import { UserRole, User, Attendance, PlanType, SubscriptionStatus, Expense, CommType } from '../types';
 
 const TaxCenter: React.FC = () => {
-   const { sales, branches, currentUser, attendance, users, settlementRate, plans, bookings, subscriptions, expenses, addExpense, deleteExpense } = useAppContext();
+   const { sales, branches, currentUser, attendance, users, plans, bookings, subscriptions, expenses, addExpense, deleteExpense } = useAppContext();
 
    const [activeView, setActiveView] = useState<'GST' | 'SETTLEMENT' | 'PAYROLL' | 'COMMISSIONS' | 'EXPENSES' | 'PROFIT_LOSS'>('GST');
    const [selectedBranchId, setSelectedBranchId] = useState<string>(currentUser?.branchId || branches[0]?.id || '');
@@ -158,13 +158,58 @@ const TaxCenter: React.FC = () => {
    }, [users, staffCommissions, selectedBranchId]);
 
    const settlementData = useMemo(() => {
-      const branchBookings = bookings.filter(b => b.branchId === selectedBranchId);
+      // Find all attendances AT this branch for this month/year
+      const branchScans = attendance.filter(a => {
+         const d = new Date(a.date);
+         return a.branchId === selectedBranchId &&
+            a.type === 'MEMBER' &&
+            d.getMonth() === selectedMonth &&
+            d.getFullYear() === selectedYear;
+      });
+
+      // Filter to ONLY members whose HOME branch is NOT this branch
+      const crossBranchVisits = branchScans.filter(scan => {
+         const member = users.find(u => u.id === scan.userId);
+         return member && member.branchId !== selectedBranchId;
+      });
+
+      const rate = currentBranch?.settlementRate || 100;
+
+      // Group visits by userId to apply MAX 10 cap
+      const userVisitCounts: Record<string, number> = {};
+
+      const auditLog = crossBranchVisits
+         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+         .map(scan => {
+            const member = users.find(u => u.id === scan.userId)!;
+            const homeBranch = branches.find(b => b.id === member.branchId);
+
+            const userId = scan.userId!;
+            userVisitCounts[userId] = (userVisitCounts[userId] || 0) + 1;
+
+            const isCapped = userVisitCounts[userId] > 10;
+            const earned = isCapped ? 0 : rate;
+
+            return {
+               ...scan,
+               memberName: member.name,
+               homeBranchName: homeBranch?.name || 'Unknown Branch',
+               earned,
+               isCapped
+            };
+         });
+
+      const totalCrossVisits = crossBranchVisits.length;
+      const payableVisits = auditLog.filter(log => !log.isCapped).length;
+
       return {
-         totalBookings: branchBookings.length,
-         rate: settlementRate,
-         totalAmount: branchBookings.length * settlementRate
+         totalCrossVisits,
+         payableVisits,
+         auditLog,
+         rate,
+         totalAmount: payableVisits * rate
       };
-   }, [bookings, selectedBranchId, settlementRate]);
+   }, [attendance, users, branches, selectedBranchId, selectedMonth, selectedYear, currentBranch]);
 
    const pnlStats = useMemo(() => {
       const totalIncome = filteredSales.reduce((acc, s) => acc + s.amount, 0);
@@ -316,29 +361,65 @@ const TaxCenter: React.FC = () => {
                {activeView === 'SETTLEMENT' && (
                   <div className="space-y-6">
                      <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-3 gap-6">
-                        <SummaryCard label="Total Bookings" value={settlementData.totalBookings} color="blue" />
-                        <SummaryCard label="Rate per Session" value={formatCurrency(settlementData.rate)} color="indigo" />
-                        <SummaryCard label="Due Amount" value={formatCurrency(settlementData.totalAmount)} color="emerald" />
+                        <SummaryCard label="Cross-Branch Visits (In)" value={settlementData.totalCrossVisits} color="blue" />
+                        <SummaryCard label="Receive per Session" value={formatCurrency(settlementData.rate)} color="indigo" />
+                        <SummaryCard label="Total Settlement Due" value={formatCurrency(settlementData.totalAmount)} color="emerald" />
                      </div>
-                     <div className="bg-white p-8 rounded-[2rem] border shadow-sm">
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Settlement Audit</h3>
-                        <div className="space-y-4">
-                           {bookings.filter(b => b.branchId === selectedBranchId).slice(0, 5).map(b => (
-                              <div key={b.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
-                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border shadow-sm">
-                                       <i className="fas fa-calendar-check text-blue-600"></i>
-                                    </div>
-                                    <div>
-                                       <p className="text-xs font-bold text-slate-900 uppercase">Session #{b.id.slice(-6)}</p>
-                                       <p className="text-[10px] text-slate-500 font-medium">{b.date} at {b.timeSlot}</p>
-                                    </div>
-                                 </div>
-                                 <p className="text-xs font-black text-slate-900">{formatCurrency(settlementRate)}</p>
-                              </div>
-                           ))}
-                           <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4">Showing last 5 bookings for settlement</p>
+                     <div className="bg-white p-8 rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
+                        <div className="flex justify-between items-center mb-6">
+                           <div>
+                              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Cross-Branch Audit Log</h3>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Members from other facilities training at {currentBranch?.name}</p>
+                           </div>
+                           <span className="bg-indigo-50 text-indigo-500 font-black text-[9px] px-3 py-1.5 rounded-full uppercase tracking-widest">{months[selectedMonth]} {selectedYear}</span>
                         </div>
+
+                        <table className="w-full text-left min-w-[700px]">
+                           <thead className="bg-slate-50 border-b">
+                              <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                 <th className="px-6 py-4">Date & Time</th>
+                                 <th className="px-6 py-4">Member</th>
+                                 <th className="px-6 py-4">Origin Branch</th>
+                                 <th className="px-6 py-4 text-right">Settlement Value</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-100">
+                              {settlementData.auditLog.length === 0 ? (
+                                 <tr>
+                                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">No cross-branch visits recorded this month.</td>
+                                 </tr>
+                              ) : (
+                                 settlementData.auditLog.map(log => (
+                                    <tr key={log.id} className={`hover:bg-indigo-50/30 transition-colors ${log.isCapped ? 'opacity-50' : ''}`}>
+                                       <td className="px-6 py-4">
+                                          <p className="text-xs font-bold text-slate-900">{log.date}</p>
+                                          <p className="text-[10px] font-medium text-slate-400">Time-In: {log.timeIn}</p>
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          <p className="text-xs font-black text-indigo-900 uppercase tracking-tight">{log.memberName}</p>
+                                          <span className="text-[8px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">MEMBER</span>
+                                          {log.isCapped && (
+                                             <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block ml-1">MAX 10 CAPPED</span>
+                                          )}
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          <div className="flex items-center gap-2">
+                                             <i className="fas fa-building text-slate-300 text-sm"></i>
+                                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{log.homeBranchName}</p>
+                                          </div>
+                                       </td>
+                                       <td className="px-6 py-4 text-right">
+                                          {log.isCapped ? (
+                                             <span className="text-sm font-black text-rose-400 line-through">+{formatCurrency(settlementData.rate)}</span>
+                                          ) : (
+                                             <span className="text-sm font-black text-emerald-600">+{formatCurrency(log.earned)}</span>
+                                          )}
+                                       </td>
+                                    </tr>
+                                 ))
+                              )}
+                           </tbody>
+                        </table>
                      </div>
                   </div>
                )}

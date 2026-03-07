@@ -52,7 +52,8 @@ const Branches: React.FC = () => {
     longitude: 0,
     geofenceRadius: 100,
     isHidden: false,
-    termsAndConditions: (selectedBranch as any)?.termsAndConditions || ''
+    termsAndConditions: (selectedBranch as any)?.termsAndConditions || '',
+    settlementRate: (selectedBranch as any)?.settlementRate || 250
   });
 
   const getBranchStats = (branchId: string) => {
@@ -86,7 +87,8 @@ const Branches: React.FC = () => {
       longitude: 0,
       geofenceRadius: 100,
       isHidden: false,
-      termsAndConditions: ''
+      termsAndConditions: '',
+      settlementRate: 250
     });
     setModalOpen(true);
   };
@@ -115,7 +117,8 @@ const Branches: React.FC = () => {
       longitude: branch.longitude || 0,
       geofenceRadius: branch.geofenceRadius || 100,
       isHidden: branch.isHidden || false,
-      termsAndConditions: (branch as any).termsAndConditions || ''
+      termsAndConditions: (branch as any).termsAndConditions || '',
+      settlementRate: branch.settlementRate || 250
     });
     setModalOpen(true);
   };
@@ -168,8 +171,8 @@ const Branches: React.FC = () => {
     }
   })();
 
-  const filteredBranches = currentUser?.role === UserRole.SUPER_ADMIN 
-    ? branches 
+  const filteredBranches = currentUser?.role === UserRole.SUPER_ADMIN
+    ? branches
     : branches.filter(b => b.id === currentUser?.branchId);
 
   return (
@@ -441,6 +444,16 @@ const Branches: React.FC = () => {
                 </div>
               </section>
 
+              <section className="space-y-3 pt-6 border-t">
+                <label className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-handshake"></i> Cross-Branch Settlement
+                </label>
+                <p className="text-[9px] text-slate-400 italic">Rate paid to this branch when members from other branches scan in.</p>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                  <input type="number" min="0" placeholder="Per-Session Rate" className="w-full p-3 pl-8 bg-gray-50 border rounded-xl outline-none text-xs font-bold" value={formData.settlementRate} onChange={e => setFormData({ ...formData, settlementRate: Number(e.target.value) })} />
+                </div>
+              </section>
 
               <section className="space-y-3 pt-6 border-t">
                 <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">

@@ -28,8 +28,6 @@ interface AppContextType {
   coupons: Coupon[];
   walkIns: WalkIn[];
 
-  settlementRate: number;
-  setSettlementRate: (rate: number) => void;
   isGlobalLoading: boolean;
   setGlobalLoading: (loading: boolean) => void;
   addBranch: (branch: Branch) => Promise<void>;
@@ -160,7 +158,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('selectedBranchId', selectedBranchId);
   }, [selectedBranchId]);
 
-  const [settlementRate, setSettlementRate] = useState<number>(250);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isGlobalLoading, setGlobalLoading] = useState(false);
 
@@ -1761,7 +1758,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       expenses, addExpense, deleteExpense, payroll, addPayroll, updatePayroll,
       holidays, addHoliday, updateHoliday, deleteHoliday,
       coupons, addCoupon, updateCoupon, deleteCoupon, validateCoupon,
-      settlementRate, setSettlementRate, isGlobalLoading, setGlobalLoading,
+      isGlobalLoading, setGlobalLoading,
       addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
       addSubscription, updateSubscription, addSale, recordAttendance, updateAttendance, addBooking, updateBooking, addFeedback, updateFeedbackStatus,
       addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,

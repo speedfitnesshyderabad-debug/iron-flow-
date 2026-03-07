@@ -102,6 +102,7 @@ export interface Branch {
   holidays?: string[]; // Array of ISO date strings 'YYYY-MM-DD' (Deprecated: use dedicated Holiday table)
   termsAndConditions?: string;
   isHidden?: boolean;
+  settlementRate?: number; // Rate owed per cross-branch visit (₹ per session)
 }
 
 export interface Shift {
