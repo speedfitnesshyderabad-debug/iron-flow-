@@ -1,0 +1,41 @@
+﻿[INFO] Found 3 branch(es).
+
+Branch: Titan Strength | ID: b-1771726419524
+  emailProvider:    SENDGRID
+  emailApiKey:      SG.NsiCRR-...
+  emailFromAddress: support@speedfitness.org
+  smsProvider:      TWILIO
+  smsApiKey:        NOT SET
+  smsSenderId:      NOT SET
+
+Branch: Speed Fitness Elite(SUNCITY BRANCH) | ID: b-1771923594361
+  emailProvider:    SENDGRID
+  emailApiKey:      SG.NsiCRR-...
+  emailFromAddress: support@speedfitness.org
+  smsProvider:      TWILIO
+  smsApiKey:        NOT SET
+  smsSenderId:      NOT SET
+
+Branch: Speed Fitness (Beeramguda Branch) | ID: b-1771923811259
+  emailProvider:    SENDGRID
+  emailApiKey:      SG.NsiCRR-...
+  emailFromAddress: support@speedfitness.org
+  smsProvider:      TWILIO
+  smsApiKey:        NOT SET
+  smsSenderId:      NOT SET
+
+[EMAIL TEST] Sending test email to: krishnatanniru009@gmail.com
+[EMAIL TEST] SUCCESS - HTTP 200
+[EMAIL TEST] Check your inbox at krishnatanniru009@gmail.com
+
+[SMS INFRA] Checking if send-sms edge function is deployed...
+[SMS INFRA] send-sms endpoint status: 404
+[SMS INFRA] NOT DEPLOYED: There is NO send-sms edge function in your project.
+[SMS INFRA] Your app stores SMS type communications in the DB but does NOT
+[SMS INFRA] actually dispatch any SMS to phone numbers. This is a gap.
+
+[SMS TEST] SKIPPED: No smsApiKey set in branch "Titan Strength".
+[SMS TEST] SMS is ONLY logged in the DB - no real SMS is sent to phones.
+[SMS TEST] To enable real SMS, add an smsApiKey in Branch Settings.
+
+--- DIAGNOSTIC COMPLETE ---

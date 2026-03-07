@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
-import { UserRole, User, Attendance, PlanType, SubscriptionStatus, Expense } from '../types';
+import { UserRole, User, Attendance, PlanType, SubscriptionStatus, Expense, CommType } from '../types';
 
 const TaxCenter: React.FC = () => {
    const { sales, branches, currentUser, attendance, users, settlementRate, plans, bookings, subscriptions, expenses, addExpense, deleteExpense } = useAppContext();
@@ -86,24 +86,76 @@ const TaxCenter: React.FC = () => {
       document.body.removeChild(link);
    };
 
+   // Per-staff commission calculation using individual rate fields
+   const staffCommissions = useMemo(() => {
+      const branchStaff = users.filter(u =>
+         u.branchId === selectedBranchId &&
+         u.role !== UserRole.MEMBER &&
+         u.role !== UserRole.SUPER_ADMIN
+      );
+
+      return branchStaff.map(staff => {
+         const mySales = sales.filter(s => {
+            const d = new Date(s.date);
+            return (
+               s.staffId === staff.id &&
+               d.getMonth() === selectedMonth &&
+               d.getFullYear() === selectedYear
+            );
+         });
+
+         const gymSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.GYM);
+         const ptSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.PT);
+         const groupSales = mySales.filter(s => plans.find(p => p.id === s.planId)?.type === PlanType.GROUP);
+
+         const gymRate = staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0;
+         const ptRate = staff.ptCommissionPercentage ?? staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0;
+         const groupRate = staff.groupCommissionPercentage ?? staff.salesCommissionPercentage ?? staff.commissionPercentage ?? 0;
+
+         const gymComm = gymSales.reduce((acc, s) => acc + s.amount * (gymRate / 100), 0);
+         const ptComm = ptSales.reduce((acc, s) => acc + s.amount * (ptRate / 100), 0);
+         const groupComm = groupSales.reduce((acc, s) => acc + s.amount * (groupRate / 100), 0);
+
+         // Trainer session commissions (completed bookings this month)
+         let sessionComm = 0;
+         if (staff.role === UserRole.TRAINER && (staff.commissionPercentage || 0) > 0) {
+            const completedBookings = bookings.filter(b => {
+               const d = new Date(b.date);
+               return b.trainerId === staff.id && b.status === 'COMPLETED' &&
+                  d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+            });
+            completedBookings.forEach(b => {
+               const sub = subscriptions.find(s =>
+                  s.memberId === b.memberId && s.trainerId === staff.id && s.status === 'ACTIVE'
+               );
+               const plan = sub ? plans.find(p => p.id === sub.planId) : null;
+               const sessionValue = plan?.price && plan?.maxSessions ? plan.price / plan.maxSessions : 0;
+               sessionComm += sessionValue * ((staff.commissionPercentage || 0) / 100);
+            });
+         }
+
+         const total = gymComm + ptComm + groupComm + sessionComm;
+
+         return {
+            staff,
+            gymSales: gymSales.length, gymComm, gymRate,
+            ptSales: ptSales.length, ptComm, ptRate,
+            groupSales: groupSales.length, groupComm, groupRate,
+            sessionComm,
+            totalSales: mySales.length,
+            total: Math.round(total)
+         };
+      });
+   }, [users, sales, plans, bookings, subscriptions, selectedBranchId, selectedMonth, selectedYear]);
+
    const totalPayouts = useMemo(() => {
-      const branchSales = sales.filter(s => s.branchId === selectedBranchId);
       const branchUsers = users.filter(u => u.branchId === selectedBranchId);
-
-      // Payroll calculation: Sum of base salaries for branch staff
       const payroll = branchUsers
-         .filter(u => u.role === UserRole.STAFF || u.role === UserRole.TRAINER)
-         .reduce((acc, u) => acc + (u.salary || 25000), 0);
-
-      // Commission calculation: 10% of sales handled by staff/trainers in this branch
-      const commissions = branchSales.reduce((acc, s) => acc + (s.amount * 0.1), 0);
-
-      return {
-         payroll,
-         commissions,
-         grandTotal: payroll + commissions
-      };
-   }, [sales, users, selectedBranchId]);
+         .filter(u => u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN)
+         .reduce((acc, u) => acc + (u.monthlySalary || 0), 0);
+      const commissions = staffCommissions.reduce((acc, r) => acc + r.total, 0);
+      return { payroll, commissions, grandTotal: payroll + commissions };
+   }, [users, staffCommissions, selectedBranchId]);
 
    const settlementData = useMemo(() => {
       const branchBookings = bookings.filter(b => b.branchId === selectedBranchId);
@@ -327,10 +379,132 @@ const TaxCenter: React.FC = () => {
 
                {activeView === 'COMMISSIONS' && (
                   <div className="space-y-6">
-                     <SummaryCard label="Branch Commissions (10% of Sales)" value={formatCurrency(totalPayouts.commissions)} color="indigo" />
-                     <div className="bg-white p-8 rounded-[2rem] border shadow-sm">
-                        <p className="text-sm text-slate-500 font-medium text-center">Commission structure for {currentBranch?.name} is based on a flat 10% performance incentive across all sales activities.</p>
+                     {/* Summary Cards */}
+                     <div className="grid grid-cols-1 xs:grid-cols-3 gap-4">
+                        <SummaryCard label="Staff with Commission" value={staffCommissions.filter(r => r.total > 0).length + ' / ' + staffCommissions.length} color="indigo" />
+                        <SummaryCard label="Total Sales This Month" value={staffCommissions.reduce((a, r) => a + r.totalSales, 0)} color="blue" />
+                        <SummaryCard label="Total Commission Payout" value={formatCurrency(totalPayouts.commissions)} color="emerald" />
                      </div>
+
+                     {/* Per-Staff Breakdown Table */}
+                     <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
+                        <div className="px-8 py-5 border-b bg-slate-50 flex items-center justify-between">
+                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Staff Commission Breakdown — {months[selectedMonth]} {selectedYear}</h3>
+                           <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">Live Calculation</span>
+                        </div>
+                        <table className="w-full text-left min-w-[760px]">
+                           <thead className="bg-slate-50/60 border-b">
+                              <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                 <th className="px-6 py-4">Staff Member</th>
+                                 <th className="px-6 py-4">Role</th>
+                                 <th className="px-6 py-4 text-center">Gym Sales</th>
+                                 <th className="px-6 py-4 text-center">PT Sales</th>
+                                 <th className="px-6 py-4 text-center">Group Sales</th>
+                                 <th className="px-6 py-4 text-right">Sessions</th>
+                                 <th className="px-6 py-4 text-right">Total Earned</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-slate-100">
+                              {staffCommissions.length === 0 ? (
+                                 <tr>
+                                    <td colSpan={7} className="px-8 py-10 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">No staff found for this branch.</td>
+                                 </tr>
+                              ) : (
+                                 staffCommissions.map((row, idx) => (
+                                    <tr key={row.staff.id} className={`hover:bg-indigo-50/30 transition-colors ${row.total > 0 ? '' : 'opacity-50'}`}>
+                                       <td className="px-6 py-4">
+                                          <div className="flex items-center gap-3">
+                                             <img src={row.staff.avatar} className="w-9 h-9 rounded-xl object-cover border shadow-sm" alt="" />
+                                             <div>
+                                                <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{row.staff.name}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold truncate max-w-[120px]">{row.staff.email}</p>
+                                             </div>
+                                          </div>
+                                       </td>
+                                       <td className="px-6 py-4">
+                                          <span className="bg-blue-50 text-blue-600 text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest whitespace-nowrap">
+                                             {row.staff.role.replace('_', ' ')}
+                                          </span>
+                                       </td>
+                                       {/* Gym */}
+                                       <td className="px-6 py-4 text-center">
+                                          {row.gymRate > 0 ? (
+                                             <div>
+                                                <p className="text-xs font-black text-slate-900">{formatCurrency(row.gymComm)}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold">{row.gymSales} sale{row.gymSales !== 1 ? 's' : ''} @ {row.gymRate}%</p>
+                                             </div>
+                                          ) : (
+                                             <span className="text-[9px] text-slate-300 font-bold">—</span>
+                                          )}
+                                       </td>
+                                       {/* PT */}
+                                       <td className="px-6 py-4 text-center">
+                                          {row.ptRate > 0 ? (
+                                             <div>
+                                                <p className="text-xs font-black text-slate-900">{formatCurrency(row.ptComm)}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold">{row.ptSales} sale{row.ptSales !== 1 ? 's' : ''} @ {row.ptRate}%</p>
+                                             </div>
+                                          ) : (
+                                             <span className="text-[9px] text-slate-300 font-bold">—</span>
+                                          )}
+                                       </td>
+                                       {/* Group */}
+                                       <td className="px-6 py-4 text-center">
+                                          {row.groupRate > 0 ? (
+                                             <div>
+                                                <p className="text-xs font-black text-slate-900">{formatCurrency(row.groupComm)}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold">{row.groupSales} sale{row.groupSales !== 1 ? 's' : ''} @ {row.groupRate}%</p>
+                                             </div>
+                                          ) : (
+                                             <span className="text-[9px] text-slate-300 font-bold">—</span>
+                                          )}
+                                       </td>
+                                       {/* Sessions */}
+                                       <td className="px-6 py-4 text-right">
+                                          {row.sessionComm > 0 ? (
+                                             <span className="text-xs font-black text-violet-600">{formatCurrency(row.sessionComm)}</span>
+                                          ) : (
+                                             <span className="text-[9px] text-slate-300 font-bold">—</span>
+                                          )}
+                                       </td>
+                                       {/* Total */}
+                                       <td className="px-6 py-4 text-right">
+                                          {row.total > 0 ? (
+                                             <span className="text-sm font-black text-emerald-600">{formatCurrency(row.total)}</span>
+                                          ) : (
+                                             <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest">No Sales</span>
+                                          )}
+                                       </td>
+                                    </tr>
+                                 ))
+                              )}
+                           </tbody>
+                           {/* Footer Total */}
+                           {staffCommissions.length > 0 && (
+                              <tfoot className="bg-slate-900">
+                                 <tr>
+                                    <td colSpan={5} className="px-6 py-4">
+                                       <span className="text-[10px] font-black text-white uppercase tracking-widest">Total Commission Payout</span>
+                                    </td>
+                                    <td colSpan={2} className="px-6 py-4 text-right">
+                                       <span className="text-lg font-black text-emerald-400">{formatCurrency(totalPayouts.commissions)}</span>
+                                    </td>
+                                 </tr>
+                              </tfoot>
+                           )}
+                        </table>
+                     </div>
+
+                     {/* Zero-commission info */}
+                     {staffCommissions.every(r => r.total === 0) && (
+                        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 flex items-center gap-4">
+                           <i className="fas fa-triangle-exclamation text-amber-500 text-xl"></i>
+                           <div>
+                              <p className="text-xs font-black text-amber-800 uppercase tracking-widest">No commissions earned this period</p>
+                              <p className="text-[10px] text-amber-600 font-medium mt-0.5">Either no sales were recorded, or staff commission rates are set to 0% in Staff Settings.</p>
+                           </div>
+                        </div>
+                     )}
                   </div>
                )}
 

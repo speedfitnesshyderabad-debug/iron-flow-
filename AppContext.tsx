@@ -891,6 +891,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }).catch(e => console.warn('📧 Email send failed (non-critical):', e));
       }
 
+      // 📱 Real SMS Delivery via Twilio (Supabase Edge Function)
+      const smsTo = user?.phone || comm.recipient;
+      const hasTwilioKey = !!branch?.smsApiKey;
+      const isPhoneNumber = smsTo && !smsTo.includes('@') && smsTo.replace(/\D/g, '').length >= 7;
+
+      if (isPhoneNumber && hasTwilioKey) {
+        // smsApiKey is stored as "ACCOUNT_SID:AUTH_TOKEN"
+        const [twilioSid, twilioToken] = (branch!.smsApiKey as string).split(':');
+        const supabaseUrlSms = import.meta.env.VITE_SUPABASE_URL?.trim();
+        const smsEndpoint = `${supabaseUrlSms}/functions/v1/send-sms`;
+
+        fetch(smsEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            to: smsTo,
+            body: newComm.body,
+            accountSid: twilioSid,
+            authToken: twilioToken,
+            fromNumber: branch?.smsSenderId,
+          }),
+        })
+          .then(async r => {
+            const resp = await r.json().catch(() => ({}));
+            if (!r.ok) console.warn('📱 SMS send failed:', resp);
+            else console.log('📱 SMS sent:', resp.messageSid);
+          })
+          .catch(e => console.warn('📱 SMS send failed (non-critical):', e));
+      } else if (isPhoneNumber && !hasTwilioKey) {
+        console.warn('📱 SMS skipped: No Twilio API key in Branch Settings → SMS Gateway.');
+      }
+
       // 🔔 Browser Push Notification
       // Only fire if this notification is for the currently logged-in user
       if (

@@ -1,0 +1,56 @@
+{
+  "branch_fetch_error": null,
+  "branches": [
+    {
+      "name": "Titan Strength",
+      "id": "b-1771726419524",
+      "emailProvider": "SENDGRID",
+      "emailApiKey": "SET:SG.NsiCRR-...",
+      "emailApiKeyFull": "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",
+      "emailFromAddress": "support@speedfitness.org",
+      "smsProvider": "TWILIO",
+      "smsApiKey": "NOT_SET",
+      "smsApiKeyFull": null,
+      "smsSenderId": null
+    },
+    {
+      "name": "Speed Fitness Elite(SUNCITY BRANCH)",
+      "id": "b-1771923594361",
+      "emailProvider": "SENDGRID",
+      "emailApiKey": "SET:SG.NsiCRR-...",
+      "emailApiKeyFull": "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",
+      "emailFromAddress": "support@speedfitness.org",
+      "smsProvider": "TWILIO",
+      "smsApiKey": "NOT_SET",
+      "smsApiKeyFull": null,
+      "smsSenderId": null
+    },
+    {
+      "name": "Speed Fitness (Beeramguda Branch)",
+      "id": "b-1771923811259",
+      "emailProvider": "SENDGRID",
+      "emailApiKey": "SET:SG.NsiCRR-...",
+      "emailApiKeyFull": "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",
+      "emailFromAddress": "support@speedfitness.org",
+      "smsProvider": "TWILIO",
+      "smsApiKey": "NOT_SET",
+      "smsApiKeyFull": null,
+      "smsSenderId": null
+    }
+  ],
+  "email_test": {
+    "status_code": 200,
+    "success": true,
+    "response": "{\"success\":true}",
+    "fix_needed": null
+  },
+  "sms_edge_function": {
+    "status_code": 404,
+    "deployed": false
+  },
+  "sms_config": {
+    "has_api_key": false,
+    "provider": "TWILIO",
+    "sender_id": null
+  }
+}
