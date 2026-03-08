@@ -25,7 +25,7 @@ const Members: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [pendingRenewal, setPendingRenewal] = useState<{ planId: string; amount: number; paymentMethod: any; discount: number; memberId: string; } | null>(null);
+  const [pendingRenewal, setPendingRenewal] = useState<{ planId: string; amount: number; paymentMethod: any; discount: number; memberId: string; customStartDate?: string; } | null>(null);
   const [activeModal, setActiveModal] = useState<'logs' | 'manage' | null>(null);
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -290,7 +290,7 @@ const Members: React.FC = () => {
 
     // Handle Renewal Payment
     if (pendingRenewal) {
-      await purchaseSubscription(pendingRenewal.memberId, pendingRenewal.planId, pendingRenewal.paymentMethod);
+      await purchaseSubscription(pendingRenewal.memberId, pendingRenewal.planId, pendingRenewal.paymentMethod, undefined, undefined, 0, pendingRenewal.discount, pendingRenewal.customStartDate);
       showToast('Membership Renewed Successfully!', 'success');
       setPaymentModalOpen(false);
       setPendingRenewal(null);
@@ -361,7 +361,7 @@ const Members: React.FC = () => {
     setRenewModalOpen(true);
   };
 
-  const handleProcessRenew = async (planId: string, amount: number, paymentMethod: any, discount: number, transactionCode?: string) => {
+  const handleProcessRenew = async (planId: string, amount: number, paymentMethod: any, discount: number, transactionCode?: string, startDate?: string) => {
     if (!renewTarget) return;
 
     // 1. ONLINE PAYMENT -> Open Payment Modal
@@ -371,7 +371,8 @@ const Members: React.FC = () => {
         amount,
         paymentMethod,
         discount,
-        memberId: renewTarget.member.id
+        memberId: renewTarget.member.id,
+        customStartDate: startDate
       });
       setRenewModalOpen(false);
       setPaymentModalOpen(true);
@@ -398,7 +399,7 @@ const Members: React.FC = () => {
     }
 
     // 3. Process Immediate Renewal (Cash/POS verified)
-    await purchaseSubscription(renewTarget.member.id, planId, paymentMethod);
+    await purchaseSubscription(renewTarget.member.id, planId, paymentMethod, undefined, undefined, 0, discount, startDate);
     showToast('Membership Renewed Successfully!', 'success');
     setRenewModalOpen(false);
     setRenewTarget(null);

@@ -37,25 +37,43 @@ const WalkInManagement: React.FC = () => {
     e.preventDefault();
     setIsSaving(true);
 
+    // Clean up empty strings for database compatibility (Foreign Keys and Date types)
+    const cleanedData = {
+      ...formData,
+      email: formData.email.trim() || undefined,
+      notes: formData.notes.trim() || undefined,
+      assignedTo: formData.assignedTo || undefined,
+      followUpDate: formData.followUpDate || undefined,
+      branchId: formData.branchId || currentUser?.branchId || branches[0]?.id
+    };
+
+    if (!cleanedData.branchId) {
+      showToast('Branch assignment is required', 'error');
+      setIsSaving(false);
+      return;
+    }
+
     try {
       if (selectedWalkIn) {
         await updateWalkIn(selectedWalkIn.id, {
-          ...formData,
+          ...cleanedData,
           updatedAt: new Date().toISOString()
-        });
+        } as Partial<WalkIn>);
       } else {
         const newWalkIn: WalkIn = {
           id: `walkin-${Date.now()}`,
-          ...formData,
+          ...cleanedData,
           status: 'NEW',
-          branchId: formData.branchId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        };
+        } as WalkIn;
         await addWalkIn(newWalkIn);
       }
       resetForm();
       setIsModalOpen(false);
+    } catch (err: any) {
+      console.error('Walk-in error:', err);
+      showToast('Error: ' + (err.message || 'Unknown error'), 'error');
     } finally {
       setIsSaving(false);
     }

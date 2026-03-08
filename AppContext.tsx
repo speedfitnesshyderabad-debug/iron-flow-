@@ -73,7 +73,7 @@ interface AppContextType {
   generateTransactionCode: (targetBranchId?: string) => Promise<string>;
   verifyTransactionCode: (code: string) => Promise<boolean>;
   enrollMember: (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string, staffId?: string, referralCode?: string, pauseAllowance?: number) => Promise<void>;
-  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance?: number, discount?: number) => Promise<void>;
+  purchaseSubscription: (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance?: number, discount?: number, customStartDate?: string) => Promise<void>;
   pauseMembership: (subscriptionId: string) => Promise<void>;
   resumeMembership: (subscriptionId: string) => Promise<void>;
   sendNotification: (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>) => Promise<void>;
@@ -301,6 +301,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => {
         supabase.from('coupons').select('*').then(({ data }) => { if (data) setCoupons(data); });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'walk_ins' }, () => {
+        supabase.from('walk_ins').select('*').then(({ data }) => { if (data) setWalkIns(data); });
       })
       .subscribe();
 
@@ -1312,7 +1315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Import Complete: ${successCount} processed, ${failCount} failed.`);
   };
 
-  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance: number = 0, discount: number = 0) => {
+  const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance: number = 0, discount: number = 0, customStartDate?: string) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
     const user = users.find(u => u.id === userId);
@@ -1320,13 +1323,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setGlobalLoading(false);
       return;
     }
+
+    const effectiveStartDate = customStartDate || todayDateStr();
     const branchId = user.branchId!;
+
     const newSub: Subscription = {
       id: `s-${Date.now()}`,
       memberId: userId,
       planId: planId,
-      startDate: todayDateStr(),
-      endDate: addDays(todayDateStr(), plan.durationDays),
+      startDate: effectiveStartDate,
+      endDate: addDays(effectiveStartDate, plan.durationDays),
       status: SubscriptionStatus.ACTIVE,
       branchId,
       trainerId,
@@ -1377,24 +1383,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addWalkIn = async (walkIn: WalkIn) => {
-    const { error } = await supabase.from('walk_ins').insert(walkIn);
-    if (!error) {
-      setWalkIns(prev => [...prev, walkIn]);
-      showToast('Walk-in registered successfully');
-    } else {
-      console.error('Add walk-in error:', error);
-      showToast('Failed to register walk-in: ' + error.message, 'error');
+    try {
+      const { error } = await supabase.from('walk_ins').insert(walkIn);
+      if (!error) {
+        setWalkIns(prev => [...prev, walkIn]);
+        showToast('Walk-in registered successfully');
+      } else {
+        console.error('Add walk-in error:', error);
+        showToast('Failed to register walk-in: ' + error.message, 'error');
+      }
+    } catch (err: any) {
+      console.error('Network or logic error during walk-in registration:', err);
+      showToast('Error: ' + (err.message || 'Check your internet connection'), 'error');
     }
   };
 
   const updateWalkIn = async (id: string, updates: Partial<WalkIn>) => {
-    const { error } = await supabase.from('walk_ins').update(updates).eq('id', id);
-    if (!error) {
-      setWalkIns(prev => prev.map(w => w.id === id ? { ...w, ...updates } : w));
-      showToast('Walk-in updated successfully');
-    } else {
-      console.error('Update walk-in error:', error);
-      showToast('Failed to update walk-in: ' + error.message, 'error');
+    try {
+      const { error } = await supabase.from('walk_ins').update(updates).eq('id', id);
+      if (!error) {
+        setWalkIns(prev => prev.map(w => w.id === id ? { ...w, ...updates } : w));
+        showToast('Walk-in updated successfully');
+      } else {
+        console.error('Update walk-in error:', error);
+        showToast('Failed to update walk-in: ' + error.message, 'error');
+      }
+    } catch (err: any) {
+      console.error('Network or logic error during walk-in update:', err);
+      showToast('Error: ' + (err.message || 'Check your internet connection'), 'error');
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Plan, Branch } from '../types';
+import { todayDateStr } from '../utils/dates';
 
 interface QuickRenewModalProps {
     isOpen: boolean;
@@ -7,7 +8,7 @@ interface QuickRenewModalProps {
     member: User;
     currentPlan?: Plan;
     plans: Plan[];
-    onRenew: (planId: string, amount: number, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', discount: number, transactionCode?: string) => void;
+    onRenew: (planId: string, amount: number, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', discount: number, transactionCode?: string, startDate?: string) => void;
     allowedPaymentMethods?: ('CASH' | 'CARD' | 'ONLINE' | 'POS')[];
     requirePin?: boolean;
 }
@@ -26,6 +27,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ONLINE' | 'POS'>(allowedPaymentMethods[0]);
     const [discount, setDiscount] = useState(0);
     const [transactionCode, setTransactionCode] = useState('');
+    const [startDate, setStartDate] = useState(todayDateStr());
 
     const [prevOpen, setPrevOpen] = useState(false);
 
@@ -43,6 +45,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
             }
             setTransactionCode('');
             setDiscount(0);
+            setStartDate(todayDateStr());
         }
         setPrevOpen(isOpen);
     }, [isOpen, currentPlan, plans, allowedPaymentMethods, prevOpen, paymentMethod]);
@@ -55,7 +58,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedPlan) {
-            onRenew(selectedPlan.id, finalAmount, paymentMethod, discount, transactionCode);
+            onRenew(selectedPlan.id, finalAmount, paymentMethod, discount, transactionCode, startDate);
         }
     };
 
@@ -108,6 +111,20 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Membership Start Date */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                <i className="fas fa-calendar-alt"></i> Membership Start Date
+                            </label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full p-4 bg-blue-50 border-none rounded-2xl font-bold text-blue-900 outline-none focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <p className="text-[9px] text-slate-400 font-medium ml-1">Plan duration will be calculated from this date</p>
                         </div>
 
                         {/* Discount & Amount */}

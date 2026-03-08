@@ -19,7 +19,7 @@ const MemberPortal: React.FC = () => {
    const [isRenewModalOpen, setRenewModalOpen] = useState(false);
    const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
-   const [pendingRenewal, setPendingRenewal] = useState<{ planId: string, amount: number, paymentMethod: any, discount: number } | null>(null);
+   const [pendingRenewal, setPendingRenewal] = useState<{ planId: string, amount: number, paymentMethod: any, discount: number, startDate?: string } | null>(null);
 
    const [aiPrompt, setAiPrompt] = useState('');
    const [aiResponse, setAiResponse] = useState('');
@@ -158,9 +158,9 @@ const MemberPortal: React.FC = () => {
       setRenewModalOpen(true);
    };
 
-   const handleProcessRenew = async (planId: string, amount: number, paymentMethod: any, discount: number) => {
+   const handleProcessRenew = async (planId: string, amount: number, paymentMethod: any, discount: number, transactionCode?: string, startDate?: string) => {
       if (renewTarget) {
-         setPendingRenewal({ planId, amount, paymentMethod, discount });
+         setPendingRenewal({ planId, amount, paymentMethod, discount, startDate });
          setRenewModalOpen(false);
          setPaymentModalOpen(true);
       }
@@ -168,7 +168,7 @@ const MemberPortal: React.FC = () => {
 
    const handlePaymentSuccess = async (paymentId: string) => {
       if (pendingRenewal && renewTarget) {
-         await purchaseSubscription(currentUser.id, pendingRenewal.planId, pendingRenewal.paymentMethod);
+         await purchaseSubscription(currentUser.id, pendingRenewal.planId, pendingRenewal.paymentMethod, undefined, undefined, 0, pendingRenewal.discount, pendingRenewal.startDate);
          showToast('Membership Renewed Successfully!', 'success');
          setPaymentModalOpen(false);
          setPendingRenewal(null);
