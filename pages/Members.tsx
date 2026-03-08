@@ -126,11 +126,10 @@ const Members: React.FC = () => {
     reader.readAsText(file);
   };
 
-  // Handle URL Params for Walk-In Conversion
   React.useEffect(() => {
     if (searchParams.get('action') === 'enroll') {
       const name = searchParams.get('name') || '';
-      const phone = searchParams.get('phone') || ''; // Mapping phone to emergencyContact temporarily as phone field is not in enrollData top level yet
+      const phone = searchParams.get('phone') || '';
       const assignedTo = searchParams.get('assignedTo') || '';
 
       const validPlans = plans.filter(p => p.branchId === initialBranchId || p.isMultiBranch);
@@ -139,7 +138,8 @@ const Members: React.FC = () => {
       setEnrollData(prev => ({
         ...prev,
         name,
-        emergencyContact: phone, // Pre-fill phone
+        phone, // Pre-fill Mobile Number
+        emergencyContact: phone, // Pre-fill Emergency Contact as fallback
         assignedStaffId: assignedTo,
         planId: prev.planId || fallbackPlanId
       }));
