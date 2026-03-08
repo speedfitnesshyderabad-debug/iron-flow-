@@ -180,6 +180,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             email: authUser.email,
             role: authUser.user_metadata?.role || UserRole.SUPER_ADMIN,
             phone: authUser.user_metadata?.phone || '',
+            emergencyContact: authUser.user_metadata?.emergencyContact || '',
+            address: authUser.user_metadata?.address || '',
             avatar: authUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${authUser.user_metadata?.name || 'Admin'}`
           }).select().single();
           if (profile) setUsers(prev => [...prev, profile]);
@@ -1081,7 +1083,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           data: {
             name: userData.name,
             role: UserRole.MEMBER,
-            branchId: userData.branchId
+            branchId: userData.branchId,
+            phone: userData.phone,
+            emergencyContact: userData.emergencyContact,
+            address: userData.address,
+            avatar: userData.avatar
           }
         }
       });
@@ -1104,7 +1110,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { data: retryData, error: retryError } = await tempSupabase.auth.signUp({
           email: userData.email!,
           password: memberPassword,
-          options: { data: { name: userData.name, role: UserRole.MEMBER, branchId: userData.branchId } }
+          options: {
+            data: {
+              name: userData.name,
+              role: UserRole.MEMBER,
+              branchId: userData.branchId,
+              phone: userData.phone,
+              emergencyContact: userData.emergencyContact,
+              address: userData.address,
+              avatar: userData.avatar
+            }
+          }
         });
         if (retryError) throw retryError;
         if (!retryData.user) throw new Error('Failed to create auth user after cleanup');
