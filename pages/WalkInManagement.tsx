@@ -20,6 +20,7 @@ const WalkInManagement: React.FC = () => {
     notes: '',
     assignedTo: '',
     followUpDate: '',
+    status: 'NEW' as WalkIn['status'],
     branchId: currentUser?.branchId || branches[0]?.id || ''
   });
 
@@ -63,7 +64,7 @@ const WalkInManagement: React.FC = () => {
         const newWalkIn: WalkIn = {
           id: `walkin-${Date.now()}`,
           ...cleanedData,
-          status: 'NEW',
+          status: formData.status || 'NEW',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as WalkIn;
@@ -89,6 +90,7 @@ const WalkInManagement: React.FC = () => {
       notes: '',
       assignedTo: '',
       followUpDate: '',
+      status: 'NEW',
       branchId: currentUser?.branchId || branches[0]?.id || ''
     });
     setSelectedWalkIn(null);
@@ -105,6 +107,7 @@ const WalkInManagement: React.FC = () => {
       notes: walkIn.notes || '',
       assignedTo: walkIn.assignedTo || '',
       followUpDate: walkIn.followUpDate || '',
+      status: walkIn.status,
       branchId: walkIn.branchId
     });
     setIsModalOpen(true);
@@ -248,13 +251,21 @@ const WalkInManagement: React.FC = () => {
               )}
             </div>
 
-            {walkIn.status === 'NEW' && (
-              <div className="mt-3 pt-3 border-t">
+            {(walkIn.status === 'NEW' || walkIn.status === 'FOLLOW_UP') && (
+              <div className="mt-3 pt-3 border-t flex gap-2">
+                {walkIn.status === 'NEW' && (
+                  <button
+                    onClick={() => handleStatusChange(walkIn.id, 'FOLLOW_UP')}
+                    className="flex-1 py-2 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"
+                  >
+                    FOLLOW-UP
+                  </button>
+                )}
                 <button
-                  onClick={() => handleStatusChange(walkIn.id, 'FOLLOW_UP')}
-                  className="w-full py-2 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"
+                  onClick={() => handleStatusChange(walkIn.id, 'NOT_INTERESTED')}
+                  className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
                 >
-                  MARK FOR FOLLOW-UP
+                  NOT INTERESTED
                 </button>
               </div>
             )}
@@ -296,6 +307,22 @@ const WalkInManagement: React.FC = () => {
                     {branches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
+                  </select>
+                </div>
+              )}
+
+              {selectedWalkIn && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Status</label>
+                  <select
+                    className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold text-xs uppercase"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as WalkIn['status'] })}
+                  >
+                    <option value="NEW">New Lead</option>
+                    <option value="FOLLOW_UP">Follow-up Required</option>
+                    <option value="CONVERTED">Converted to Member</option>
+                    <option value="NOT_INTERESTED">Not Interested</option>
                   </select>
                 </div>
               )}
