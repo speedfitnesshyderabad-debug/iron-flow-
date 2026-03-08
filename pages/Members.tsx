@@ -174,7 +174,8 @@ const Members: React.FC = () => {
     // 1. Search Filter
     const searchLower = (searchTerm || '').toLowerCase();
     const matchesSearch = (m.name || '').toLowerCase().includes(searchLower) ||
-      (m.memberId || '').toLowerCase().includes(searchLower);
+      (m.memberId || '').toLowerCase().includes(searchLower) ||
+      (m.phone || '').includes(searchLower);
 
     if (!matchesSearch) return false;
 
