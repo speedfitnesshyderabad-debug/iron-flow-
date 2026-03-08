@@ -158,56 +158,74 @@ const TaxCenter: React.FC = () => {
    }, [users, staffCommissions, selectedBranchId]);
 
    const settlementData = useMemo(() => {
-      // Find all attendances AT this branch for this month/year
-      const branchScans = attendance.filter(a => {
+      // 1. "MONEY OWED TO ME" (IN-VISITS): Members from OTHER branches training HERE
+      const inVisits = attendance.filter(a => {
          const d = new Date(a.date);
+         const member = users.find(u => u.id === a.userId);
          return a.branchId === selectedBranchId &&
             a.type === 'MEMBER' &&
+            member && member.branchId !== selectedBranchId && // Home branch is elsewhere
             d.getMonth() === selectedMonth &&
             d.getFullYear() === selectedYear;
       });
 
-      // Filter to ONLY members whose HOME branch is NOT this branch
-      const crossBranchVisits = branchScans.filter(scan => {
-         const member = users.find(u => u.id === scan.userId);
-         return member && member.branchId !== selectedBranchId;
+      // 2. "MONEY I OWE" (OUT-VISITS): MY members training at OTHER branches
+      const outVisits = attendance.filter(a => {
+         const d = new Date(a.date);
+         const member = users.find(u => u.id === a.userId);
+         return a.branchId !== selectedBranchId && // Scanned elsewhere
+            a.type === 'MEMBER' &&
+            member && member.branchId === selectedBranchId && // Home branch is here
+            d.getMonth() === selectedMonth &&
+            d.getFullYear() === selectedYear;
       });
 
       const rate = currentBranch?.settlementRate || 100;
 
-      // Group visits by userId to apply MAX 10 cap
-      const userVisitCounts: Record<string, number> = {};
+      // Logic to calculate audit log and totals
+      const processVisits = (visits: Attendance[], type: 'IN' | 'OUT') => {
+         const userVisitCounts: Record<string, number> = {};
+         return visits
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(scan => {
+               const member = users.find(u => u.id === scan.userId)!;
+               const homeBranch = branches.find(b => b.id === member.branchId);
+               const scanBranch = branches.find(b => b.id === scan.branchId);
 
-      const auditLog = crossBranchVisits
-         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-         .map(scan => {
-            const member = users.find(u => u.id === scan.userId)!;
-            const homeBranch = branches.find(b => b.id === member.branchId);
+               const userId = scan.userId!;
+               userVisitCounts[userId] = (userVisitCounts[userId] || 0) + 1;
 
-            const userId = scan.userId!;
-            userVisitCounts[userId] = (userVisitCounts[userId] || 0) + 1;
+               const isCapped = userVisitCounts[userId] > 10;
+               const value = isCapped ? 0 : rate;
 
-            const isCapped = userVisitCounts[userId] > 10;
-            const earned = isCapped ? 0 : rate;
+               return {
+                  ...scan,
+                  memberName: member.name,
+                  homeBranchName: homeBranch?.name || 'Unknown',
+                  scanBranchName: scanBranch?.name || 'Unknown',
+                  value,
+                  isCapped,
+                  type
+               };
+            });
+      };
 
-            return {
-               ...scan,
-               memberName: member.name,
-               homeBranchName: homeBranch?.name || 'Unknown Branch',
-               earned,
-               isCapped
-            };
-         });
+      const inLog = processVisits(inVisits, 'IN');
+      const outLog = processVisits(outVisits, 'OUT');
 
-      const totalCrossVisits = crossBranchVisits.length;
-      const payableVisits = auditLog.filter(log => !log.isCapped).length;
+      const payableIn = inLog.filter(l => !l.isCapped).length;
+      const payableOut = outLog.filter(l => !l.isCapped).length;
 
       return {
-         totalCrossVisits,
-         payableVisits,
-         auditLog,
+         totalInVisits: inVisits.length,
+         totalOutVisits: outVisits.length,
+         payableIn,
+         payableOut,
+         auditLog: [...inLog, ...outLog].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
          rate,
-         totalAmount: payableVisits * rate
+         totalInAmount: payableIn * rate,
+         totalOutAmount: payableOut * rate,
+         netBalance: (payableIn * rate) - (payableOut * rate)
       };
    }, [attendance, users, branches, selectedBranchId, selectedMonth, selectedYear, currentBranch]);
 
@@ -360,16 +378,20 @@ const TaxCenter: React.FC = () => {
 
                {activeView === 'SETTLEMENT' && (
                   <div className="space-y-6">
-                     <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-3 gap-6">
-                        <SummaryCard label="Cross-Branch Visits (In)" value={settlementData.totalCrossVisits} color="blue" />
-                        <SummaryCard label="Receive per Session" value={formatCurrency(settlementData.rate)} color="indigo" />
-                        <SummaryCard label="Total Settlement Due" value={formatCurrency(settlementData.totalAmount)} color="emerald" />
+                     <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 gap-6">
+                        <SummaryCard label="Money Owed to Me (In)" value={formatCurrency(settlementData.totalInAmount)} color="emerald" />
+                        <SummaryCard label="Money I Owe (Out)" value={formatCurrency(settlementData.totalOutAmount)} color="red" />
+                        <div className={`p-6 rounded-[2rem] border shadow-sm ${settlementData.netBalance >= 0 ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-rose-50 text-rose-600 border-rose-100'} transition-all min-w-0`}>
+                           <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1 truncate">Net Settlement Result</p>
+                           <p className="text-lg md:text-xl font-black truncate tracking-tight">{formatCurrency(Math.abs(settlementData.netBalance))} {settlementData.netBalance >= 0 ? 'RECEIVABLE' : 'PAYABLE'}</p>
+                        </div>
+                        <SummaryCard label="Settlement Rate" value={`${formatCurrency(settlementData.rate)} / Session`} color="slate" />
                      </div>
                      <div className="bg-white p-8 rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
                         <div className="flex justify-between items-center mb-6">
                            <div>
                               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Cross-Branch Audit Log</h3>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Members from other facilities training at {currentBranch?.name}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Global Activity for {currentBranch?.name}</p>
                            </div>
                            <span className="bg-indigo-50 text-indigo-500 font-black text-[9px] px-3 py-1.5 rounded-full uppercase tracking-widest">{months[selectedMonth]} {selectedYear}</span>
                         </div>
@@ -377,42 +399,46 @@ const TaxCenter: React.FC = () => {
                         <table className="w-full text-left min-w-[700px]">
                            <thead className="bg-slate-50 border-b">
                               <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                 <th className="px-6 py-4">Date & Time</th>
-                                 <th className="px-6 py-4">Member</th>
-                                 <th className="px-6 py-4">Origin Branch</th>
-                                 <th className="px-6 py-4 text-right">Settlement Value</th>
+                                 <th className="px-6 py-4">Status / Type</th>
+                                 <th className="px-6 py-4">Athlete Details</th>
+                                 <th className="px-6 py-4 text-center">Inter-Branch Route</th>
+                                 <th className="px-6 py-4 text-right">Cash Value</th>
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-slate-100">
                               {settlementData.auditLog.length === 0 ? (
                                  <tr>
-                                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">No cross-branch visits recorded this month.</td>
+                                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">No cross-branch visits recorded for this period.</td>
                                  </tr>
                               ) : (
                                  settlementData.auditLog.map(log => (
-                                    <tr key={log.id} className={`hover:bg-indigo-50/30 transition-colors ${log.isCapped ? 'opacity-50' : ''}`}>
+                                    <tr key={`${log.id}-${log.type}`} className={`hover:bg-indigo-50/10 transition-colors ${log.isCapped ? 'opacity-40 grayscale' : ''}`}>
                                        <td className="px-6 py-4">
-                                          <p className="text-xs font-bold text-slate-900">{log.date}</p>
-                                          <p className="text-[10px] font-medium text-slate-400">Time-In: {log.timeIn}</p>
+                                          <div className={`w-fit px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase mb-1 ${log.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                             {log.type === 'IN' ? 'Money Owed To Me' : 'Money I Owe'}
+                                          </div>
+                                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{log.date} @ {log.timeIn}</p>
                                        </td>
                                        <td className="px-6 py-4">
                                           <p className="text-xs font-black text-indigo-900 uppercase tracking-tight">{log.memberName}</p>
-                                          <span className="text-[8px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">MEMBER</span>
                                           {log.isCapped && (
-                                             <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full uppercase mt-1 inline-block ml-1">MAX 10 CAPPED</span>
+                                             <span className="text-[7px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded uppercase mt-0.5 inline-block">SESSION CAP EXCEEDED (MAX 10)</span>
                                           )}
                                        </td>
-                                       <td className="px-6 py-4">
-                                          <div className="flex items-center gap-2">
-                                             <i className="fas fa-building text-slate-300 text-sm"></i>
-                                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{log.homeBranchName}</p>
+                                       <td className="px-6 py-4 text-center">
+                                          <div className="flex items-center justify-center gap-2">
+                                             <span className="text-[9px] font-bold text-slate-500 uppercase">{log.homeBranchName}</span>
+                                             <i className={`fas fa-arrow-right text-[10px] ${log.type === 'IN' ? 'text-emerald-400' : 'text-red-400'}`}></i>
+                                             <span className="text-[9px] font-bold text-slate-900 uppercase">{log.scanBranchName}</span>
                                           </div>
                                        </td>
                                        <td className="px-6 py-4 text-right">
                                           {log.isCapped ? (
-                                             <span className="text-sm font-black text-rose-400 line-through">+{formatCurrency(settlementData.rate)}</span>
+                                             <span className="text-xs font-bold text-slate-300">₹0</span>
                                           ) : (
-                                             <span className="text-sm font-black text-emerald-600">+{formatCurrency(log.earned)}</span>
+                                             <span className={`text-sm font-black ${log.type === 'IN' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {log.type === 'IN' ? '+' : '-'}{formatCurrency(log.value)}
+                                             </span>
                                           )}
                                        </td>
                                     </tr>

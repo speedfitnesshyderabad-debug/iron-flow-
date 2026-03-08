@@ -61,13 +61,15 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   const startCamera = async () => {
     try {
       setIsCameraOpen(true);
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Could not access camera. Please allow camera permissions.");
+      alert("Could not access back camera. Please allow camera permissions.");
       setIsCameraOpen(false);
     }
   };
@@ -85,9 +87,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         canvas.height = video.videoHeight;
 
         // Draw video frame to canvas
-        // Optional: Flip horizontally for mirror effect if desired
-        context.translate(canvas.width, 0);
-        context.scale(-1, 1);
+        // Draw video frame to canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         // Get data URL and set as imgSrc for cropping
@@ -323,7 +323,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       {isCameraOpen && (
         <div className="fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
           <div className="relative w-full max-w-md aspect-[3/4] bg-black rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
             <canvas ref={canvasRef} className="hidden" />
 
             <div className="absolute top-4 right-4 z-10">

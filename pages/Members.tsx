@@ -159,7 +159,7 @@ const Members: React.FC = () => {
     }
   }, [plans, enrollData.branchId, enrollData.planId]);
 
-  const [manageData, setManageData] = useState({ name: '', email: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1, trainerId: '' });
+  const [manageData, setManageData] = useState({ name: '', email: '', phone: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1, trainerId: '' });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isEnrollImageModalOpen, setEnrollImageModalOpen] = useState(false);
   const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
@@ -304,6 +304,7 @@ const Members: React.FC = () => {
       await updateUser(selectedMember.id, {
         name: manageData.name,
         email: manageData.email,
+        phone: manageData.phone,
         emergencyContact: manageData.emergencyContact,
         address: manageData.address,
         avatar: manageData.avatar,
@@ -332,6 +333,7 @@ const Members: React.FC = () => {
     setManageData({
       name: member.name,
       email: member.email,
+      phone: member.phone || '',
       emergencyContact: member.emergencyContact || '',
       address: member.address || '',
       avatar: member.avatar || '',
@@ -862,9 +864,16 @@ const Members: React.FC = () => {
                   <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.name} onChange={e => setManageData({ ...manageData, name: e.target.value })} />
                 </div>
 
+
+
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
                   <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" value={manageData.address} onChange={e => setManageData({ ...manageData, address: e.target.value })} rows={2}></textarea>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
+                  <input required type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.phone} onChange={e => setManageData({ ...manageData, phone: e.target.value })} />
                 </div>
 
                 <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
