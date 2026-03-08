@@ -141,7 +141,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item,
             <div className="text-right">
               <div className="w-32 h-12 border-b border-slate-300 ml-auto mb-2 opacity-20"></div>
               <p className="text-[10px] font-black text-slate-900 uppercase">Authorized Signatory</p>
-              <p className="text-[9px] text-slate-400 font-bold">IronFlow Systems Pvt Ltd</p>
+              <p className="text-[9px] text-slate-400 font-bold">{branch.name}</p>
             </div>
           </div>
         </div>
