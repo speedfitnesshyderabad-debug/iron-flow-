@@ -38,7 +38,7 @@ const Members: React.FC = () => {
   const branchSpecificPlans = plans.filter(p => p.branchId === initialBranchId);
   const initialPlanId = (branchSpecificPlans.length > 0 ? branchSpecificPlans[0].id : plans.find(p => p.isMultiBranch)?.id) || '';
 
-  const [enrollData, setEnrollData] = useState({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
+  const [enrollData, setEnrollData] = useState({ name: '', email: '', mobile: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED'>('ALL');
 
   const handleExport = () => {
@@ -128,19 +128,19 @@ const Members: React.FC = () => {
 
   React.useEffect(() => {
     if (searchParams.get('action') === 'enroll') {
-      const name = searchParams.get('name') || '';
-      const phone = searchParams.get('phone') || '';
-      const assignedTo = searchParams.get('assignedTo') || '';
+      const incomingName = searchParams.get('name') || '';
+      const incomingPhone = searchParams.get('phone') || '';
+      const incomingStaff = searchParams.get('assignedTo') || '';
 
       const validPlans = plans.filter(p => p.branchId === initialBranchId || p.isMultiBranch);
       const fallbackPlanId = validPlans.length > 0 ? validPlans[0].id : '';
 
       setEnrollData(prev => ({
         ...prev,
-        name,
-        phone, // Pre-fill Mobile Number
-        emergencyContact: phone, // Pre-fill Emergency Contact as fallback
-        assignedStaffId: assignedTo,
+        name: incomingName,
+        mobile: incomingPhone, // Set Mobile
+        emergencyContact: incomingPhone, // Set Emergency Contact
+        assignedStaffId: incomingStaff,
         planId: prev.planId || fallbackPlanId
       }));
       setAddModalOpen(true);
@@ -219,7 +219,7 @@ const Members: React.FC = () => {
           email: enrollData.email,
           emergencyContact: enrollData.emergencyContact,
           address: enrollData.address,
-          phone: enrollData.phone,
+          phone: enrollData.mobile,
           avatar: enrollData.avatar,
           branchId: enrollData.branchId
         },
@@ -265,7 +265,7 @@ const Members: React.FC = () => {
       name: enrollData.name,
       email: enrollData.email,
       emergencyContact: enrollData.emergencyContact,
-      phone: enrollData.phone,
+      phone: enrollData.mobile,
       address: enrollData.address,
       avatar: enrollData.avatar,
       branchId: enrollData.branchId
@@ -278,7 +278,7 @@ const Members: React.FC = () => {
     setAddModalOpen(false);
     setPaymentModalOpen(false);
     setPendingEnrollment(null);
-    setEnrollData({ name: '', email: '', phone: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
+    setEnrollData({ name: '', email: '', mobile: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
@@ -423,7 +423,7 @@ const Members: React.FC = () => {
           onClick={() => {
             const validPlans = plans.filter(p => p.branchId === initialBranchId || p.isMultiBranch);
             const defaultPlanId = validPlans.length > 0 ? validPlans[0].id : '';
-            setEnrollData({ name: '', email: '', phone: '', password: '', planId: defaultPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
+            setEnrollData({ name: '', email: '', mobile: '', password: '', planId: defaultPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
             setAddModalOpen(true);
           }}
           className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200"
@@ -675,14 +675,14 @@ const Members: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
-                  <input required type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="+91 XXXXX XXXXX" value={enrollData.phone} onChange={e => setEnrollData({ ...enrollData, phone: e.target.value })} />
+                  <input required type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="+91 XXXXX XXXXX" value={enrollData.mobile} onChange={e => setEnrollData(prev => ({ ...prev, mobile: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
                   <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                     <i className="fas fa-truck-medical"></i> Emergency Contact Number
                   </label>
-                  <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" placeholder="+91 XXXXX XXXXX" value={enrollData.emergencyContact} onChange={e => setEnrollData({ ...enrollData, emergencyContact: e.target.value })} />
+                  <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" placeholder="+91 XXXXX XXXXX" value={enrollData.emergencyContact} onChange={e => setEnrollData(prev => ({ ...prev, emergencyContact: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
