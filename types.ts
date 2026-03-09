@@ -161,6 +161,7 @@ export interface Subscription {
   pauseStartDate?: string;
   pauseAllowanceDays?: number;
   pausedDaysUsed?: number;
+  saleId?: string;
 }
 
 export interface Sale {

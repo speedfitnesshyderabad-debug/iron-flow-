@@ -201,9 +201,12 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                                 <span className="text-[10px] font-bold text-gray-400 uppercase">
                                                                     {formatCurrency(
                                                                         sales.find(s =>
-                                                                            s.memberId === sub.memberId &&
-                                                                            s.planId === sub.planId &&
-                                                                            (s.date === sub.startDate || Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) < 86400000)
+                                                                            (sub.saleId && s.id === sub.saleId) ||
+                                                                            (!sub.saleId &&
+                                                                                s.memberId === sub.memberId &&
+                                                                                s.planId === sub.planId &&
+                                                                                (s.date === sub.startDate || Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) < 86400000)
+                                                                            )
                                                                         )?.amount || plan?.price || 0
                                                                     )} Paid
                                                                 </span>

@@ -1180,6 +1180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let subEndDate = '';
 
       if (plan) {
+        const saleId = `sale-${Date.now()}`;
         const newSub: Subscription = {
           id: `s-${Date.now()}`,
           memberId: newUserId,
@@ -1189,13 +1190,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           status: SubscriptionStatus.ACTIVE,
           branchId,
           trainerId,
-          pauseAllowanceDays: pauseAllowance
+          pauseAllowanceDays: pauseAllowance,
+          saleId: saleId
         };
         subEndDate = newSub.endDate;
 
         const finalAmount = Math.max(0, plan.price - discount);
         const newSale: Sale = {
-          id: `sale-${Date.now()}`,
+          id: saleId,
           invoiceNo: generateInvoiceNo(branchId),
           date: todayDateStr(),
           amount: finalAmount,
@@ -1362,6 +1364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const effectiveStartDate = customStartDate || todayDateStr();
     const branchId = user.branchId!;
 
+    const saleId = `sale-${Date.now()}`;
     const newSub: Subscription = {
       id: `s-${Date.now()}`,
       memberId: userId,
@@ -1371,10 +1374,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: SubscriptionStatus.ACTIVE,
       branchId,
       trainerId,
-      pauseAllowanceDays: pauseAllowance
+      pauseAllowanceDays: pauseAllowance,
+      saleId: saleId
     };
     const newSale: Sale = {
-      id: `sale-${Date.now()}`,
+      id: saleId,
       invoiceNo: generateInvoiceNo(branchId),
       date: todayDateStr(),
       amount: plan.price - discount,
