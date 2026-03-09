@@ -199,16 +199,17 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                             </p>
                                                             <div className="flex items-center gap-3 mt-1">
                                                                 <span className="text-[10px] font-bold text-gray-400 uppercase">
-                                                                    {formatCurrency(
-                                                                        sales.find(s =>
+                                                                    {(() => {
+                                                                        const matchedSale = sales.find(s =>
                                                                             (sub.saleId && s.id === sub.saleId) ||
                                                                             (!sub.saleId &&
                                                                                 s.memberId === sub.memberId &&
                                                                                 s.planId === sub.planId &&
-                                                                                (s.date === sub.startDate || Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) < 86400000)
+                                                                                Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000 // 48h buffer
                                                                             )
-                                                                        )?.amount || plan?.price || 0
-                                                                    )} Paid
+                                                                        );
+                                                                        return formatCurrency(matchedSale?.amount || plan?.price || 0);
+                                                                    })()} Paid
                                                                 </span>
                                                                 {sub.pauseAllowanceDays ? (
                                                                     <span className="text-[10px] font-bold text-blue-500 uppercase">
