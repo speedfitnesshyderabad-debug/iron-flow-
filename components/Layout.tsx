@@ -141,9 +141,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Primary items for the bottom bar (limited to 5)
   const mobileBottomNavItems = filteredNav.slice(0, 5);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
-    localStorage.removeItem('if_user');
+    localStorage.removeItem('currentUser');
     navigate('/login', { replace: true });
   };
 

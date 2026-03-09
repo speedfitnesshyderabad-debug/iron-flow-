@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../src/lib/supabase';
 
 const GateQR: React.FC = () => {
-    const { currentUser, branches } = useAppContext();
+    const { currentUser, branches, setCurrentUser } = useAppContext();
     const navigate = useNavigate();
     const [qrToken, setQrToken] = useState<string>('');
     const [isFullScreen, setIsFullScreen] = useState(false);
@@ -189,10 +189,11 @@ const GateQR: React.FC = () => {
         }
     };
 
-    const handleLogout = () => {
-        // Simple logout for KIOSK users who might need to restart/close
-        navigate('/login');
-        // In a real KIOSK, you might hide this or require a PIN
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setCurrentUser(null);
+        localStorage.removeItem('currentUser');
+        navigate('/login', { replace: true });
     };
 
     if (!currentUser) return null;
