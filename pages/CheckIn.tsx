@@ -768,17 +768,17 @@ const CheckIn: React.FC = () => {
                 </div>
               ) : !isScannerActive ? (
                 // 🔴 Camera Off - shown after a successful scan (or specific failure that stopped camera)
-                <div className={`${scanResult?.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border-2 p-10 rounded-[2.5rem] text-center`}>
-                  <div className={`w-20 h-20 ${scanResult?.success ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl`}>
-                    <i className={`fas ${scanResult?.success ? 'fa-check' : 'fa-times'} text-white text-3xl`}></i>
+                <div className={`${scanResult?.success === false ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'} border-2 p-10 rounded-[2.5rem] text-center`}>
+                  <div className={`w-20 h-20 ${scanResult?.success === false ? 'bg-red-500' : 'bg-green-500'} rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl`}>
+                    <i className={`fas ${scanResult?.success === false ? 'fa-times' : 'fa-check'} text-white text-3xl`}></i>
                   </div>
-                  <h3 className={`text-xl font-black ${scanResult?.success ? 'text-green-800' : 'text-red-800'} uppercase tracking-tight mb-2`}>
-                    {scanResult?.success ? 'Scan Complete!' : 'Access Denied'}
+                  <h3 className={`text-xl font-black ${scanResult?.success === false ? 'text-red-800' : 'text-green-800'} uppercase tracking-tight mb-2`}>
+                    {scanResult?.success === false ? 'Access Denied' : 'Success!'}
                   </h3>
-                  <p className={`text-sm ${scanResult?.success ? 'text-green-600' : 'text-red-600'} font-bold mb-2 leading-tight max-w-[250px] mx-auto`}>
-                    {scanResult?.message}
+                  <p className={`text-sm ${scanResult?.success === false ? 'text-red-600' : 'text-green-600'} font-bold mb-2 leading-tight max-w-[250px] mx-auto`}>
+                    {scanResult?.message || "Attendance recorded successfully."}
                   </p>
-                  <p className={`text-xs ${scanResult?.success ? 'text-green-600' : 'text-red-600'} font-medium mb-6 opacity-70`}>Camera has been turned off.</p>
+                  <p className={`text-xs ${scanResult?.success === false ? 'text-red-600' : 'text-green-600'} font-medium mb-6 opacity-70`}>Camera has been turned off to save battery.</p>
                   <button
                     onClick={() => {
                       setScanResult(null);
