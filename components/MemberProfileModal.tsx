@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Subscription, Plan, SubscriptionStatus, Attendance, Sale } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 interface MemberProfileModalProps {
     isOpen: boolean;
@@ -29,6 +30,32 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
     attendance,
     sales
 }) => {
+    const [memberSales, setMemberSales] = useState<Sale[]>(sales);
+    const [isLoadingSales, setIsLoadingSales] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && member.id) {
+            const fetchMemberSales = async () => {
+                setIsLoadingSales(true);
+                try {
+                    const { data, error } = await supabase
+                        .from('sales')
+                        .select('*')
+                        .eq('memberId', member.id);
+
+                    if (!error && data) {
+                        setMemberSales(data);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch member sales:', err);
+                } finally {
+                    setIsLoadingSales(false);
+                }
+            };
+            fetchMemberSales();
+        }
+    }, [isOpen, member.id]);
+
     if (!isOpen) return null;
 
     const memberSubs = subscriptions
@@ -74,7 +101,7 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 bg-gray-50/50">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 lg:col-span-3 gap-8">
 
                         {/* Left Column: Personal Info */}
                         <div className="lg:col-span-1 space-y-6">
@@ -200,7 +227,7 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                             <div className="flex items-center gap-3 mt-1">
                                                                 <span className="text-[10px] font-bold text-gray-400 uppercase">
                                                                     {(() => {
-                                                                        const matchedSale = sales.find(s =>
+                                                                        const matchedSale = memberSales.find(s =>
                                                                             (sub.saleId && s.id === sub.saleId) ||
                                                                             (!sub.saleId &&
                                                                                 s.memberId === sub.memberId &&
@@ -208,15 +235,8 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                                                 Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000 // 48h buffer
                                                                             )
                                                                         );
-                                                                        return (
-                                                                            <>
-                                                                                {formatCurrency(matchedSale?.amount || plan?.price || 0)} Paid
-                                                                                <div className="text-[8px] text-gray-300 mt-1">
-                                                                                    Debug: {sub.saleId || 'no-link'} | Total Sales: {sales.length}
-                                                                                </div>
-                                                                            </>
-                                                                        );
-                                                                    })()}
+                                                                        return formatCurrency(matchedSale?.amount || plan?.price || 0);
+                                                                    })()} Paid
                                                                 </span>
                                                                 {sub.pauseAllowanceDays ? (
                                                                     <span className="text-[10px] font-bold text-blue-500 uppercase">
