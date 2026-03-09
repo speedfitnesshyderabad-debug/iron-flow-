@@ -6,6 +6,7 @@ import { ImageUploadModal } from '../components/ImageUploadModal';
 import { PaymentModal } from '../components/PaymentModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
 import ActiveSessionsModal from '../components/ActiveSessionsModal';
+import MemberProfileModal from '../components/MemberProfileModal';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -29,6 +30,7 @@ const Members: React.FC = () => {
   const [activeModal, setActiveModal] = useState<'logs' | 'manage' | null>(null);
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Form States
@@ -583,6 +585,15 @@ const Members: React.FC = () => {
                   </button>
                 )}
                 <button
+                  onClick={() => {
+                    setSelectedMember(member);
+                    setProfileModalOpen(true);
+                  }}
+                  className="py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider shadow-md"
+                >
+                  PROFILE
+                </button>
+                <button
                   onClick={() => handleOpenRenew(member)}
                   className="py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
                 >
@@ -998,6 +1009,22 @@ const Members: React.FC = () => {
             plans={renewalPlans}
             onRenew={handleProcessRenew}
             requirePin={true} // Admin facing, so require PIN for cash/pos
+          />
+        )
+      }
+
+      {
+        selectedMember && isProfileModalOpen && (
+          <MemberProfileModal
+            isOpen={isProfileModalOpen}
+            onClose={() => {
+              setProfileModalOpen(false);
+              setSelectedMember(null);
+            }}
+            member={selectedMember}
+            subscriptions={subscriptions}
+            plans={plans}
+            attendance={attendance}
           />
         )
       }
