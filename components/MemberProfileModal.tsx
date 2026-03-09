@@ -38,12 +38,17 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
             const fetchMemberSales = async () => {
                 setIsLoadingSales(true);
                 try {
+                    console.log('Fetching sales for member:', member.id, member.name);
                     const { data, error } = await supabase
                         .from('sales')
                         .select('*')
                         .eq('memberId', member.id);
 
-                    if (!error && data) {
+                    if (error) {
+                        console.error('Supabase error fetching sales:', error);
+                    }
+                    if (data) {
+                        console.log(`Successfully fetched ${data.length} sales for member ${member.name}`);
                         setMemberSales(data);
                     }
                 } catch (err) {
@@ -258,6 +263,26 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                         })}
                                     </div>
                                 )}
+                                {/* Debug Section */}
+                                <div className="mt-8 p-4 bg-gray-100 rounded-2xl border border-gray-200">
+                                    <h6 className="text-[10px] font-black uppercase text-gray-400 mb-2">Technical Diagnostics (Temp)</h6>
+                                    <div className="text-[10px] text-gray-600 font-mono space-y-1">
+                                        <p>Member ID: {member.id}</p>
+                                        <p>Sales Fetched: {memberSales.length}</p>
+                                        <p>Loading State: {isLoadingSales ? 'True' : 'False'}</p>
+                                        <div className="mt-2 text-[8px] max-h-32 overflow-y-auto">
+                                            {memberSales.length > 0 ? (
+                                                memberSales.map((s, idx) => (
+                                                    <div key={idx} className="border-b border-gray-200 py-1">
+                                                        Sale: {s.id.slice(0, 8)} | Date: {s.date} | Amt: {s.amount} | Plan: {s.planId?.slice(0, 8) || 'N/A'}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-red-500">No sales found in database for this member ID.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
