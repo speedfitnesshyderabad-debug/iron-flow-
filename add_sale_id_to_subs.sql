@@ -1,5 +1,5 @@
 -- ============================================================
--- TITAN GYM SOFTWARE - ULTIMATE DATA REPAIR (v4.2 - Final)
+-- TITAN GYM SOFTWARE - ULTIMATE DATA REPAIR (v4.3 - Targeted)
 -- ============================================================
 
 -- 1. STRUCTURAL PREP
@@ -24,6 +24,7 @@ WHERE s."memberId" = u."memberId"
   AND s."memberId" != u.id;
 
 -- 3. DEEP DATA RESTORATION: Restore Branch IDs using Member Ownership
+-- We target ONLY sales and subscriptions first to ensure the Profile works.
 UPDATE public.sales s
 SET "branchId" = u."branchId"
 FROM public.users u
@@ -35,12 +36,6 @@ SET "branchId" = u."branchId"
 FROM public.users u
 WHERE s."memberId" = u.id
   AND (s."branchId" IS NULL OR s."branchId" = '');
-
-UPDATE public.attendance a
-SET "branchId" = u."branchId"
-FROM public.users u
-WHERE a."userId" = u.id
-  AND (a."branchId" IS NULL OR a."branchId" = '');
 
 -- 4. SMART LINKING: Re-link Subscriptions to Sales (Fuzzy)
 UPDATE public.subscriptions s
@@ -59,8 +54,8 @@ WHERE s."memberId" = sa."memberId"
   AND ABS(EXTRACT(EPOCH FROM (s."startDate"::timestamp - sa.date::timestamp))) <= 172800 
   AND s."saleId" IS NULL;
 
--- 5. MEMBER-CENTRIC RLS POLICIES (Explicit Definitions)
--- ENSURES visibility based on member relationship to the branch.
+-- 5. TARGETED RLS REPAIR (Only essential tables)
+-- This ensures branch admins can see ANY record belonging to a member in their branch.
 
 -- SALES
 DROP POLICY IF EXISTS "Branch Data Isolation" ON public.sales;
@@ -78,31 +73,4 @@ FOR ALL USING (
     is_super_admin() OR 
     "branchId" = get_user_branch() OR
     EXISTS (SELECT 1 FROM public.users WHERE id = public.subscriptions."memberId" AND "branchId" = get_user_branch())
-);
-
--- ATTENDANCE
-DROP POLICY IF EXISTS "Branch Data Isolation" ON public.attendance;
-CREATE POLICY "Branch Data Isolation" ON public.attendance
-FOR ALL USING (
-    is_super_admin() OR 
-    "branchId" = get_user_branch() OR
-    EXISTS (SELECT 1 FROM public.users WHERE id = public.attendance."userId" AND "branchId" = get_user_branch())
-);
-
--- BOOKINGS
-DROP POLICY IF EXISTS "Branch Data Isolation" ON public.bookings;
-CREATE POLICY "Branch Data Isolation" ON public.bookings
-FOR ALL USING (
-    is_super_admin() OR 
-    "branchId" = get_user_branch() OR
-    EXISTS (SELECT 1 FROM public.users WHERE id = public.bookings."memberId" AND "branchId" = get_user_branch())
-);
-
--- METRICS
-DROP POLICY IF EXISTS "Branch Data Isolation" ON public.metrics;
-CREATE POLICY "Branch Data Isolation" ON public.metrics
-FOR ALL USING (
-    is_super_admin() OR 
-    "branchId" = get_user_branch() OR
-    EXISTS (SELECT 1 FROM public.users WHERE id = public.metrics."memberId" AND "branchId" = get_user_branch())
 );
