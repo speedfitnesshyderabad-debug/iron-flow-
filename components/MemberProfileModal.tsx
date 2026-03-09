@@ -39,10 +39,17 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                 setIsLoadingSales(true);
                 try {
                     console.log('Fetching sales for member:', member.id, member.name);
+
+                    // Robust filter: Fetch using BOTH the UUID and the string memberId (for legacy records)
+                    const idFilters = [`memberId.eq.${member.id}`];
+                    if (member.memberId) {
+                        idFilters.push(`memberId.eq.${member.memberId}`);
+                    }
+
                     const { data, error } = await supabase
                         .from('sales')
                         .select('*')
-                        .eq('memberId', member.id);
+                        .or(idFilters.join(','));
 
                     if (error) {
                         console.error('Supabase error fetching sales:', error);
@@ -233,17 +240,19 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                                 <span className="text-[10px] font-bold text-gray-400 border-b border-dashed border-gray-200 uppercase pb-0.5">
                                                                     {(() => {
                                                                         const matchedSale = memberSales.find(s =>
-                                                                            // Tier 1: Strict Link
+                                                                            // Tier 1: Strict saleId Link (New Transactions)
                                                                             (sub.saleId && s.id === sub.saleId) ||
+
                                                                             // Tier 2: Heuristic Match (Member + Plan + Date)
                                                                             (!sub.saleId &&
-                                                                                s.memberId === sub.memberId &&
+                                                                                (s.memberId === member.id || (member.memberId && s.memberId === member.memberId)) &&
                                                                                 s.planId === sub.planId &&
                                                                                 Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
                                                                             ) ||
-                                                                            // Tier 3: Loose Match (Member + Date Only) - for renamed/deleted plans
+
+                                                                            // Tier 3: Loose Match (Member + Date Only) - for renamed/deleted plans or legacy data
                                                                             (!sub.saleId &&
-                                                                                s.memberId === sub.memberId &&
+                                                                                (s.memberId === member.id || (member.memberId && s.memberId === member.memberId)) &&
                                                                                 Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
                                                                             )
                                                                         );

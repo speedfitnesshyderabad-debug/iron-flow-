@@ -1,13 +1,29 @@
 -- ============================================================
--- TITAN GYM SOFTWARE - POWER DATA & ACCESS REPAIR (v3)
+-- TITAN GYM SOFTWARE - ULTIMATE DATA REPAIR (v4 - Dual ID Support)
 -- ============================================================
 
 -- 1. STRUCTURAL PREP
 ALTER TABLE public.subscriptions 
 ADD COLUMN IF NOT EXISTS "saleId" TEXT;
 
--- 2. DEEP DATA RESTORATION: Restore Branch IDs using Member Ownership
--- This fixes historical records that were "orphaned" during branch migrations or missing data.
+-- 2. ID NORMALIZATION: Convert Human-Readable IDs to UUIDs
+-- This ensures that both legacy records (IF-IND-xxx) and new records (UUID)
+-- use the same Supabase UUID for linking and RLS filtering.
+UPDATE public.sales s
+SET "memberId" = u.id
+FROM public.users u
+WHERE s."memberId" = u."memberId"
+  AND s."memberId" IS NOT NULL
+  AND s."memberId" != u.id;
+
+UPDATE public.subscriptions s
+SET "memberId" = u.id
+FROM public.users u
+WHERE s."memberId" = u."memberId"
+  AND s."memberId" IS NOT NULL
+  AND s."memberId" != u.id;
+
+-- 3. DEEP DATA RESTORATION: Restore Branch IDs using Member Ownership
 UPDATE public.sales s
 SET "branchId" = u."branchId"
 FROM public.users u
@@ -20,20 +36,14 @@ FROM public.users u
 WHERE s."memberId" = u.id
   AND (s."branchId" IS NULL OR s."branchId" = '');
 
-UPDATE public.attendance a
-SET "branchId" = u."branchId"
-FROM public.users u
-WHERE a."userId" = u.id
-  AND (a."branchId" IS NULL OR a."branchId" = '');
-
--- 3. SMART LINKING: Re-link Subscriptions to Sales
+-- 4. SMART LINKING: Re-link Subscriptions to Sales (Fuzzy)
 -- Priority 1: Exact Match (Member + Plan + Date)
 UPDATE public.subscriptions s
 SET "saleId" = sa.id
 FROM public.sales sa
 WHERE s."memberId" = sa."memberId"
   AND s."planId" = sa."planId"
-  AND sa.date = s."startDate"
+  AND (sa.date::date = s."startDate"::date)
   AND s."saleId" IS NULL;
 
 -- Priority 2: Fuzzy Date Match (±48 hours)
@@ -45,18 +55,15 @@ WHERE s."memberId" = sa."memberId"
   AND ABS(EXTRACT(EPOCH FROM (s."startDate"::timestamp - sa.date::timestamp))) <= 172800 
   AND s."saleId" IS NULL;
 
--- Priority 3: Member + Date Match (Fallback if plan name/ID changed)
+-- Priority 3: Loose Fallback (Member + Date ±48h)
 UPDATE public.subscriptions s
 SET "saleId" = sa.id
 FROM public.sales sa
 WHERE s."memberId" = sa."memberId"
-  AND sa.date = s."startDate"
+  AND ABS(EXTRACT(EPOCH FROM (s."startDate"::timestamp - sa.date::timestamp))) <= 172800 
   AND s."saleId" IS NULL;
 
--- 4. MEMBER-CENTRIC RLS POLICIES
--- This ensures branch admins can see ANY record belonging to a member in their branch,
--- even if the record itself has a different branchId (cross-branch history).
-
+-- 5. MEMBER-CENTRIC RLS POLICIES
 DO $$ 
 DECLARE 
     tbl text;
