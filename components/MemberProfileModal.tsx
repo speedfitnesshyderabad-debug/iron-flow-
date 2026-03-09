@@ -276,19 +276,44 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                 <div className="mt-8 p-4 bg-gray-100 rounded-2xl border border-gray-200">
                                     <h6 className="text-[10px] font-black uppercase text-gray-400 mb-2">Technical Diagnostics (Temp)</h6>
                                     <div className="text-[10px] text-gray-600 font-mono space-y-1">
-                                        <p>Member ID: {member.id}</p>
+                                        <p>Member UUID: {member.id}</p>
+                                        <p>Member String ID: {member.memberId || 'N/A'}</p>
                                         <p>Sales Fetched: {memberSales.length}</p>
-                                        <p>Loading State: {isLoadingSales ? 'True' : 'False'}</p>
-                                        <div className="mt-2 text-[8px] max-h-32 overflow-y-auto">
-                                            {memberSales.length > 0 ? (
-                                                memberSales.map((s, idx) => (
-                                                    <div key={idx} className="border-b border-gray-200 py-1">
-                                                        Sale: {s.id.slice(0, 8)} | Date: {s.date} | Amt: {s.amount} | Plan: {s.planId?.slice(0, 8) || 'N/A'}
+
+                                        <div className="mt-4 border-t border-gray-200 pt-2">
+                                            <p className="font-bold text-[9px] mb-1">Subscriptions Matching:</p>
+                                            {subscriptions.map((sub, idx) => {
+                                                const matchedSale = memberSales.find(s =>
+                                                    (sub.saleId && s.id === sub.saleId) ||
+                                                    (!sub.saleId &&
+                                                        (s.memberId === member.id || (member.memberId && s.memberId === member.memberId)) &&
+                                                        Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
+                                                    )
+                                                );
+                                                return (
+                                                    <div key={idx} className="mb-2 p-1 bg-white border border-gray-200 rounded">
+                                                        <p>Sub: {sub.id.slice(0, 8)} | Date: {sub.startDate} | Plan: {sub.planId.slice(0, 8)}</p>
+                                                        <p className={matchedSale ? 'text-green-600' : 'text-red-500'}>
+                                                            {matchedSale ? `MATCHED: ${matchedSale.id.slice(0, 8)} (${matchedSale.amount})` : 'NO MATCH FOUND'}
+                                                        </p>
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-red-500">No sales found in database for this member ID.</p>
-                                            )}
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="mt-4 border-t border-gray-200 pt-2">
+                                            <p className="font-bold text-[9px] mb-1">Raw Sales List:</p>
+                                            <div className="max-h-32 overflow-y-auto">
+                                                {memberSales.length > 0 ? (
+                                                    memberSales.map((s, idx) => (
+                                                        <div key={idx} className="border-b border-gray-200 py-1">
+                                                            ID: {s.id.slice(0, 8)} | Date: {s.date} | Amt: {s.amount} | M-ID: {s.memberId?.slice(0, 8)} | P-ID: {s.planId?.slice(0, 8) || 'N/A'}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-red-500">No sales found in database.</p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
