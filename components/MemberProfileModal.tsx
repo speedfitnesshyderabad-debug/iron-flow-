@@ -208,8 +208,15 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                                                 Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000 // 48h buffer
                                                                             )
                                                                         );
-                                                                        return formatCurrency(matchedSale?.amount || plan?.price || 0);
-                                                                    })()} Paid
+                                                                        return (
+                                                                            <>
+                                                                                {formatCurrency(matchedSale?.amount || plan?.price || 0)} Paid
+                                                                                <div className="text-[8px] text-gray-300 mt-1">
+                                                                                    Debug: {sub.saleId || 'no-link'} | Total Sales: {sales.length}
+                                                                                </div>
+                                                                            </>
+                                                                        );
+                                                                    })()}
                                                                 </span>
                                                                 {sub.pauseAllowanceDays ? (
                                                                     <span className="text-[10px] font-bold text-blue-500 uppercase">
