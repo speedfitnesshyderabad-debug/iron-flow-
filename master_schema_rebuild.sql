@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   "groupCommissionPercentage" NUMERIC DEFAULT 0,
   shifts JSONB,
   "weekOffs" TEXT[] DEFAULT '{}',
-  "monthlySalary" NUMERIC DEFAULT 15000,
+  "monthlySalary" NUMERIC,
   "maxDevices" INTEGER DEFAULT 1,
   "referralCode" TEXT UNIQUE
 );

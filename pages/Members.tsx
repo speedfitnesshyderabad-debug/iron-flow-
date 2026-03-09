@@ -39,7 +39,7 @@ const Members: React.FC = () => {
   const initialPlanId = (branchSpecificPlans.length > 0 ? branchSpecificPlans[0].id : plans.find(p => p.isMultiBranch)?.id) || '';
 
   const [enrollData, setEnrollData] = useState({ name: '', email: '', mobile: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
-  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED' | 'NO_PLAN'>('ALL');
 
   const handleExport = () => {
     const headers = ['Name', 'Email', 'Phone', 'Address', 'BranchID', 'MemberID', 'Role', 'Status'];
@@ -98,7 +98,10 @@ const Members: React.FC = () => {
         headers.forEach((h, index) => {
           const key = h.toLowerCase().replace(/id/g, 'Id');
           // Map CSV headers to User fields
-          if (key === 'phone') userObj.emergencyContact = values[index];
+          if (key === 'phone') {
+            userObj.phone = values[index];
+            userObj.emergencyContact = values[index]; // Default emergency contact to phone initially
+          }
           else if (key === 'branchid') userObj.branchId = values[index];
           else if (key === 'memberid') userObj.memberId = values[index];
           else if (key === 'name') userObj.name = values[index];
@@ -195,7 +198,8 @@ const Members: React.FC = () => {
 
     switch (filter) {
       case 'ACTIVE': return !!activeSub;
-      case 'EXPIRED': return !activeSub && !memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
+      case 'EXPIRED': return !activeSub && memberSubs.length > 0 && !memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
+      case 'NO_PLAN': return memberSubs.length === 0;
       case 'EXPIRING_SOON': return isExpiringSoon;
       case 'PAUSED': return memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
       default: return true;
@@ -475,7 +479,8 @@ const Members: React.FC = () => {
             { id: 'ACTIVE', label: 'Active', icon: 'fa-check-circle', color: 'text-green-600 bg-green-50 border-green-100 ring-2 ring-green-100' },
             { id: 'EXPIRING_SOON', label: 'Expiring Soon (7 Days)', icon: 'fa-clock', color: 'text-amber-600 bg-amber-50 border-amber-100 ring-2 ring-amber-100' },
             { id: 'EXPIRED', label: 'Expired', icon: 'fa-times-circle', color: 'text-red-600 bg-red-50 border-red-100 ring-2 ring-red-100' },
-            { id: 'PAUSED', label: 'Paused', icon: 'fa-pause-circle', color: 'text-slate-600 bg-slate-50 border-slate-100 ring-2 ring-slate-100' }
+            { id: 'PAUSED', label: 'Paused', icon: 'fa-pause-circle', color: 'text-slate-600 bg-slate-50 border-slate-100 ring-2 ring-slate-100' },
+            { id: 'NO_PLAN', label: 'No Plan', icon: 'fa-user-clock', color: 'text-gray-600 bg-gray-50 border-gray-100 ring-2 ring-gray-100' }
           ].map(f => (
             <button
               key={f.id}
@@ -517,10 +522,11 @@ const Members: React.FC = () => {
                   </div>
                 </div>
                 <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-green-100 text-green-700' :
-                  latestSub?.status === SubscriptionStatus.PAUSED ? 'bg-slate-100 text-slate-700' :
-                    'bg-red-100 text-red-700'
+                  memberSubs.length === 0 ? 'bg-gray-100 text-gray-700' :
+                    latestSub?.status === SubscriptionStatus.PAUSED ? 'bg-slate-100 text-slate-700' :
+                      'bg-red-100 text-red-700'
                   }`}>
-                  {isActive ? 'Active' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Expired'}
+                  {isActive ? 'Active' : memberSubs.length === 0 ? 'No Plan' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Expired'}
                 </div>
               </div>
 

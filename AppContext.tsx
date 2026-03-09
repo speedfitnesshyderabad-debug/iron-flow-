@@ -172,8 +172,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 1. Sync User Profile EARLY (Required for RLS to allow further fetching/seeding)
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        const { data: existingProfile } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+        const { data: existingProfile } = await supabase.from('users').select('*').or(`id.eq.${authUser.id},email.eq.${authUser.email}`).single();
         if (!existingProfile) {
+          const isGoogle = authUser.app_metadata?.provider === 'google' || authUser.app_metadata?.providers?.includes('google');
+
+          if (isGoogle && !authUser.user_metadata?.role) {
+            console.warn('Blocked unauthorized Google login for new user:', authUser.email);
+            // Delete the mistakenly created auth user in the background to keep the system clean
+            const supabaseUrlClean = import.meta.env.VITE_SUPABASE_URL?.trim();
+            fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ email: authUser.email }),
+            }).catch(console.error);
+
+            await supabase.auth.signOut();
+            showToast("Account not found! Please click 'Join Now' to register and select your branch first.", "error");
+            setGlobalLoading(false);
+            return;
+          }
+
+          // Legitimate missing profile creation (e.g. from Admin Setup or App initialization)
           const { data: profile } = await supabase.from('users').upsert({
             id: authUser.id,
             name: authUser.user_metadata?.name || 'Super Admin',

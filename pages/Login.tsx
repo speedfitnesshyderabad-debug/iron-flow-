@@ -45,6 +45,24 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setIsAuthenticating(true);
+    setError('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Google login error:', err);
+      setError(err.message || 'Failed to authenticate with Google.');
+      setIsAuthenticating(false);
+    }
+  };
+
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
@@ -295,6 +313,22 @@ const Login: React.FC = () => {
                 >
                   {isAuthenticating ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-sign-in-alt"></i>}
                   {isAuthenticating ? 'SIGNING IN...' : 'SIGN IN'}
+                </button>
+
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-700/50"></div>
+                  <span className="flex-shrink-0 mx-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Or</span>
+                  <div className="flex-grow border-t border-slate-700/50"></div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={isAuthenticating}
+                  className="w-full py-4 bg-white hover:bg-gray-100 text-slate-900 font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-3 border border-gray-200"
+                >
+                  <i className="fab fa-google text-red-500 text-lg"></i>
+                  Sign in with Google
                 </button>
 
                 {/* System Check Utility */}
