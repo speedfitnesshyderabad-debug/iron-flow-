@@ -63,6 +63,102 @@ const Login: React.FC = () => {
     }
   };
 
+  const processAuthUser = async (authUser: any, inputEmail?: string) => {
+    try {
+      const targetEmail = inputEmail || authUser.email;
+      let user = users.find(u => u.id === authUser.id) ||
+        (targetEmail ? users.find(u => u.email.toLowerCase() === targetEmail.toLowerCase()) : undefined);
+
+      if (!user && targetEmail) {
+        console.log('🔄 User not found in local context, fetching from Supabase...');
+        const { data: dbUser, error: dbError } = await supabase
+          .from('users')
+          .select('*')
+          .or(`id.eq.${authUser.id},email.eq.${targetEmail.toLowerCase()}`)
+          .single();
+
+        if (dbUser && !dbError) {
+          user = dbUser;
+        }
+      }
+
+      if (user) {
+        if (user.isActive === false) {
+          console.warn('❌ Account disabled:', user.email);
+          setError('This account has been disabled. Please contact the administrator.');
+          await supabase.auth.signOut();
+          setIsAuthenticating(false);
+          return;
+        }
+
+        console.log('✅ User found:', user.name);
+        const sessionResult = await createSession(user.id);
+        if (sessionResult.success) {
+          setCurrentUser(user);
+        } else {
+          setError(sessionResult.message || 'Maximum devices reached. Contact Admin to switch permission.');
+          await supabase.auth.signOut();
+          setIsAuthenticating(false);
+        }
+      } else if (authUser) {
+        console.log('🔄 Profile missing, initiating auto-reconstruction for:', authUser.email);
+        const metadata = authUser.user_metadata;
+        let resolvedBranchId = metadata?.branchId || null;
+        if (!resolvedBranchId) {
+          const { data: branches } = await supabase.from('branches').select('id').limit(1).single();
+          resolvedBranchId = branches?.id || null;
+        }
+
+        const newUserProfile = {
+          id: authUser.id,
+          name: metadata?.name || authUser.email?.split('@')[0] || 'Gym Member',
+          email: authUser.email!,
+          role: metadata?.role || UserRole.MEMBER,
+          branchId: resolvedBranchId,
+          phone: metadata?.phone || '',
+          memberId: `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
+        };
+
+        const { error: insertError } = await supabase.from('users').insert(newUserProfile);
+
+        if (!insertError) {
+          console.log('✅ Profile reconstructed successfully');
+          const sessionResult = await createSession(newUserProfile.id);
+          if (sessionResult.success) {
+            setCurrentUser(newUserProfile);
+          } else {
+            setError(sessionResult.message || 'Maximum devices reached.');
+            await supabase.auth.signOut();
+            setIsAuthenticating(false);
+          }
+        } else {
+          console.error('❌ Reconstruction failed:', insertError);
+          setError(`Profile sync failed: ${insertError.message}. Please try again or contact support.`);
+          await supabase.auth.signOut();
+          setIsAuthenticating(false);
+        }
+      }
+    } catch (err: any) {
+      console.error('Session processing error:', err);
+      setError('Failed to process user session. Please try again.');
+      setIsAuthenticating(false);
+    }
+  };
+
+  React.useEffect(() => {
+    let mounted = true;
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && mounted) {
+        setIsAuthenticating(true);
+        await processAuthUser(session.user);
+      }
+    };
+    checkSession();
+    return () => { mounted = false; };
+  }, []); // Run on mount to catch OAuth redirects
+
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
@@ -84,83 +180,7 @@ const Login: React.FC = () => {
       if (authError) throw authError;
 
       if (data.user) {
-        // 2. Find the Public User Record
-        // Prioritize matching by Auth UID (for new staff), fallback to email (for legacy/demo users)
-        let user = users.find(u => u.id === data.user.id) ||
-          users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-        // CRITICAL FALLBACK: If user not found in context (stale state), fetch directly from Supabase
-        if (!user) {
-          console.log('🔄 User not found in local context, fetching from Supabase...');
-          const { data: dbUser, error: dbError } = await supabase
-            .from('users')
-            .select('*')
-            .or(`id.eq.${data.user.id},email.eq.${email.toLowerCase()}`)
-            .single();
-
-          if (dbUser && !dbError) {
-            user = dbUser;
-          }
-        }
-
-        if (user) {
-          if (user.isActive === false) {
-            console.warn('❌ Account disabled:', user.email);
-            setError('This account has been disabled. Please contact the administrator.');
-            await supabase.auth.signOut();
-            setIsAuthenticating(false);
-            return;
-          }
-
-          console.log('✅ User found:', user.name);
-          const sessionResult = await createSession(user.id);
-          if (sessionResult.success) {
-            setCurrentUser(user);
-          } else {
-            setError(sessionResult.message || 'Maximum devices reached. Contact Admin to switch permission.');
-            await supabase.auth.signOut();
-          }
-        } else if (data.user) {
-          // SELF-HEALING FALLBACK: Create missing profile from Auth metadata
-          console.log('🔄 Profile missing, initiating auto-reconstruction for:', data.user.email);
-          const metadata = data.user.user_metadata;
-
-          // Fetch a valid branchId — metadata may be empty for re-created accounts
-          let resolvedBranchId = metadata?.branchId || null;
-          if (!resolvedBranchId) {
-            const { data: branches } = await supabase.from('branches').select('id').limit(1).single();
-            resolvedBranchId = branches?.id || null;
-          }
-
-          const newUserProfile = {
-            id: data.user.id,
-            name: metadata?.name || data.user.email?.split('@')[0] || 'Gym Member',
-            email: data.user.email!,
-            role: metadata?.role || UserRole.MEMBER,
-            branchId: resolvedBranchId,
-            phone: metadata?.phone || '',
-            memberId: `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
-          };
-
-          console.log('🔄 Reconstructing profile with branchId:', resolvedBranchId);
-          const { error: insertError } = await supabase.from('users').insert(newUserProfile);
-
-          if (!insertError) {
-            console.log('✅ Profile reconstructed successfully');
-            const sessionResult = await createSession(newUserProfile.id);
-            if (sessionResult.success) {
-              setCurrentUser(newUserProfile);
-            } else {
-              setError(sessionResult.message || 'Maximum devices reached.');
-              await supabase.auth.signOut();
-            }
-          } else {
-            console.error('❌ Reconstruction failed:', insertError.message, insertError.details, insertError.hint);
-            setError(`Profile sync failed: ${insertError.message}. Please try again or contact support.`);
-            await supabase.auth.signOut();
-          }
-        }
+        await processAuthUser(data.user, email);
       }
     } catch (err: any) {
       console.error('Login error:', err);
