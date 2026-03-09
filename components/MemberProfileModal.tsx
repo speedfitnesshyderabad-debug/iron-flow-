@@ -225,14 +225,21 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                                 {new Date(sub.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                             </p>
                                                             <div className="flex items-center gap-3 mt-1">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase">
+                                                                <span className="text-[10px] font-bold text-gray-400 border-b border-dashed border-gray-200 uppercase pb-0.5">
                                                                     {(() => {
                                                                         const matchedSale = memberSales.find(s =>
+                                                                            // Tier 1: Strict Link
                                                                             (sub.saleId && s.id === sub.saleId) ||
+                                                                            // Tier 2: Heuristic Match (Member + Plan + Date)
                                                                             (!sub.saleId &&
                                                                                 s.memberId === sub.memberId &&
                                                                                 s.planId === sub.planId &&
-                                                                                Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000 // 48h buffer
+                                                                                Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
+                                                                            ) ||
+                                                                            // Tier 3: Loose Match (Member + Date Only) - for renamed/deleted plans
+                                                                            (!sub.saleId &&
+                                                                                s.memberId === sub.memberId &&
+                                                                                Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
                                                                             )
                                                                         );
                                                                         return formatCurrency(matchedSale?.amount || plan?.price || 0);
