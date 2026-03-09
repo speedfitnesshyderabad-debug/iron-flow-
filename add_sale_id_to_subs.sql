@@ -1,5 +1,5 @@
 -- ============================================================
--- TITAN GYM SOFTWARE - ULTIMATE DATA REPAIR (v4 - Dual ID Support)
+-- TITAN GYM SOFTWARE - ULTIMATE DATA REPAIR (v4.1 - Fixed)
 -- ============================================================
 
 -- 1. STRUCTURAL PREP
@@ -7,8 +7,6 @@ ALTER TABLE public.subscriptions
 ADD COLUMN IF NOT EXISTS "saleId" TEXT;
 
 -- 2. ID NORMALIZATION: Convert Human-Readable IDs to UUIDs
--- This ensures that both legacy records (IF-IND-xxx) and new records (UUID)
--- use the same Supabase UUID for linking and RLS filtering.
 UPDATE public.sales s
 SET "memberId" = u.id
 FROM public.users u
@@ -37,7 +35,6 @@ WHERE s."memberId" = u.id
   AND (s."branchId" IS NULL OR s."branchId" = '');
 
 -- 4. SMART LINKING: Re-link Subscriptions to Sales (Fuzzy)
--- Priority 1: Exact Match (Member + Plan + Date)
 UPDATE public.subscriptions s
 SET "saleId" = sa.id
 FROM public.sales sa
@@ -46,7 +43,6 @@ WHERE s."memberId" = sa."memberId"
   AND (sa.date::date = s."startDate"::date)
   AND s."saleId" IS NULL;
 
--- Priority 2: Fuzzy Date Match (±48 hours)
 UPDATE public.subscriptions s
 SET "saleId" = sa.id
 FROM public.sales sa
@@ -55,7 +51,6 @@ WHERE s."memberId" = sa."memberId"
   AND ABS(EXTRACT(EPOCH FROM (s."startDate"::timestamp - sa.date::timestamp))) <= 172800 
   AND s."saleId" IS NULL;
 
--- Priority 3: Loose Fallback (Member + Date ±48h)
 UPDATE public.subscriptions s
 SET "saleId" = sa.id
 FROM public.sales sa
@@ -63,22 +58,35 @@ WHERE s."memberId" = sa."memberId"
   AND ABS(EXTRACT(EPOCH FROM (s."startDate"::timestamp - sa.date::timestamp))) <= 172800 
   AND s."saleId" IS NULL;
 
--- 5. MEMBER-CENTRIC RLS POLICIES
+-- 5. MEMBER-CENTRIC RLS POLICIES (Fixed Column Mappings)
 DO $$ 
 DECLARE 
     tbl text;
-    tables_to_repair text[] := ARRAY['sales', 'subscriptions', 'attendance', 'bookings', 'metrics'];
+    col text;
+    tables_to_repair text[][] := ARRAY[
+        ARRAY['sales', 'memberId'], 
+        ARRAY['subscriptions', 'memberId'], 
+        ARRAY['bookings', 'memberId'], 
+        ARRAY['metrics', 'memberId'],
+        ARRAY['attendance', 'userId']
+    ];
 BEGIN
-    FOREACH tbl IN ARRAY tables_to_repair
+    FOR i IN 1..array_length(tables_to_repair, 1)
     LOOP
+        tbl := tables_to_repair[i][1];
+        col := tables_to_repair[i][2];
+        
         EXECUTE format('DROP POLICY IF EXISTS "Branch Data Isolation" ON public.%I', tbl);
         EXECUTE format('
             CREATE POLICY "Branch Data Isolation" ON public.%I
             FOR ALL USING (
                 is_super_admin() OR 
                 "branchId" = get_user_branch() OR
-                (SELECT "branchId" FROM public.users WHERE id = public.%I."memberId") = get_user_branch() OR
-                (SELECT "branchId" FROM public.users WHERE id = public.%I."userId") = get_user_branch()
-            )', tbl, tbl, tbl, tbl);
+                EXISTS (
+                    SELECT 1 FROM public.users 
+                    WHERE id = public.%I.%I 
+                    AND "branchId" = get_user_branch()
+                )
+            )', tbl, tbl, tbl, col);
     END LOOP;
 END $$;
