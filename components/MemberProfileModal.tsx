@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User, Subscription, Plan, SubscriptionStatus, Attendance } from '../types';
+import { User, Subscription, Plan, SubscriptionStatus, Attendance, Sale } from '../types';
 
 interface MemberProfileModalProps {
     isOpen: boolean;
@@ -9,6 +9,7 @@ interface MemberProfileModalProps {
     subscriptions: Subscription[];
     plans: Plan[];
     attendance: Attendance[];
+    sales: Sale[];
 }
 
 const formatCurrency = (amount: number) => {
@@ -25,7 +26,8 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
     member,
     subscriptions,
     plans,
-    attendance
+    attendance,
+    sales
 }) => {
     if (!isOpen) return null;
 
@@ -163,15 +165,15 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                 <div
                                                     key={sub.id}
                                                     className={`group p-6 rounded-2xl border transition-all ${isActive ? 'bg-green-50/50 border-green-100' :
-                                                            isPaused ? 'bg-slate-50 border-slate-200' :
-                                                                'bg-white border-gray-100 grayscale-[0.5] hover:grayscale-0'
+                                                        isPaused ? 'bg-slate-50 border-slate-200' :
+                                                            'bg-white border-gray-100 grayscale-[0.5] hover:grayscale-0'
                                                         }`}
                                                 >
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
                                                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-green-500 text-white shadow-lg shadow-green-100' :
-                                                                    isPaused ? 'bg-slate-600 text-white shadow-lg shadow-slate-100' :
-                                                                        'bg-gray-100 text-gray-400'
+                                                                isPaused ? 'bg-slate-600 text-white shadow-lg shadow-slate-100' :
+                                                                    'bg-gray-100 text-gray-400'
                                                                 }`}>
                                                                 <i className={`fas ${plan?.type === 'PT' ? 'fa-user-ninja' : 'fa-dumbbell'} text-lg`}></i>
                                                             </div>
@@ -179,8 +181,8 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                                 <h5 className="font-black text-gray-900 uppercase tracking-tight">{plan?.name || 'Deleted Plan'}</h5>
                                                                 <div className="flex items-center gap-2 mt-1">
                                                                     <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${isActive ? 'bg-green-100 text-green-700' :
-                                                                            isPaused ? 'bg-slate-100 text-slate-700' :
-                                                                                'bg-red-50 text-red-500'
+                                                                        isPaused ? 'bg-slate-100 text-slate-700' :
+                                                                            'bg-red-50 text-red-500'
                                                                         }`}>
                                                                         {sub.status}
                                                                     </span>
@@ -197,7 +199,13 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                             </p>
                                                             <div className="flex items-center gap-3 mt-1">
                                                                 <span className="text-[10px] font-bold text-gray-400 uppercase">
-                                                                    {formatCurrency(plan?.price || 0)} Paid
+                                                                    {formatCurrency(
+                                                                        sales.find(s =>
+                                                                            s.memberId === sub.memberId &&
+                                                                            s.planId === sub.planId &&
+                                                                            (s.date === sub.startDate || Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) < 86400000)
+                                                                        )?.amount || plan?.price || 0
+                                                                    )} Paid
                                                                 </span>
                                                                 {sub.pauseAllowanceDays ? (
                                                                     <span className="text-[10px] font-bold text-blue-500 uppercase">

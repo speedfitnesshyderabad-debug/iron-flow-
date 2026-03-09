@@ -19,7 +19,7 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, currentUser, enrollMember, attendance, updateUser, updateSubscription, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId } = useAppContext();
+  const { users, subscriptions, plans, sales, currentUser, enrollMember, attendance, updateUser, updateSubscription, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId } = useAppContext();
 
   // Trainers available for PT plan assignment
   const availableTrainers = users.filter(u => u.role === UserRole.TRAINER);
@@ -1025,6 +1025,7 @@ const Members: React.FC = () => {
             subscriptions={subscriptions}
             plans={plans}
             attendance={attendance}
+            sales={sales}
           />
         )
       }
