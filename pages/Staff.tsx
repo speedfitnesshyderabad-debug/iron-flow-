@@ -763,7 +763,7 @@ const Staff: React.FC = () => {
                 </select>
               </div>
 
-              {formData.role !== UserRole.MEMBER && formData.role !== UserRole.KIOSK && (
+              {formData.role !== UserRole.MEMBER && (
                 <div className="space-y-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-[fadeIn_0.3s_ease-out]">
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
