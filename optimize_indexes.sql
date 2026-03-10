@@ -17,7 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_users_name_trgm ON public.users USING gin (name g
 CREATE INDEX IF NOT EXISTS idx_users_phone_trgm ON public.users USING gin (phone gin_trgm_ops);
 
 -- Index for Member ID (String ID like 'IF-IND-1234')
-CREATE INDEX IF NOT EXISTS idx_users_memberid_trgm ON public.users USING gin (memberId gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_users_memberid_trgm ON public.users USING gin ("memberId" gin_trgm_ops);
 
 -- 3. CREATE FILTER INDEXES
 -- Using standard B-Tree for exact match filtering (Branch & Role).
