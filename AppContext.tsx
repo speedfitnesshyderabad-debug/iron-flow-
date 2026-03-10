@@ -201,16 +201,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
           }
 
-          // Legitimate missing profile creation (e.g. from Admin Setup or App initialization)
+          // 🛡️ Secure Profile Reconstruction
+          // If DB record is missing, pull details from Auth Metadata (set during enrollment)
+          const metadata = authUser.user_metadata;
+          const reconstructedRole = metadata?.role || UserRole.MEMBER; // 🔒 Default to Member for safety
+          const reconstructedBranchId = metadata?.branchId || null;
+
           const { data: profile } = await supabase.from('users').upsert({
             id: authUser.id,
-            name: authUser.user_metadata?.name || 'Super Admin',
+            name: metadata?.name || authUser.email?.split('@')[0] || 'Gym Member',
             email: authUser.email,
-            role: authUser.user_metadata?.role || UserRole.SUPER_ADMIN,
-            phone: authUser.user_metadata?.phone || '',
-            emergencyContact: authUser.user_metadata?.emergencyContact || '',
-            address: authUser.user_metadata?.address || '',
-            avatar: authUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${authUser.user_metadata?.name || 'Admin'}`
+            role: reconstructedRole,
+            branchId: reconstructedBranchId,
+            phone: metadata?.phone || '',
+            emergencyContact: metadata?.emergencyContact || '',
+            address: metadata?.address || '',
+            memberId: metadata?.memberId || `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
+            avatar: metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
           }).select().single();
           if (profile) setUsers(prev => [...prev, profile]);
         }

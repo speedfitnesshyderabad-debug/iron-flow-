@@ -101,23 +101,27 @@ const Login: React.FC = () => {
           setIsAuthenticating(false);
         }
       } else if (authUser) {
-        console.log('🔄 Profile missing, initiating auto-reconstruction for:', authUser.email);
+        // 🛡️ Secure Profile Reconstruction
+        // Pull details from Auth Metadata (set during enrollment)
         const metadata = authUser.user_metadata;
-        let resolvedBranchId = metadata?.branchId || null;
-        if (!resolvedBranchId) {
-          const { data: branches } = await supabase.from('branches').select('id').limit(1).single();
-          resolvedBranchId = branches?.id || null;
+        const reconstructedRole = metadata?.role || UserRole.MEMBER;
+        let reconstructedBranchId = metadata?.branchId || null;
+
+        // Fallback ONLY if metadata is missing (e.g. legacy or manual auth creation)
+        if (!reconstructedBranchId && reconstructedRole !== UserRole.SUPER_ADMIN) {
+          const { data: bData } = await supabase.from('branches').select('id').limit(1).maybeSingle();
+          reconstructedBranchId = bData?.id || null;
         }
 
         const newUserProfile = {
           id: authUser.id,
           name: metadata?.name || authUser.email?.split('@')[0] || 'Gym Member',
           email: authUser.email!,
-          role: metadata?.role || UserRole.MEMBER,
-          branchId: resolvedBranchId,
+          role: reconstructedRole,
+          branchId: reconstructedBranchId,
           phone: metadata?.phone || '',
-          memberId: `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
+          memberId: metadata?.memberId || `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
+          avatar: metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
         };
 
         const { error: insertError } = await supabase.from('users').insert(newUserProfile);
