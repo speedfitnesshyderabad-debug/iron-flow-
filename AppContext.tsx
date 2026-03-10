@@ -101,15 +101,24 @@ interface AppContextType {
     statusFilter?: string;
   }) => Promise<{ members: User[]; totalCount: number }>;
   isFetchingMembers: boolean;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+  const [currentUser, _setCurrentUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('currentUser');
     return savedUser ? JSON.parse(savedUser) : null;
   });
+
+  const currentUserRef = React.useRef<User | null>(currentUser);
+
+  const setCurrentUser = useCallback((user: User | null) => {
+    _setCurrentUser(user);
+    currentUserRef.current = user;
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -292,7 +301,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (fbData) setFeedback(fbData);
 
       const { data: cData } = await supabase.from('communications').select('*, user:users!userId(name, memberId, role)');
-      if (cData) setCommunications(cData as any);
+      if (cData) {
+        // Map is_read from DB to isRead in UI
+        const mapped = cData.map((c: any) => ({ ...c, isRead: !!c.is_read }));
+        setCommunications(mapped as any);
+      }
       const { data: holidaysData } = await supabase.from('holidays').select('*');
       setHolidays(holidaysData || []);
 
@@ -357,8 +370,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'walk_ins' }, () => {
         supabase.from('walk_ins').select('*').then(({ data }) => { if (data) setWalkIns(data); });
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, () => {
-        supabase.from('communications').select('*, user:users!userId(name, memberId, role)').then(({ data }) => { if (data) setCommunications(data as any); });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newComm = payload.new as any;
+          // Check if this is for the current user
+          if (currentUserRef.current?.id === newComm.user_id) {
+            showToast(`New ${newComm.category} notification: ${newComm.body.substring(0, 50)}...`);
+
+            // Browser push notification
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              new Notification(`🔔 New Notification`, {
+                body: newComm.body,
+                icon: '/favicon.ico'
+              });
+            }
+          }
+        }
+
+        // Refresh communications list to pick up joined data and status
+        supabase.from('communications').select('*, user:users!userId(name, memberId, role)').then(({ data }) => {
+          if (data) {
+            const mapped = data.map((c: any) => ({ ...c, isRead: !!c.is_read }));
+            setCommunications(mapped as any);
+          }
+        });
       })
       .subscribe();
 
@@ -1586,6 +1621,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const markNotificationAsRead = async (id: string) => {
+    const { error } = await supabase.from('communications').update({ is_read: true }).eq('id', id);
+    if (!error) {
+      setCommunications(prev => prev.map(c => c.id === id ? { ...c, isRead: true } : c));
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    if (!currentUser) return;
+    const unreadIds = communications.filter(c => c.userId === currentUser.id && !c.isRead).map(c => c.id);
+    if (unreadIds.length === 0) return;
+
+    const { error } = await supabase.from('communications').update({ is_read: true }).in('id', unreadIds);
+    if (!error) {
+      setCommunications(prev => prev.map(c => unreadIds.includes(c.id) ? { ...c, isRead: true } : c));
+    }
+  };
+
   const addWalkIn = async (walkIn: WalkIn) => {
     try {
       const { error } = await supabase.from('walk_ins').insert(walkIn);
@@ -2071,7 +2124,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isRowVisible,
     fetchData,
     fetchPaginatedMembers,
-    isFetchingMembers
+    isFetchingMembers,
+    markNotificationAsRead,
+    markAllNotificationsAsRead
   };
 
   return (

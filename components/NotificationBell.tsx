@@ -10,25 +10,9 @@ const categoryMeta: Record<string, { icon: string; color: string; bg: string }> 
     ANNOUNCEMENT: { icon: 'fa-bullhorn', color: 'text-purple-600', bg: 'bg-purple-50' },
 };
 
-const STORAGE_KEY = 'if_read_notifications';
-
-const getReadIds = (): Set<string> => {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return new Set(raw ? JSON.parse(raw) : []);
-    } catch { return new Set(); }
-};
-
-const markAsRead = (ids: string[]) => {
-    const existing = getReadIds();
-    ids.forEach(id => existing.add(id));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing]));
-};
-
 const NotificationBell: React.FC = () => {
-    const { communications, currentUser } = useAppContext();
+    const { communications, currentUser, markAllNotificationsAsRead } = useAppContext();
     const [isOpen, setIsOpen] = useState(false);
-    const [readIds, setReadIds] = useState<Set<string>>(getReadIds);
     const panelRef = useRef<HTMLDivElement>(null);
 
     // Filter to only this user's notifications
@@ -37,7 +21,7 @@ const NotificationBell: React.FC = () => {
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, 30);
 
-    const unreadCount = myNotifs.filter(n => !readIds.has(n.id)).length;
+    const unreadCount = myNotifs.filter(n => !n.isRead).length;
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -52,14 +36,10 @@ const NotificationBell: React.FC = () => {
 
     // Mark all as read when opening
     const handleOpen = () => {
-        setIsOpen(prev => {
-            if (!prev) {
-                const ids = myNotifs.map(n => n.id);
-                markAsRead(ids);
-                setReadIds(new Set(ids));
-            }
-            return !prev;
-        });
+        if (!isOpen) {
+            markAllNotificationsAsRead();
+        }
+        setIsOpen(!isOpen);
     };
 
     const formatTime = (ts: string) => {
@@ -123,7 +103,7 @@ const NotificationBell: React.FC = () => {
                         ) : (
                             myNotifs.map(notif => {
                                 const meta = categoryMeta[notif.category] || categoryMeta['ANNOUNCEMENT'];
-                                const isUnread = !readIds.has(notif.id);
+                                const isUnread = !notif.isRead;
                                 return (
                                     <div
                                         key={notif.id}

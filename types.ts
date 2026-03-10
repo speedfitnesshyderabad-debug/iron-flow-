@@ -40,6 +40,7 @@ export interface Communication {
   category: 'WELCOME' | 'PAYMENT' | 'REMINDER' | 'ANNOUNCEMENT';
   branchId: string; // Added branchId for tracking
   user?: { name: string; memberId?: string; role: string }; // Joined from users table
+  isRead?: boolean;
 }
 
 export interface Offer {

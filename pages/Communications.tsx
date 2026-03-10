@@ -93,10 +93,23 @@ const Communications: React.FC = () => {
                         <p className="text-xs font-bold text-slate-400">{comm.timestamp}</p>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="bg-green-100 text-green-700 text-[9px] font-black px-3 py-1 rounded-full flex items-center gap-2 w-fit">
-                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                          DELIVERED
-                        </span>
+                        <div className="flex flex-col gap-2">
+                          <span className="bg-green-100 text-green-700 text-[9px] font-black px-3 py-1 rounded-full flex items-center gap-2 w-fit">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                            DELIVERED
+                          </span>
+                          {comm.isRead ? (
+                            <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-3 py-1 rounded-full flex items-center gap-2 w-fit">
+                              <i className="fas fa-check-double text-[8px]"></i>
+                              READ
+                            </span>
+                          ) : (
+                            <span className="bg-blue-100 text-blue-600 text-[9px] font-black px-3 py-1 rounded-full flex items-center gap-2 w-fit animate-pulse">
+                              <i className="fas fa-circle text-[6px]"></i>
+                              NEW
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
