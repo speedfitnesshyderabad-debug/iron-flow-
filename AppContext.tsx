@@ -92,6 +92,14 @@ interface AppContextType {
   setSelectedBranchId: (id: string | 'all') => void;
   isRowVisible: (rowBranchId: string | null | undefined) => boolean;
   fetchData: () => Promise<void>;
+  fetchPaginatedMembers: (config: {
+    page: number;
+    pageSize: number;
+    searchTerm?: string;
+    branchId?: string | 'all';
+    statusFilter?: string;
+  }) => Promise<{ members: User[]; totalCount: number }>;
+  isFetchingMembers: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -160,6 +168,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isGlobalLoading, setGlobalLoading] = useState(false);
+  const [isFetchingMembers, setIsFetchingMembers] = useState(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -338,6 +347,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fetchData();
     }
   }, [currentUser?.id, fetchData]);
+
+  const fetchPaginatedMembers = useCallback(async (config: {
+    page: number;
+    pageSize: number;
+    searchTerm?: string;
+    branchId?: string | 'all';
+    statusFilter?: string;
+  }) => {
+    setIsFetchingMembers(true);
+    try {
+      const { page, pageSize, searchTerm, branchId, statusFilter } = config;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      let query = supabase
+        .from('users')
+        .select('*', { count: 'exact' })
+        .eq('role', UserRole.MEMBER);
+
+      // Branch filter
+      if (branchId && branchId !== 'all') {
+        query = query.eq('branchId', branchId);
+      } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+        query = query.eq('branchId', currentUser.branchId);
+      }
+
+      // Search term
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,memberId.ilike.%${searchTerm}%`);
+      }
+
+      // Status filtering is complex server-side due to the subscriptions relation.
+      // For now, we fetch the basic member list and count.
+      // If a specific status like 'ACTIVE' is requested, we join with subscriptions.
+      if (statusFilter && statusFilter !== 'ALL') {
+        // This is a simplified version - in a production app with huge data, 
+        // you'd use a postgres view or a more complex RPC.
+        if (statusFilter === 'ACTIVE') {
+          query = query.not('subscriptions', 'is', null).filter('subscriptions.status', 'eq', SubscriptionStatus.ACTIVE);
+        }
+        // Note: Complex filters like 'EXPIRING_SOON' are better handled via views or RPC.
+      }
+
+      const { data, count, error } = await query
+        .order('createdAt', { ascending: false })
+        .range(start, end);
+
+      if (error) throw error;
+
+      return {
+        members: data || [],
+        totalCount: count || 0
+      };
+    } catch (error) {
+      console.error('Error fetching paginated members:', error);
+      return { members: [], totalCount: 0 };
+    } finally {
+      setIsFetchingMembers(false);
+    }
+  }, [currentUser]);
 
   // Supabase Auth State Listener - Handle recovery sessions and auth state changes
   useEffect(() => {
@@ -1805,31 +1874,102 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { valid: true, discount, message: 'Coupon applied successfully!' };
   };
 
+  const value: AppContextType = {
+    currentUser,
+    setCurrentUser,
+    branches,
+    users,
+    plans,
+    subscriptions,
+    sales,
+    attendance,
+    bookings,
+    feedback,
+    communications,
+    inventory,
+    metrics,
+    offers,
+    classSchedules,
+    expenses,
+    payroll,
+    holidays,
+    coupons,
+    walkIns,
+    isGlobalLoading,
+    setGlobalLoading,
+    addBranch,
+    updateBranch,
+    addUser,
+    updateUser,
+    deleteUser,
+    addPlan,
+    updatePlan,
+    addSubscription,
+    updateSubscription,
+    addSale,
+    recordAttendance,
+    updateAttendance,
+    addBooking,
+    updateBooking,
+    addFeedback,
+    updateFeedbackStatus,
+    addInventory,
+    updateInventory,
+    deleteInventory,
+    sellInventoryItem,
+    addMetric,
+    addOffer,
+    deleteOffer,
+    addClassTemplate,
+    deleteClassTemplate,
+    addHoliday,
+    updateHoliday,
+    deleteHoliday,
+    addCoupon,
+    updateCoupon,
+    deleteCoupon,
+    validateCoupon,
+    generateUpcomingClasses,
+    addClassSession,
+    deleteClassSession,
+    addExpense,
+    deleteExpense,
+    addPayroll,
+    updatePayroll,
+    generateTransactionCode,
+    verifyTransactionCode,
+    enrollMember,
+    purchaseSubscription,
+    pauseMembership,
+    resumeMembership,
+    sendNotification,
+    askGemini,
+    toast,
+    showToast,
+    generateDeviceFingerprint,
+    createSession,
+    revokeSession,
+    getSessions,
+    importMembers,
+    addWalkIn,
+    updateWalkIn,
+    selectedBranchId,
+    setSelectedBranchId,
+    isRowVisible,
+    fetchData,
+    fetchPaginatedMembers,
+    isFetchingMembers
+  };
+
   return (
-    <AppContext.Provider value={{
-      currentUser, setCurrentUser, branches, users, plans, subscriptions, sales,
-      attendance, bookings, feedback, communications, inventory, metrics, offers,
-      classSchedules, addClassTemplate, deleteClassTemplate, generateUpcomingClasses, addClassSession, deleteClassSession,
-      expenses, addExpense, deleteExpense, payroll, addPayroll, updatePayroll,
-      holidays, addHoliday, updateHoliday, deleteHoliday,
-      coupons, addCoupon, updateCoupon, deleteCoupon, validateCoupon,
-      isGlobalLoading, setGlobalLoading,
-      addBranch, updateBranch, addUser, updateUser, deleteUser, addPlan, updatePlan,
-      addSubscription, updateSubscription, addSale, recordAttendance, updateAttendance, addBooking, updateBooking, addFeedback, updateFeedbackStatus,
-      addInventory, updateInventory, deleteInventory, sellInventoryItem, addMetric, addOffer, deleteOffer, enrollMember, purchaseSubscription, pauseMembership, resumeMembership, generateTransactionCode, verifyTransactionCode, sendNotification, askGemini, toast, showToast,
-      generateDeviceFingerprint, createSession, revokeSession, getSessions, importMembers,
-      walkIns, addWalkIn,
-      updateWalkIn,
-      selectedBranchId,
-      setSelectedBranchId,
-      isRowVisible,
-      fetchData
-    }}>
+    <AppContext.Provider value={value}>
       {children}
       {toast && (
-        <div className={`fixed bottom-8 right-8 px-6 py-4 rounded-2xl shadow-2xl z-[9999] flex items-center gap-3 animate-[slideLeft_0.3s_ease-out] text-white font-bold ${toast.type === 'error' ? 'bg-red-600' : 'bg-slate-900'}`}>
-          <i className={`fas ${toast.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} text-xl`}></i>
-          {toast.message}
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white font-bold shadow-2xl z-[9999] animate-[slideIn_0.3s_ease-out] ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+          <div className="flex items-center gap-2">
+            <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
+            {toast.message}
+          </div>
         </div>
       )}
       {isGlobalLoading && (

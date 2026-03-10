@@ -19,7 +19,14 @@ const formatCurrency = (amount: number) => {
 import { useSearchParams } from 'react-router-dom';
 
 const Members: React.FC = () => {
-  const { users, subscriptions, plans, sales, currentUser, enrollMember, attendance, updateUser, updateSubscription, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId } = useAppContext();
+  const { users, subscriptions, plans, sales, currentUser, enrollMember, attendance, updateUser, updateSubscription, deleteUser, verifyTransactionCode, showToast, purchaseSubscription, pauseMembership, resumeMembership, branches, importMembers, isRowVisible, selectedBranchId, fetchPaginatedMembers, isFetchingMembers } = useAppContext();
+
+  // Pagination & Server-Side Filtering State
+  const [paginatedMembers, setPaginatedMembers] = useState<User[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Trainers available for PT plan assignment
   const availableTrainers = users.filter(u => u.role === UserRole.TRAINER);
@@ -175,38 +182,35 @@ const Members: React.FC = () => {
 
   const members = users.filter(u => u.role === UserRole.MEMBER && isRowVisible(u.branchId));
 
-  const filteredMembers = members.filter(m => {
-    // 1. Search Filter
-    const searchLower = (searchTerm || '').toLowerCase();
-    const matchesSearch = (m.name || '').toLowerCase().includes(searchLower) ||
-      (m.memberId || '').toLowerCase().includes(searchLower) ||
-      (m.phone || '').includes(searchLower);
+  // Debounce search term
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
-    if (!matchesSearch) return false;
+  // Fetch paginated data
+  const loadMembers = React.useCallback(async () => {
+    const result = await fetchPaginatedMembers({
+      page: currentPage,
+      pageSize,
+      searchTerm: debouncedSearch,
+      branchId: selectedBranchId,
+      statusFilter: filter
+    });
+    setPaginatedMembers(result.members);
+    setTotalCount(result.totalCount);
+  }, [currentPage, pageSize, debouncedSearch, selectedBranchId, filter, fetchPaginatedMembers]);
 
-    // 2. Status Filter
-    const memberSubs = subscriptions.filter(s => s.memberId === m.id);
-    const activeSub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE);
+  React.useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
 
-    // Check Expiring Soon (Active + Ends in <= 7 days)
-    const isExpiringSoon = (() => {
-      if (!activeSub) return false;
-      const today = new Date();
-      const end = new Date(activeSub.endDate);
-      const diffTime = end.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays >= 0 && diffDays <= 7;
-    })();
+  const filteredMembers = paginatedMembers;
 
-    switch (filter) {
-      case 'ACTIVE': return !!activeSub;
-      case 'EXPIRED': return !activeSub && memberSubs.length > 0 && !memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
-      case 'NO_PLAN': return memberSubs.length === 0;
-      case 'EXPIRING_SOON': return isExpiringSoon;
-      case 'PAUSED': return memberSubs.some(s => s.status === SubscriptionStatus.PAUSED);
-      default: return true;
-    }
-  });
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1053,6 +1057,68 @@ const Members: React.FC = () => {
         )
       }
 
+      {/* Pagination Controls */}
+      <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-white/20">
+        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+          Showing {filteredMembers.length} of {totalCount} members
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setCurrentPage(prev => Math.max(1, prev - 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={currentPage === 1 || isFetchingMembers}
+            className="p-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 font-bold text-xs disabled:opacity-50 hover:bg-slate-50 transition-colors flex items-center shadow-sm"
+          >
+            <i className="fas fa-arrow-left mr-2"></i> Previous
+          </button>
+
+          <div className="hidden md:flex items-center gap-1 mx-2">
+            {[...Array(totalPages)].map((_, i) => {
+              const p = i + 1;
+              // Only show first 3, last 3, and current +- 1
+              if (
+                p === 1 ||
+                p === totalPages ||
+                (p >= currentPage - 1 && p <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setCurrentPage(p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`w-8 h-8 rounded-lg font-black text-[10px] transition-all duration-200 ${currentPage === p
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
+                        : 'bg-white/80 text-slate-500 hover:bg-white border border-slate-100'
+                      }`}
+                  >
+                    {p}
+                  </button>
+                );
+              }
+              if (p === currentPage - 2 || p === currentPage + 2) {
+                return <span key={p} className="text-slate-400 text-[10px] px-1 font-bold">...</span>;
+              }
+              return null;
+            })}
+          </div>
+
+          <button
+            onClick={() => {
+              setCurrentPage(prev => Math.min(totalPages, prev + 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={currentPage === totalPages || isFetchingMembers}
+            className="p-2 px-4 rounded-xl bg-blue-600 text-white font-bold text-xs disabled:opacity-50 hover:opacity-90 transition-opacity flex items-center shadow-md shadow-blue-100"
+          >
+            Next <i className="fas fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </div>
+
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(20px); opacity: 0; }
@@ -1060,7 +1126,7 @@ const Members: React.FC = () => {
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
-    </div >
+    </div>
   );
 };
 
