@@ -40,12 +40,12 @@ const CheckinsLog: React.FC = () => {
             return true;
         });
 
-        // Apply text search on user name
+        // Apply text search on user name (Using joined user data)
         if (searchQuery.trim()) {
             const lowerQuery = searchQuery.toLowerCase();
             result = result.filter(a => {
-                const user = users.find(u => u.id === a.userId);
-                return user?.name.toLowerCase().includes(lowerQuery) || user?.email.toLowerCase().includes(lowerQuery);
+                const name = a.user?.name || '';
+                return name.toLowerCase().includes(lowerQuery);
             });
         }
 
@@ -148,7 +148,8 @@ const CheckinsLog: React.FC = () => {
                         <tbody className="divide-y-2 divide-slate-50 text-slate-700">
                             {filteredAttendance.length > 0 ? (
                                 filteredAttendance.map(record => {
-                                    const user = users.find(u => u.id === record.userId);
+                                    const userName = record.user?.name || 'Unknown User';
+                                    const userAvatar = (record.user as any)?.avatar;
                                     const branch = branches.find(b => b.id === record.branchId);
                                     const isStaff = record.type === 'STAFF';
 
@@ -157,19 +158,19 @@ const CheckinsLog: React.FC = () => {
                                             <td className="p-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className={`w-12 h-12 rounded-full flex justify-center items-center shrink-0 font-bold text-xl text-white ${isStaff ? 'bg-amber-500' : 'bg-blue-500'} shadow-md`}>
-                                                        {user?.avatar ? (
-                                                            <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt="avatar" />
+                                                        {userAvatar ? (
+                                                            <img src={userAvatar} className="w-full h-full rounded-full object-cover" alt="avatar" />
                                                         ) : (
-                                                            user?.name.charAt(0) || '?'
+                                                            userName.charAt(0) || '?'
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{user?.name || 'Unknown User'}</p>
+                                                        <p className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{userName}</p>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <span className={`text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full ${isStaff ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                                                                 {record.type}
                                                             </span>
-                                                            {user?.phone && <span className="text-xs text-slate-400">{user.phone}</span>}
+                                                            {record.user?.phone && <span className="text-xs text-slate-400">{record.user.phone}</span>}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -225,7 +226,8 @@ const CheckinsLog: React.FC = () => {
                 <div className="block lg:hidden flex flex-col p-4 gap-4 bg-slate-50/50">
                     {filteredAttendance.length > 0 ? (
                         filteredAttendance.map(record => {
-                            const user = users.find(u => u.id === record.userId);
+                            const userName = record.user?.name || 'Unknown User';
+                            const userAvatar = (record.user as any)?.avatar;
                             const branch = branches.find(b => b.id === record.branchId);
                             const isStaff = record.type === 'STAFF';
 
@@ -238,14 +240,14 @@ const CheckinsLog: React.FC = () => {
                                     <div className="flex justify-between items-start gap-2 pl-2">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-full flex justify-center items-center shrink-0 font-bold text-sm text-white ${isStaff ? 'bg-amber-500' : 'bg-blue-500'} shadow-md`}>
-                                                {user?.avatar ? (
-                                                    <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt="avatar" />
+                                                {userAvatar ? (
+                                                    <img src={userAvatar} className="w-full h-full rounded-full object-cover" alt="avatar" />
                                                 ) : (
-                                                    user?.name.charAt(0) || '?'
+                                                    userName.charAt(0) || '?'
                                                 )}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900 leading-tight line-clamp-1">{user?.name || 'Unknown User'}</p>
+                                                <p className="font-bold text-slate-900 leading-tight line-clamp-1">{userName}</p>
                                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                     <span className={`text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-md ${isStaff ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                                                         {record.type}

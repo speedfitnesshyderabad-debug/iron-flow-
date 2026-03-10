@@ -226,8 +226,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setBranches(finalBranches);
 
-      // 3. Fetch/Seed Users
-      const { data: uData } = await supabase.from('users').select('*');
+      // 3. Fetch/Seed Users (Excluding Members to keep global state light)
+      // Members are handled via fetchPaginatedMembers to support 10,000+ records.
+      const { data: uData } = await supabase
+        .from('users')
+        .select('*')
+        .neq('role', UserRole.MEMBER);
+
       if (uData) setUsers(uData);
 
       // 4. Fetch/Seed Plans (Ensuring plans exist for all branches)
@@ -253,21 +258,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setPlans(finalPlans);
 
-      // 5. Fetch other data...
-      const { data: sData } = await supabase.from('subscriptions').select('*');
-      if (sData) setSubscriptions(sData);
+      // 5. Fetch/Seed Subscriptions (With Member Join for dashboard alerts)
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('*, member:users(name, avatar, phone, memberId)');
+      if (subData) setSubscriptions(subData as any);
+    } catch (error) {
+      console.error('Core sync error:', error);
+    }
 
-      const { data: slData } = await supabase.from('sales').select('*');
-      if (slData) setSales(slData);
+    try {
+      // 6. Fetch Logs with Member/User Joins (To display names without loading 10,000 members)
+      const { data: sData } = await supabase.from('sales').select('*, member:users(name, memberId)');
+      if (sData) setSales(sData);
 
-      const { data: aData } = await supabase.from('attendance').select('*');
+      const { data: aData } = await supabase.from('attendance').select('*, user:users(name, memberId, role)');
       if (aData) setAttendance(aData);
 
-      const { data: bkData } = await supabase.from('bookings').select('*');
+      const { data: bkData } = await supabase.from('bookings').select('*, member:users(name, memberId)');
       if (bkData) setBookings(bkData);
 
-      const { data: fData } = await supabase.from('feedback').select('*');
-      if (fData) setFeedback(fData);
+      const { data: fbData } = await supabase.from('feedback').select('*');
+      if (fbData) setFeedback(fbData);
 
       const { data: cData } = await supabase.from('communications').select('*');
       if (cData) setCommunications(cData);
@@ -356,6 +368,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     statusFilter?: string;
   }) => {
     setIsFetchingMembers(true);
+    // Artificial delay to ensure user sees the loading state (confirming it's not all pre-loaded)
+    await new Promise(r => setTimeout(r, 400));
     try {
       const { page, pageSize, searchTerm, branchId, statusFilter } = config;
       const start = (page - 1) * pageSize;

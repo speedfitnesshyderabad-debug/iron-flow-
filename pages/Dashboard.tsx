@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
   );
 
   const handleOpenRenew = (sub: any) => {
-    const member = users.find(u => u.id === sub.memberId);
+    const member = sub.member || users.find((u: any) => u.id === sub.memberId);
     const currentPlan = plans.find(p => p.id === sub.planId);
     if (member) {
       setRenewTarget({ member, currentPlan });
@@ -340,14 +340,14 @@ const Dashboard: React.FC = () => {
               <p className="text-xs text-amber-700/60 font-medium italic">No memberships expiring this week. Great retention!</p>
             ) : (
               expiringSubs.slice(0, 3).map(sub => {
-                const member = users.find(u => u.id === sub.memberId);
+                const member = sub.member;
                 const plan = plans.find(p => p.id === sub.planId);
                 return (
                   <div key={sub.id} className="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm">
                     <div className="flex items-center gap-3">
                       <img src={member?.avatar || `https://ui-avatars.com/api/?name=${member?.name}`} className="w-8 h-8 rounded-lg bg-gray-100 object-cover" alt="" />
                       <div>
-                        <p className="text-xs font-bold text-gray-900">{member?.name}</p>
+                        <p className="text-xs font-bold text-gray-900">{member?.name || 'Unknown'}</p>
                         <p className="text-[9px] text-gray-400 font-mono">{plan?.name} • Ends {sub.endDate}</p>
                       </div>
                     </div>
@@ -376,7 +376,7 @@ const Dashboard: React.FC = () => {
               <p className="text-xs text-red-700/60 font-medium italic">No expired memberships pending renewal.</p>
             ) : (
               expiredSubs.slice(0, 3).map(sub => {
-                const member = users.find(u => u.id === sub.memberId);
+                const member = sub.member;
                 const plan = plans.find(p => p.id === sub.planId);
                 return (
                   <div key={sub.id} className="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm border border-red-100 opacity-75 hover:opacity-100 transition-opacity">
@@ -385,7 +385,7 @@ const Dashboard: React.FC = () => {
                         Ex
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-gray-900">{member?.name}</p>
+                        <p className="text-xs font-bold text-gray-900">{member?.name || 'Unknown'}</p>
                         <p className="text-[9px] text-red-400 font-black uppercase">Expired {sub.endDate}</p>
                       </div>
                     </div>
@@ -471,12 +471,12 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {recentTransactions.map((sale) => {
-                  const member = users.find(u => u.id === sale.memberId);
+                  const memberName = sale.member?.name || 'Unknown Member';
                   const plan = plans.find(p => p.id === sale.planId);
                   return (
                     <tr key={sale.id} className="text-sm hover:bg-gray-50 transition-colors group">
                       <td className="py-4 px-2">
-                        <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{member?.name}</div>
+                        <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{memberName}</div>
                       </td>
                       <td className="py-4 px-2">
                         <span className="text-gray-500 text-xs font-medium">{plan?.name || 'Retail Item'}</span>

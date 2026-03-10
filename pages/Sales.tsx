@@ -95,7 +95,7 @@ const Sales: React.FC = () => {
               </tr>
             ) : (
               [...filteredSales].reverse().map(sale => {
-                const member = users.find(u => u.id === sale.memberId);
+                const memberName = sale.member?.name || 'Unknown Member';
                 const plan = plans.find(p => p.id === sale.planId);
                 const inventoryItem = inventory.find(i => i.id === sale.itemId);
                 const branch = branches.find(b => b.id === sale.branchId);
@@ -104,7 +104,7 @@ const Sales: React.FC = () => {
                   <tr key={sale.id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-6 py-4 font-mono text-xs text-blue-600 font-bold">{sale.invoiceNo}</td>
                     <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900">{member?.name}</div>
+                      <div className="font-bold text-gray-900">{memberName}</div>
                       <div className="text-[10px] text-gray-400">{sale.date}</div>
                     </td>
                     <td className="px-6 py-4">
@@ -142,7 +142,7 @@ const Sales: React.FC = () => {
         <InvoiceModal
           sale={viewingSale}
           branch={branches.find(b => b.id === viewingSale.branchId)!}
-          member={users.find(u => u.id === viewingSale.memberId)!}
+          member={viewingSale.member as any || { name: 'Unknown Member' }}
           item={(plans.find(p => p.id === viewingSale.planId) || inventory.find(i => i.id === viewingSale.itemId))!}
           onClose={closeInvoice}
         />

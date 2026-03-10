@@ -503,130 +503,158 @@ const Members: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMembers.map(member => {
-          const memberSubs = subscriptions.filter(s => s.memberId === member.id);
-          const activeSub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE);
-          const latestSub = memberSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
-
-          const sub = activeSub || latestSub;
-          const plan = plans.find(p => p.id === sub?.planId);
-          const isActive = !!activeSub;
-
-          return (
-            <div key={member.id} className="bg-white rounded-2xl border p-6 hover:shadow-xl transition-all group relative overflow-hidden">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <img src={member.avatar} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
-                    {isActive && <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>}
-                    {latestSub?.status === SubscriptionStatus.PAUSED && <div className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 border-2 border-white rounded-full"></div>}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900">{member.name}</h3>
-                    <p className="text-xs font-mono text-gray-400 tracking-tighter uppercase">{member.memberId}</p>
-                  </div>
-                </div>
-                <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-green-100 text-green-700' :
-                  memberSubs.length === 0 ? 'bg-gray-100 text-gray-700' :
-                    latestSub?.status === SubscriptionStatus.PAUSED ? 'bg-slate-100 text-slate-700' :
-                      'bg-red-100 text-red-700'
-                  }`}>
-                  {isActive ? 'Active' : memberSubs.length === 0 ? 'No Plan' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Expired'}
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-gray-50">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400 uppercase font-bold">Subscription</span>
-                  <span className="font-bold text-gray-700">{plan?.name || 'No Plan'}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-red-500 uppercase font-black text-[9px] tracking-widest">Emergency</span>
-                  <span className="font-black text-slate-700">{member.emergencyContact || 'MISSING'}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400 uppercase font-bold">Address</span>
-                  <span className="font-medium text-gray-700 truncate max-w-[150px]" title={member.address}>{member.address || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400 uppercase font-bold">Valid Until</span>
-                  <span className="font-medium text-gray-700">{sub?.endDate || 'N/A'}</span>
-                </div>
-                {sub?.pauseAllowanceDays !== undefined && (
-                  <div className="flex justify-between text-xs pt-1">
-                    <span className="text-blue-400 uppercase font-bold text-[9px]">Pause Allowance</span>
-                    <span className="font-black text-blue-700">{(sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0)} Days left</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-6">
-                <button
-                  onClick={() => openLogs(member)}
-                  className="py-2 bg-gray-50 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors"
-                >
-                  VIEW LOGS
-                </button>
-                {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
-                  <button
-                    onClick={() => openManage(member)}
-                    className="py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
-                  >
-                    MANAGE
-                  </button>
-                )}
-                {currentUser?.role === UserRole.SUPER_ADMIN && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone.`)) {
-                        deleteUser(member.id);
-                      }
-                    }}
-                    className="py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
-                  >
-                    DELETE
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setSelectedMember(member);
-                    setProfileModalOpen(true);
-                  }}
-                  className="py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider shadow-md"
-                >
-                  PROFILE
-                </button>
-                <button
-                  onClick={() => handleOpenRenew(member)}
-                  className="py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
-                >
-                  CHANGE / RENEW PLAN
-                </button>
-                {activeSub && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to pause ${member.name}'s membership? They will not be able to check in until resumed.`)) {
-                        pauseMembership(activeSub.id);
-                      }
-                    }}
-                    className="col-span-2 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors uppercase tracking-wider"
-                  >
-                    PAUSE MEMBERSHIP
-                  </button>
-                )}
-                {latestSub?.status === SubscriptionStatus.PAUSED && (
-                  <button
-                    onClick={() => resumeMembership(latestSub.id)}
-                    className="col-span-2 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors uppercase tracking-wider"
-                  >
-                    RESUME MEMBERSHIP
-                  </button>
-                )}
-              </div>
+      <div className="relative min-h-[400px]">
+        {/* Loading Overlay */}
+        {isFetchingMembers && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center rounded-3xl animate-pulse">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fetching Page {currentPage}...</p>
             </div>
-          );
-        })}
+          </div>
+        )}
+
+        {filteredMembers.length === 0 && !isFetchingMembers ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <i className="fas fa-users-slash text-3xl text-slate-300"></i>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">No Members Found</h3>
+            <p className="text-sm text-slate-500 max-w-[250px] text-center mt-1">Try adjusting your search or filters to find what you're looking for.</p>
+            <button
+              onClick={() => { setSearchTerm(''); setFilter('ALL'); }}
+              className="mt-6 text-blue-600 font-bold text-xs uppercase tracking-wider hover:underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300 ${isFetchingMembers ? 'opacity-30' : 'opacity-100'}`}>
+            {filteredMembers.map(member => {
+              const memberSubs = subscriptions.filter(s => s.memberId === member.id);
+              const activeSub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE);
+              const latestSub = memberSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
+
+              const sub = activeSub || latestSub;
+              const plan = plans.find(p => p.id === sub?.planId);
+              const isActive = !!activeSub;
+
+              return (
+                <div key={member.id} className="bg-white rounded-2xl border p-6 hover:shadow-xl transition-all group relative overflow-hidden">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <img src={member.avatar} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
+                        {isActive && <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>}
+                        {latestSub?.status === SubscriptionStatus.PAUSED && <div className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 border-2 border-white rounded-full"></div>}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900">{member.name}</h3>
+                        <p className="text-xs font-mono text-gray-400 tracking-tighter uppercase">{member.memberId}</p>
+                      </div>
+                    </div>
+                    <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-green-100 text-green-700' :
+                      memberSubs.length === 0 ? 'bg-gray-100 text-gray-700' :
+                        latestSub?.status === SubscriptionStatus.PAUSED ? 'bg-slate-100 text-slate-700' :
+                          'bg-red-100 text-red-700'
+                      }`}>
+                      {isActive ? 'Active' : memberSubs.length === 0 ? 'No Plan' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Expired'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-4 border-t border-gray-50">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400 uppercase font-bold">Subscription</span>
+                      <span className="font-bold text-gray-700">{plan?.name || 'No Plan'}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-red-500 uppercase font-black text-[9px] tracking-widest">Emergency</span>
+                      <span className="font-black text-slate-700">{member.emergencyContact || 'MISSING'}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400 uppercase font-bold">Address</span>
+                      <span className="font-medium text-gray-700 truncate max-w-[150px]" title={member.address}>{member.address || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400 uppercase font-bold">Valid Until</span>
+                      <span className="font-medium text-gray-700">{sub?.endDate || 'N/A'}</span>
+                    </div>
+                    {sub?.pauseAllowanceDays !== undefined && (
+                      <div className="flex justify-between text-xs pt-1">
+                        <span className="text-blue-400 uppercase font-bold text-[9px]">Pause Allowance</span>
+                        <span className="font-black text-blue-700">{(sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0)} Days left</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                      onClick={() => openLogs(member)}
+                      className="py-2 bg-gray-50 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors"
+                    >
+                      VIEW LOGS
+                    </button>
+                    {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
+                      <button
+                        onClick={() => openManage(member)}
+                        className="py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
+                      >
+                        MANAGE
+                      </button>
+                    )}
+                    {currentUser?.role === UserRole.SUPER_ADMIN && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone.`)) {
+                            deleteUser(member.id);
+                          }
+                        }}
+                        className="py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                      >
+                        DELETE
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setProfileModalOpen(true);
+                      }}
+                      className="py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider shadow-md"
+                    >
+                      PROFILE
+                    </button>
+                    <button
+                      onClick={() => handleOpenRenew(member)}
+                      className="py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
+                    >
+                      CHANGE / RENEW PLAN
+                    </button>
+                    {activeSub && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to pause ${member.name}'s membership? They will not be able to check in until resumed.`)) {
+                            pauseMembership(activeSub.id);
+                          }
+                        }}
+                        className="col-span-2 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors uppercase tracking-wider"
+                      >
+                        PAUSE MEMBERSHIP
+                      </button>
+                    )}
+                    {latestSub?.status === SubscriptionStatus.PAUSED && (
+                      <button
+                        onClick={() => resumeMembership(latestSub.id)}
+                        className="col-span-2 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors uppercase tracking-wider"
+                      >
+                        RESUME MEMBERSHIP
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Add Member Modal */}
@@ -1091,8 +1119,8 @@ const Members: React.FC = () => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`w-8 h-8 rounded-lg font-black text-[10px] transition-all duration-200 ${currentPage === p
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
-                        : 'bg-white/80 text-slate-500 hover:bg-white border border-slate-100'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
+                      : 'bg-white/80 text-slate-500 hover:bg-white border border-slate-100'
                       }`}
                   >
                     {p}

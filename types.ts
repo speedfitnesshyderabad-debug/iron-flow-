@@ -161,6 +161,7 @@ export interface Subscription {
   pauseStartDate?: string;
   pauseAllowanceDays?: number;
   pausedDaysUsed?: number;
+  member?: { name: string; avatar?: string; phone?: string; memberId?: string }; // Joined for dashboard
   saleId?: string;
 }
 
@@ -179,6 +180,7 @@ export interface Sale {
   trainerId?: string | null;
   transactionCode?: string; // For Cash/POS payments
   razorpayPaymentId?: string; // For Card/Online payments
+  member?: { name: string; memberId?: string }; // Joined for logs
 }
 
 export interface Referral {
@@ -200,6 +202,7 @@ export interface Attendance {
   branchId: string;
   type: 'MEMBER' | 'STAFF';
   notes?: string; // Added for manual overrides/remarks
+  user?: { name: string; memberId?: string; role: string }; // Joined for logs
 }
 
 export interface Booking {
@@ -211,6 +214,7 @@ export interface Booking {
   timeSlot: string;
   branchId: string;
   status: 'BOOKED' | 'CANCELLED' | 'COMPLETED';
+  member?: { name: string; memberId?: string }; // Joined for logs
 }
 
 export interface Feedback {
