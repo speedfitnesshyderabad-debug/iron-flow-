@@ -39,7 +39,8 @@ const Payroll: React.FC = () => {
     const branchStaff = useMemo(() => {
         return users.filter(u =>
             u.role !== UserRole.MEMBER &&
-            u.role !== UserRole.SUPER_ADMIN && // Usually Super Admin pays themselves differently? Or include? Let's exclude for now or include if they belong to branch.
+            u.role !== UserRole.SUPER_ADMIN &&
+            u.role !== UserRole.KIOSK &&
             (selectedBranchId === 'ALL' || u.branchId === selectedBranchId)
         );
     }, [users, selectedBranchId]);

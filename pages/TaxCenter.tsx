@@ -91,7 +91,8 @@ const TaxCenter: React.FC = () => {
       const branchStaff = users.filter(u =>
          u.branchId === selectedBranchId &&
          u.role !== UserRole.MEMBER &&
-         u.role !== UserRole.SUPER_ADMIN
+         u.role !== UserRole.SUPER_ADMIN &&
+         u.role !== UserRole.KIOSK
       );
 
       return branchStaff.map(staff => {
@@ -151,7 +152,7 @@ const TaxCenter: React.FC = () => {
    const totalPayouts = useMemo(() => {
       const branchUsers = users.filter(u => u.branchId === selectedBranchId);
       const payroll = branchUsers
-         .filter(u => u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN)
+         .filter(u => u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN && u.role !== UserRole.KIOSK)
          .reduce((acc, u) => acc + (u.monthlySalary || 0), 0);
       const commissions = staffCommissions.reduce((acc, r) => acc + r.total, 0);
       return { payroll, commissions, grandTotal: payroll + commissions };
@@ -535,7 +536,7 @@ const TaxCenter: React.FC = () => {
                {activeView === 'PAYROLL' && (
                   <div className="space-y-6">
                      <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-2 gap-6">
-                        <SummaryCard label="Staff Count" value={users.filter(u => u.branchId === selectedBranchId && u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN).length} color="blue" />
+                        <SummaryCard label="Staff Count" value={users.filter(u => u.branchId === selectedBranchId && u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN && u.role !== UserRole.KIOSK).length} color="blue" />
                         <SummaryCard label="Total Monthly Payroll" value={formatCurrency(totalPayouts.payroll)} color="emerald" />
                      </div>
 
@@ -550,7 +551,7 @@ const TaxCenter: React.FC = () => {
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-slate-100">
-                              {users.filter(u => u.branchId === selectedBranchId && u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN).map(u => (
+                              {users.filter(u => u.branchId === selectedBranchId && u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN && u.role !== UserRole.KIOSK).map(u => (
                                  <tr key={u.id} className="hover:bg-slate-50/50">
                                     <td className="px-8 py-5">
                                        <div className="flex items-center gap-3">
@@ -568,7 +569,7 @@ const TaxCenter: React.FC = () => {
 
                      {/* Payroll Mobile Cards */}
                      <div className="md:hidden space-y-4">
-                        {users.filter(u => u.branchId === selectedBranchId && u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN).map(u => (
+                        {users.filter(u => u.branchId === selectedBranchId && u.role !== UserRole.MEMBER && u.role !== UserRole.SUPER_ADMIN && u.role !== UserRole.KIOSK).map(u => (
                            <div key={u.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
                               <div className="flex items-center gap-4">
                                  <img src={u.avatar} className="w-12 h-12 rounded-2xl object-cover border border-slate-100 shadow-sm" alt="" />
