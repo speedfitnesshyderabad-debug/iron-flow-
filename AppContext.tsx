@@ -401,16 +401,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,memberId.ilike.%${searchTerm}%`);
       }
 
-      // Status filtering is complex server-side due to the subscriptions relation.
-      // For now, we fetch the basic member list and count.
-      // If a specific status like 'ACTIVE' is requested, we join with subscriptions.
+      // --- Advanced Status Filtering ---
       if (statusFilter && statusFilter !== 'ALL') {
-        // This is a simplified version - in a production app with huge data, 
-        // you'd use a postgres view or a more complex RPC.
-        if (statusFilter === 'ACTIVE') {
-          query = query.not('subscriptions', 'is', null).filter('subscriptions.status', 'eq', SubscriptionStatus.ACTIVE);
+        // We need subqueries/intermediate mapping for complex subscription states
+        // because a user can have multiple subscriptions
+        // ⚠️ Only compute statuses based on GYM plans, PT/Group are add-ons
+        const subQuery = supabase
+          .from('subscriptions')
+          .select('memberId, status, endDate, plans!inner(type)')
+          .eq('plans.type', 'GYM');
+
+        const { data: allSubs } = await subQuery;
+
+        if (allSubs) {
+          let validMemberIds = new Set<string>();
+
+          // Group subscriptions by member
+          const subsByMember = allSubs.reduce((acc, sub) => {
+            if (sub.memberId) {
+              if (!acc[sub.memberId]) acc[sub.memberId] = [];
+              acc[sub.memberId].push(sub);
+            }
+            return acc;
+          }, {} as Record<string, typeof allSubs>);
+
+          if (statusFilter === 'NO_PLAN') {
+            // Find ALL members in the current view first, then exclude those who have a GYM plan
+            // A more efficient way: `not.in` with the list of people who DO have plans.
+            const membersWithPlans = Object.keys(subsByMember);
+            if (membersWithPlans.length > 0) {
+              query = query.not('id', 'in', `(${membersWithPlans.map(id => `"${id}"`).join(',')})`);
+            }
+            // If nobody has a plan, then NO_PLAN means everyone (query stays untouched)
+          } else {
+            if (statusFilter === 'ACTIVE') {
+              Object.entries(subsByMember).forEach(([memberId, subs]) => {
+                if (subs.some(s => s.status === SubscriptionStatus.ACTIVE)) {
+                  validMemberIds.add(memberId);
+                }
+              });
+            } else if (statusFilter === 'PAUSED') {
+              Object.entries(subsByMember).forEach(([memberId, subs]) => {
+                if (subs.some(s => s.status === SubscriptionStatus.PAUSED)) {
+                  validMemberIds.add(memberId);
+                }
+              });
+            } else if (statusFilter === 'EXPIRED') {
+              Object.entries(subsByMember).forEach(([memberId, subs]) => {
+                const hasActiveOrPaused = subs.some(s => s.status === SubscriptionStatus.ACTIVE || s.status === SubscriptionStatus.PAUSED);
+                const hasExpired = subs.some(s => s.status === SubscriptionStatus.EXPIRED);
+                // Must have at least one expired plan AND NO currently active/paused plans
+                if (hasExpired && !hasActiveOrPaused) {
+                  validMemberIds.add(memberId);
+                }
+              });
+            } else if (statusFilter === 'EXPIRING_SOON') {
+              const now = new Date();
+              const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+              Object.entries(subsByMember).forEach(([memberId, subs]) => {
+                const isExpiringSoon = subs.some(s => {
+                  if (s.status !== SubscriptionStatus.ACTIVE) return false;
+                  const end = new Date(s.endDate);
+                  return end > now && end <= sevenDaysFromNow;
+                });
+                if (isExpiringSoon) {
+                  validMemberIds.add(memberId);
+                }
+              });
+            }
+
+            // Apply filter payload for non-NO_PLAN statuses
+            if (validMemberIds.size > 0) {
+              query = query.in('id', Array.from(validMemberIds));
+            } else {
+              // Guarantee 0 results if filter matched nobody
+              query = query.in('id', ['__no_match__']);
+            }
+          }
         }
-        // Note: Complex filters like 'EXPIRING_SOON' are better handled via views or RPC.
       }
 
       const { data, count, error } = await query

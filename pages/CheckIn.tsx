@@ -3,6 +3,7 @@ import { useAppContext } from '../AppContext';
 import { SubscriptionStatus, PlanType, UserRole } from '../types';
 import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../src/lib/supabase';
+import { todayDateStr, currentTimeStr } from '../utils/dates';
 
 const CheckIn: React.FC = () => {
   const { users, subscriptions, plans, recordAttendance, updateAttendance, attendance, currentUser, branches, showToast, bookings, updateBooking } = useAppContext();
@@ -442,7 +443,7 @@ const CheckIn: React.FC = () => {
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayDateStr();
 
     // STAFF LOGIC (PUNCH IN / PUNCH OUT)
     if (currentUser.role !== UserRole.MEMBER) {
@@ -469,7 +470,7 @@ const CheckIn: React.FC = () => {
 
       if (openAttendance) {
         // Normal Checkout
-        updateAttendance(openAttendance.id, { timeOut: new Date().toLocaleTimeString() });
+        updateAttendance(openAttendance.id, { timeOut: currentTimeStr() });
         playStatusSound('success');
         setIsScannerActive(false);
         setScanResult({
@@ -504,7 +505,7 @@ const CheckIn: React.FC = () => {
           id: `att-${Date.now()}`,
           userId: currentUser.id,
           date: today,
-          timeIn: new Date().toLocaleTimeString(),
+          timeIn: currentTimeStr(),
           branchId: branch.id,
           type: 'STAFF'
         });
@@ -613,7 +614,7 @@ const CheckIn: React.FC = () => {
         id: `att-${Date.now()}`,
         userId: currentUser.id,
         date: today,
-        timeIn: new Date().toLocaleTimeString(),
+        timeIn: currentTimeStr(),
         branchId: branch.id,
         type: 'MEMBER'
       });

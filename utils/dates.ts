@@ -10,13 +10,31 @@
  * 3. All day calculations use T00:00:00 to eliminate time component drift.
  */
 
-/** Returns today's date as a "YYYY-MM-DD" string in local time */
+/** Returns today's date as a "YYYY-MM-DD" string in IST (Asia/Kolkata) time */
 export const todayDateStr = (): string => {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    // Use Intl.DateTimeFormat to force Asia/Kolkata
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    // en-CA format is YYYY-MM-DD
+    return formatter.format(now);
+};
+
+/** Returns current time as a localized string in IST (Asia/Kolkata) time */
+export const currentTimeStr = (): string => {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: true
+    });
+    return formatter.format(now);
 };
 
 /**

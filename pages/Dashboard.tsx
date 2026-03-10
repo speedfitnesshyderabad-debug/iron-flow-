@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus } from '../types';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { QuickRenewModal } from '../components/QuickRenewModal';
+import { todayDateStr, addDays } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -30,8 +28,8 @@ const Dashboard: React.FC = () => {
   const filteredSales = sales.filter(s => isRowVisible(s.branchId));
 
   // RENEWAL LOGIC
-  const today = new Date().toISOString().split('T')[0];
-  const next7Days = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const today = todayDateStr();
+  const next7Days = addDays(today, 7);
 
   const expiringSubs = filteredSubs.filter(s =>
     s.status === SubscriptionStatus.ACTIVE &&
@@ -64,7 +62,7 @@ const Dashboard: React.FC = () => {
 
   // TRAINER DASHBOARD
   if (isTrainer) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
     const currentTimeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     // Assigned clients = unique members with active PT subscriptions under this trainer

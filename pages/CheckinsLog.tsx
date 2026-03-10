@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole } from '../types';
+import { todayDateStr } from '../utils/dates';
 
 const CheckinsLog: React.FC = () => {
     const { attendance, users, branches, currentUser, isRowVisible, selectedBranchId } = useAppContext();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayDateStr();
 
     // Filter controls
     const [dateFilter, setDateFilter] = useState(todayStr);
