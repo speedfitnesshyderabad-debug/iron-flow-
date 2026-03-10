@@ -266,9 +266,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPlans(finalPlans);
 
       // 5. Fetch/Seed Subscriptions (With Member Join for dashboard alerts)
-      const { data: subData } = await supabase
+      const { data: subData, error: subError } = await supabase
         .from('subscriptions')
-        .select('*, member:users(name, avatar, phone, memberId)');
+        .select('*, member:users!memberId(name, avatar, phone, memberId)');
+
+      if (subError) console.warn('⚠️ Subscription join failed:', subError);
       if (subData) setSubscriptions(subData as any);
     } catch (error) {
       console.error('Core sync error:', error);
@@ -276,13 +278,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       // 6. Fetch Logs with Member/User Joins (To display names without loading 10,000 members)
-      const { data: sData } = await supabase.from('sales').select('*, member:users(name, memberId)');
+      const { data: sData } = await supabase.from('sales').select('*, member:users!memberId(name, memberId)');
       if (sData) setSales(sData);
 
-      const { data: aData } = await supabase.from('attendance').select('*, user:users(name, memberId, role)');
+      const { data: aData } = await supabase.from('attendance').select('*, user:users!userId(name, memberId, role)');
       if (aData) setAttendance(aData);
 
-      const { data: bkData } = await supabase.from('bookings').select('*, member:users(name, memberId)');
+      const { data: bkData } = await supabase.from('bookings').select('*, member:users!memberId(name, memberId)');
       if (bkData) setBookings(bkData);
 
       const { data: fbData } = await supabase.from('feedback').select('*');
