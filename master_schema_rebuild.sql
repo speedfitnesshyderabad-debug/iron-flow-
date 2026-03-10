@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   "weekOffs" TEXT[] DEFAULT '{}',
   "monthlySalary" NUMERIC,
   "maxDevices" INTEGER DEFAULT 1,
+  "createdAt" TIMESTAMPTZ DEFAULT NOW(),
   "referralCode" TEXT UNIQUE
 );
 
