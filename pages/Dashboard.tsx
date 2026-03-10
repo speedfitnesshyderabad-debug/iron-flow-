@@ -456,38 +456,64 @@ const Dashboard: React.FC = () => {
         {recentTransactions.length === 0 ? (
           <div className="py-12 text-center text-gray-400 italic text-sm">No sales yet.</div>
         ) : (
-          <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide">
-            {/* ... TABLE CODE (Keeping existing table) ... */}
-            <table className="w-full text-left min-w-[500px] md:min-w-0">
-              <thead>
-                <tr className="text-gray-400 uppercase text-[9px] font-black tracking-widest border-b pb-4">
-                  <th className="pb-4 px-2">Athlete</th>
-                  <th className="pb-4 px-2">Plan Details</th>
-                  <th className="pb-4 px-2">Value</th>
-                  <th className="pb-4 px-2">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {recentTransactions.map((sale) => {
-                  const memberName = sale.member?.name || 'Unknown Member';
-                  const plan = plans.find(p => p.id === sale.planId);
-                  return (
-                    <tr key={sale.id} className="text-sm hover:bg-gray-50 transition-colors group">
-                      <td className="py-4 px-2">
-                        <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{memberName}</div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <span className="text-gray-500 text-xs font-medium">{plan?.name || 'Retail Item'}</span>
-                      </td>
-                      <td className="py-4 px-2">
-                        <span className="font-black text-green-600">{formatCurrency(sale.amount)}</span>
-                      </td>
-                      <td className="py-4 px-2 text-gray-400 text-xs whitespace-nowrap">{sale.date}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-gray-400 uppercase text-[9px] font-black tracking-widest border-b pb-4">
+                    <th className="pb-4 px-2">Athlete</th>
+                    <th className="pb-4 px-2">Plan Details</th>
+                    <th className="pb-4 px-2">Value</th>
+                    <th className="pb-4 px-2">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {recentTransactions.map((sale) => {
+                    const memberName = sale.member?.name || 'Unknown Member';
+                    const plan = plans.find(p => p.id === sale.planId);
+                    return (
+                      <tr key={sale.id} className="text-sm hover:bg-gray-50 transition-colors group">
+                        <td className="py-4 px-2">
+                          <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{memberName}</div>
+                        </td>
+                        <td className="py-4 px-2">
+                          <span className="text-gray-500 text-xs font-medium">{plan?.name || 'Retail Item'}</span>
+                        </td>
+                        <td className="py-4 px-2">
+                          <span className="font-black text-green-600">{formatCurrency(sale.amount)}</span>
+                        </td>
+                        <td className="py-4 px-2 text-gray-400 text-xs whitespace-nowrap">{sale.date}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {recentTransactions.map((sale) => {
+                const memberName = sale.member?.name || 'Unknown Member';
+                const plan = plans.find(p => p.id === sale.planId);
+                return (
+                  <div key={sale.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center group active:scale-[0.98] transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                        <i className="fas fa-receipt text-xs"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{memberName}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">{plan?.name || 'Retail Item'} • {sale.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-emerald-600">{formatCurrency(sale.amount)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

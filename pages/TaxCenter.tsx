@@ -347,7 +347,8 @@ const TaxCenter: React.FC = () => {
                         <SummaryCard label="Total Tax" value={formatCurrency(taxStats.tax)} color="emerald" />
                         <SummaryCard label="Invoices" value={taxStats.count} color="slate" />
                      </div>
-                     <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
+                     {/* GST Desktop Table */}
+                     <div className="hidden md:block bg-white rounded-[2rem] md:rounded-[2.5rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
                         <table className="w-full text-left min-w-[600px]">
                            <thead className="bg-slate-50 border-b">
                               <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
@@ -373,6 +374,36 @@ const TaxCenter: React.FC = () => {
                            </tbody>
                         </table>
                      </div>
+
+                     {/* GST Mobile Cards */}
+                     <div className="md:hidden space-y-4">
+                        {filteredSales.map(sale => {
+                           const gstRate = currentBranch?.gstPercentage || 18;
+                           const taxable = sale.amount / (1 + (gstRate / 100));
+                           return (
+                              <div key={sale.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 active:bg-slate-50 transition-colors">
+                                 <div className="flex justify-between items-center">
+                                    <span className="font-mono text-[10px] font-black text-blue-600 uppercase tracking-tighter">{sale.invoiceNo}</span>
+                                    <span className="bg-slate-100 text-slate-500 text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest">STP Verified</span>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-50">
+                                    <div className="space-y-1">
+                                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Taxable Value</p>
+                                       <p className="text-xs font-bold text-slate-700">{formatCurrency(taxable)}</p>
+                                    </div>
+                                    <div className="space-y-1 text-right">
+                                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">GST Rate</p>
+                                       <p className="text-xs font-bold text-slate-700">{gstRate}%</p>
+                                    </div>
+                                 </div>
+                                 <div className="flex justify-between items-center bg-blue-50/50 -mx-6 -mb-6 px-6 py-4 rounded-b-3xl mt-2">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Invoice</span>
+                                    <span className="text-lg font-black text-slate-900">{formatCurrency(sale.amount)}</span>
+                                 </div>
+                              </div>
+                           );
+                        })}
+                     </div>
                   </div>
                )}
 
@@ -387,7 +418,8 @@ const TaxCenter: React.FC = () => {
                         </div>
                         <SummaryCard label="Settlement Rate" value={`${formatCurrency(settlementData.rate)} / Session`} color="slate" />
                      </div>
-                     <div className="bg-white p-8 rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
+                     {/* Settlement Audit Log - Desktop Table */}
+                     <div className="hidden md:block bg-white p-8 rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
                         <div className="flex justify-between items-center mb-6">
                            <div>
                               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Cross-Branch Audit Log</h3>
@@ -447,6 +479,56 @@ const TaxCenter: React.FC = () => {
                            </tbody>
                         </table>
                      </div>
+
+                     {/* Settlement Audit Log - Mobile Cards */}
+                     <div className="md:hidden space-y-4">
+                        <div className="flex justify-between items-center mb-2 px-1">
+                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cross-Branch Audit Log</h3>
+                           <span className="bg-indigo-50 text-indigo-500 font-black text-[8px] px-2 py-1 rounded-full uppercase tracking-widest">{months[selectedMonth]} {selectedYear}</span>
+                        </div>
+                        {settlementData.auditLog.length === 0 ? (
+                           <div className="bg-white p-10 rounded-3xl border border-slate-100 text-center">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">No cross-branch visits recorded.</p>
+                           </div>
+                        ) : (
+                           settlementData.auditLog.map(log => (
+                              <div key={`${log.id}-${log.type}`} className={`bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 ${log.isCapped ? 'opacity-60 grayscale scale-[0.98]' : ''}`}>
+                                 <div className="flex justify-between items-start">
+                                    <div>
+                                       <div className={`w-fit px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase mb-1 ${log.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                          {log.type === 'IN' ? 'Settlement Owed to Me' : 'Owed to Other Branch'}
+                                       </div>
+                                       <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{log.memberName}</p>
+                                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{log.date} @ {log.timeIn}</p>
+                                    </div>
+                                    <div className="text-right">
+                                       {log.isCapped ? (
+                                          <span className="text-lg font-black text-slate-300">₹0</span>
+                                       ) : (
+                                          <span className={`text-lg font-black ${log.type === 'IN' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                             {log.type === 'IN' ? '+' : '-'}{formatCurrency(log.value)}
+                                          </span>
+                                       )}
+                                       {log.isCapped && (
+                                          <p className="text-[7px] font-black text-rose-500 bg-rose-50 px-1 py-0.5 rounded uppercase mt-1">CAP EXCEEDED</p>
+                                       )}
+                                    </div>
+                                 </div>
+                                 <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                                    <div className="flex-1 text-center">
+                                       <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Home</p>
+                                       <p className="text-[10px] font-black text-slate-900 truncate uppercase">{log.homeBranchName}</p>
+                                    </div>
+                                    <i className={`fas fa-arrow-right text-[10px] ${log.type === 'IN' ? 'text-emerald-400' : 'text-red-400'}`}></i>
+                                    <div className="flex-1 text-center">
+                                       <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Visited</p>
+                                       <p className="text-[10px] font-black text-slate-900 truncate uppercase">{log.scanBranchName}</p>
+                                    </div>
+                                 </div>
+                              </div>
+                           ))
+                        )}
+                     </div>
                   </div>
                )}
 
@@ -456,7 +538,9 @@ const TaxCenter: React.FC = () => {
                         <SummaryCard label="Staff Count" value={users.filter(u => u.branchId === selectedBranchId && (u.role === UserRole.STAFF || u.role === UserRole.TRAINER)).length} color="blue" />
                         <SummaryCard label="Total Monthly Payroll" value={formatCurrency(totalPayouts.payroll)} color="emerald" />
                      </div>
-                     <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden">
+
+                     {/* Payroll Desktop Table */}
+                     <div className="hidden md:block bg-white rounded-[2rem] border shadow-sm overflow-hidden">
                         <table className="w-full text-left">
                            <thead className="bg-slate-50 border-b">
                               <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
@@ -475,11 +559,30 @@ const TaxCenter: React.FC = () => {
                                        </div>
                                     </td>
                                     <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase">{u.role}</td>
-                                    <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">{formatCurrency(u.salary || 25000)}</td>
+                                    <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">{formatCurrency(u.monthlySalary || 25000)}</td>
                                  </tr>
                               ))}
                            </tbody>
                         </table>
+                     </div>
+
+                     {/* Payroll Mobile Cards */}
+                     <div className="md:hidden space-y-4">
+                        {users.filter(u => u.branchId === selectedBranchId && (u.role === UserRole.STAFF || u.role === UserRole.TRAINER)).map(u => (
+                           <div key={u.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                 <img src={u.avatar} className="w-12 h-12 rounded-2xl object-cover border border-slate-100 shadow-sm" alt="" />
+                                 <div>
+                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{u.name}</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{u.role.replace('_', ' ')}</p>
+                                 </div>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Base</p>
+                                 <p className="text-sm font-black text-slate-900">{formatCurrency(u.monthlySalary || 25000)}</p>
+                              </div>
+                           </div>
+                        ))}
                      </div>
                   </div>
                )}
@@ -493,13 +596,13 @@ const TaxCenter: React.FC = () => {
                         <SummaryCard label="Total Commission Payout" value={formatCurrency(totalPayouts.commissions)} color="emerald" />
                      </div>
 
-                     {/* Per-Staff Breakdown Table */}
+                     {/* Per-Staff Breakdown Table - Desktop Only (Too complex for simple mobile cards, will require horizontal scroll on desktop area) */}
                      <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto scrollbar-hide">
                         <div className="px-8 py-5 border-b bg-slate-50 flex items-center justify-between">
-                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Staff Commission Breakdown — {months[selectedMonth]} {selectedYear}</h3>
-                           <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">Live Calculation</span>
+                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Commission Breakdown</h3>
+                           <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">Live</span>
                         </div>
-                        <table className="w-full text-left min-w-[760px]">
+                        <table className="w-full text-left min-w-[800px]">
                            <thead className="bg-slate-50/60 border-b">
                               <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                  <th className="px-6 py-4">Staff Member</th>
@@ -517,7 +620,7 @@ const TaxCenter: React.FC = () => {
                                     <td colSpan={7} className="px-8 py-10 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">No staff found for this branch.</td>
                                  </tr>
                               ) : (
-                                 staffCommissions.map((row, idx) => (
+                                 staffCommissions.map((row) => (
                                     <tr key={row.staff.id} className={`hover:bg-indigo-50/30 transition-colors ${row.total > 0 ? '' : 'opacity-50'}`}>
                                        <td className="px-6 py-4">
                                           <div className="flex items-center gap-3">
@@ -533,40 +636,36 @@ const TaxCenter: React.FC = () => {
                                              {row.staff.role.replace('_', ' ')}
                                           </span>
                                        </td>
-                                       {/* Gym */}
                                        <td className="px-6 py-4 text-center">
                                           {row.gymRate > 0 ? (
                                              <div>
                                                 <p className="text-xs font-black text-slate-900">{formatCurrency(row.gymComm)}</p>
-                                                <p className="text-[9px] text-slate-400 font-bold">{row.gymSales} sale{row.gymSales !== 1 ? 's' : ''} @ {row.gymRate}%</p>
+                                                <p className="text-[9px] text-slate-400 font-bold">@{row.gymRate}%</p>
                                              </div>
                                           ) : (
                                              <span className="text-[9px] text-slate-300 font-bold">—</span>
                                           )}
                                        </td>
-                                       {/* PT */}
                                        <td className="px-6 py-4 text-center">
                                           {row.ptRate > 0 ? (
                                              <div>
                                                 <p className="text-xs font-black text-slate-900">{formatCurrency(row.ptComm)}</p>
-                                                <p className="text-[9px] text-slate-400 font-bold">{row.ptSales} sale{row.ptSales !== 1 ? 's' : ''} @ {row.ptRate}%</p>
+                                                <p className="text-[9px] text-slate-400 font-bold">@{row.ptRate}%</p>
                                              </div>
                                           ) : (
                                              <span className="text-[9px] text-slate-300 font-bold">—</span>
                                           )}
                                        </td>
-                                       {/* Group */}
                                        <td className="px-6 py-4 text-center">
                                           {row.groupRate > 0 ? (
                                              <div>
                                                 <p className="text-xs font-black text-slate-900">{formatCurrency(row.groupComm)}</p>
-                                                <p className="text-[9px] text-slate-400 font-bold">{row.groupSales} sale{row.groupSales !== 1 ? 's' : ''} @ {row.groupRate}%</p>
+                                                <p className="text-[9px] text-slate-400 font-bold">@{row.groupRate}%</p>
                                              </div>
                                           ) : (
                                              <span className="text-[9px] text-slate-300 font-bold">—</span>
                                           )}
                                        </td>
-                                       {/* Sessions */}
                                        <td className="px-6 py-4 text-right">
                                           {row.sessionComm > 0 ? (
                                              <span className="text-xs font-black text-violet-600">{formatCurrency(row.sessionComm)}</span>
@@ -574,56 +673,29 @@ const TaxCenter: React.FC = () => {
                                              <span className="text-[9px] text-slate-300 font-bold">—</span>
                                           )}
                                        </td>
-                                       {/* Total */}
                                        <td className="px-6 py-4 text-right">
-                                          {row.total > 0 ? (
-                                             <span className="text-sm font-black text-emerald-600">{formatCurrency(row.total)}</span>
-                                          ) : (
-                                             <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest">No Sales</span>
-                                          )}
+                                          <span className="text-sm font-black text-emerald-600">{formatCurrency(row.total)}</span>
                                        </td>
                                     </tr>
                                  ))
                               )}
                            </tbody>
-                           {/* Footer Total */}
-                           {staffCommissions.length > 0 && (
-                              <tfoot className="bg-slate-900">
-                                 <tr>
-                                    <td colSpan={5} className="px-6 py-4">
-                                       <span className="text-[10px] font-black text-white uppercase tracking-widest">Total Commission Payout</span>
-                                    </td>
-                                    <td colSpan={2} className="px-6 py-4 text-right">
-                                       <span className="text-lg font-black text-emerald-400">{formatCurrency(totalPayouts.commissions)}</span>
-                                    </td>
-                                 </tr>
-                              </tfoot>
-                           )}
                         </table>
                      </div>
-
-                     {/* Zero-commission info */}
-                     {staffCommissions.every(r => r.total === 0) && (
-                        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 flex items-center gap-4">
-                           <i className="fas fa-triangle-exclamation text-amber-500 text-xl"></i>
-                           <div>
-                              <p className="text-xs font-black text-amber-800 uppercase tracking-widest">No commissions earned this period</p>
-                              <p className="text-[10px] text-amber-600 font-medium mt-0.5">Either no sales were recorded, or staff commission rates are set to 0% in Staff Settings.</p>
-                           </div>
-                        </div>
-                     )}
                   </div>
                )}
 
                {activeView === 'EXPENSES' && (
                   <div className="space-y-6">
-                     <div className="flex justify-between items-center">
+                     <div className="flex justify-between items-center px-1">
                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Expense Records</h3>
-                        <button onClick={() => setExpenseModalOpen(true)} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2">
-                           <i className="fas fa-plus"></i> Add Expense
+                        <button onClick={() => setExpenseModalOpen(true)} className="bg-red-50 text-red-600 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2 active:scale-95 shadow-sm">
+                           <i className="fas fa-plus"></i> Add New Record
                         </button>
                      </div>
-                     <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden">
+
+                     {/* Expenses Desktop Table */}
+                     <div className="hidden md:block bg-white rounded-[2rem] border shadow-sm overflow-hidden">
                         <table className="w-full text-left">
                            <thead className="bg-slate-50 border-b">
                               <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
@@ -658,6 +730,33 @@ const TaxCenter: React.FC = () => {
                               )}
                            </tbody>
                         </table>
+                     </div>
+
+                     {/* Expenses Mobile Cards */}
+                     <div className="md:hidden space-y-4">
+                        {filteredExpenses.length === 0 ? (
+                           <div className="bg-white p-10 rounded-3xl border border-slate-100 text-center">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">No expenses recorded.</p>
+                           </div>
+                        ) : (
+                           filteredExpenses.map(exp => (
+                              <div key={exp.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                                 <div className="flex justify-between items-start">
+                                    <div>
+                                       <span className="bg-slate-100 text-slate-600 text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest">{exp.category}</span>
+                                       <p className="text-sm font-black text-slate-900 uppercase tracking-tight mt-2">{exp.description}</p>
+                                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{exp.date}</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-3">
+                                       <p className="text-lg font-black text-red-600">{formatCurrency(exp.amount)}</p>
+                                       <button onClick={() => deleteExpense(exp.id)} className="w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center active:bg-red-100 transition-colors">
+                                          <i className="fas fa-trash-can text-sm"></i>
+                                       </button>
+                                    </div>
+                                 </div>
+                              </div>
+                           ))
+                        )}
                      </div>
                   </div>
                )}

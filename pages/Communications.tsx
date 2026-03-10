@@ -41,7 +41,8 @@ const Communications: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto scrollbar-hide">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto scrollbar-hide">
           <table className="w-full text-left min-w-[800px]">
             <thead className="bg-slate-50 border-b">
               <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -117,6 +118,59 @@ const Communications: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredComms.length === 0 ? (
+            <div className="px-8 py-20 text-center text-slate-400 italic font-medium">
+              <i className="fas fa-inbox text-4xl opacity-10 mb-3 block"></i>
+              <p>No communications recorded.</p>
+            </div>
+          ) : (
+            filteredComms.map((comm) => {
+              const user = users.find(u => u.id === comm.userId);
+              const branch = branches.find(b => b.id === comm.branchId);
+              return (
+                <div key={comm.id} className="p-6 space-y-4 active:bg-slate-50 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${comm.type === CommType.EMAIL ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>
+                        <i className={`fas ${comm.type === CommType.EMAIL ? 'fa-envelope' : 'fa-sms'} text-sm`}></i>
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-900 text-sm uppercase">{comm.user?.name || user?.name || 'System'}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">{comm.timestamp}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {!comm.isRead && (
+                        <span className="bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase tracking-widest">
+                          New
+                        </span>
+                      )}
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded">
+                        {branch?.name?.split(' ')[0] || 'GLOBAL'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                    {comm.subject && <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2 border-b border-slate-200 pb-2">{comm.subject}</p>}
+                    <p className="text-[11px] text-slate-600 leading-relaxed font-medium line-clamp-3">{comm.body}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{comm.recipient}</span>
+                    <span className="bg-green-100 text-green-700 text-[8px] font-black px-2 py-0.5 rounded-full flex items-center gap-1.5">
+                      <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+                      DELIVERED
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

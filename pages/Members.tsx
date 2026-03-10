@@ -425,22 +425,53 @@ const Members: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Member Directory</h2>
-          <p className="text-gray-500">Manage athletes from across India</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="w-full md:w-auto">
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-1">Members Directory</h2>
+          <p className="text-slate-500 font-medium">Manage your community across all branches</p>
         </div>
-        <button
-          onClick={() => {
-            const validPlans = plans.filter(p => p.branchId === initialBranchId || p.isMultiBranch);
-            const defaultPlanId = validPlans.length > 0 ? validPlans[0].id : '';
-            setEnrollData({ name: '', email: '', mobile: '', password: '', planId: defaultPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
-            setAddModalOpen(true);
-          }}
-          className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200"
-        >
-          <i className="fas fa-plus"></i> ADD NEW MEMBER
-        </button>
+
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm flex-1 sm:flex-none text-center">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Members</p>
+            <p className="text-xl font-black text-slate-900">{totalCount}</p>
+          </div>
+          <button
+            onClick={() => setAddModalOpen(true)}
+            className="flex-1 sm:flex-none bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-slate-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+          >
+            <i className="fas fa-user-plus text-base"></i> NEW ENROLLMENT
+          </button>
+        </div>
+      </div>
+
+      {/* Modern Filter Strip */}
+      <div className="bg-white p-4 md:p-6 rounded-[2.5rem] shadow-xl border border-slate-50 flex flex-col xl:flex-row gap-4">
+        <div className="flex-1 relative">
+          <i className="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input
+            type="text"
+            placeholder="Search by name, ID, or mobile..."
+            className="w-full bg-slate-50 pl-14 pr-6 py-4 rounded-2xl font-bold text-slate-700 outline-none border-2 border-transparent focus:border-slate-900 focus:bg-white transition-all"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            className="flex-1 sm:w-48 bg-slate-50 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-transparent focus:border-slate-900 outline-none transition-all"
+            value={filter}
+            onChange={e => setFilter(e.target.value as any)}
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active Only</option>
+            <option value="EXPIRED">Expired Only</option>
+            <option value="EXPIRING_SOON">Expiring Soon</option>
+            <option value="PAUSED">Paused</option>
+            <option value="NO_PLAN">No Plan</option>
+          </select>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">

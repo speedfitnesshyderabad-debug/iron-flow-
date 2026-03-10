@@ -332,7 +332,8 @@ const Staff: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto scrollbar-hide">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto scrollbar-hide">
           <table className="w-full text-left min-w-[700px]">
             <thead className="bg-gray-50 border-b">
               <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -455,6 +456,85 @@ const Staff: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {staffMembers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400 italic">No staff found.</div>
+          ) : (
+            staffMembers.map(staff => {
+              const branch = branches.find(b => b.id === staff.branchId);
+              const today = new Date().toISOString().split('T')[0];
+              const isCheckedIn = attendance.some(a => a.userId === staff.id && a.date === today && !a.timeOut);
+
+              return (
+                <div key={staff.id} className="p-6 space-y-4 active:bg-gray-50 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                      <img src={staff.avatar} className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md" alt="" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-black text-slate-900 uppercase tracking-tight">{staff.name}</h4>
+                          {staff.isActive === false && <span className="bg-red-100 text-red-600 text-[8px] font-black px-1 py-0.5 rounded">INACTIVE</span>}
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{staff.role.replace('_', ' ')}</p>
+                        <p className="text-[10px] text-blue-500 font-black mt-1 uppercase">{branch?.name?.split(' ')[0] || 'Global'}</p>
+                      </div>
+                    </div>
+                    {isCheckedIn ? (
+                      <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1 rounded-full font-black text-[8px] uppercase tracking-widest">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        On Duty
+                      </span>
+                    ) : (
+                      <span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">Offline</span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Monthly Salary</p>
+                      <p className="text-sm font-black text-emerald-600 uppercase">₹{staff.monthlySalary || 15000}</p>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Emergency SOS</p>
+                      <p className="text-[10px] font-black text-red-600 uppercase truncate">
+                        <i className="fas fa-phone-alt mr-1"></i> {staff.emergencyContact || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenLogs(staff)}
+                        className="bg-blue-50 text-blue-600 p-3 rounded-xl hover:bg-blue-100 transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                      >
+                        <i className="fas fa-clock-rotate-left"></i> LOGS
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenEdit(staff)}
+                        className="bg-indigo-50 text-indigo-600 p-3 rounded-xl hover:bg-indigo-100 transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                      >
+                        <i className="fas fa-user-pen text-sm"></i> EDIT
+                      </button>
+                      {staff.role !== UserRole.SUPER_ADMIN && (
+                        <button
+                          onClick={() => handleDeleteStaff(staff.id)}
+                          className="bg-red-50 text-red-600 p-3 rounded-xl hover:bg-red-100 transition-all"
+                        >
+                          <i className="fas fa-trash-can"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

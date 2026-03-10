@@ -177,15 +177,15 @@ const Branches: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Branch Network</h2>
-          <p className="text-gray-50">Infrastructure & Multi-Channel Gateway Management</p>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Branch Network</h2>
+          <p className="text-slate-500 font-medium text-sm">Infrastructure & Multi-Channel Gateway Management</p>
         </div>
         {currentUser?.role === UserRole.SUPER_ADMIN && (
           <button
             onClick={handleOpenAdd}
-            className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
+            className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 active:scale-95"
           >
             <i className="fas fa-plus"></i> NEW BRANCH
           </button>

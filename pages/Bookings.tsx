@@ -228,54 +228,58 @@ const Bookings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-            {activeTab === 'GROUP' ? 'Class Schedule' : 'Personal Training'}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="w-full md:w-auto">
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-1">
+            {activeTab === 'GROUP' ? 'Class Schedule' : 'PT Booking Hub'}
           </h2>
-          <p className="text-gray-500 font-medium text-sm">
-            {activeTab === 'GROUP' ? 'Book your next workout' : 'Book 1-on-1 sessions with trainers'}
+          <p className="text-slate-500 font-medium">
+            {activeTab === 'GROUP' ? 'Pulse-pounding group sessions' : '1-on-1 performance training'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
           {/* Tab Switcher */}
-          <div className="bg-white p-1 rounded-xl border flex">
+          <div className="bg-white p-1.5 rounded-2xl border border-slate-100 flex shadow-sm w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('GROUP')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'GROUP' ? 'bg-slate-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+              className={`flex-1 sm:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'GROUP' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'
                 }`}
             >
-              <i className="fas fa-users mr-1"></i> Group
+              <i className="fas fa-users mr-2"></i> Group
             </button>
             <button
               onClick={() => setActiveTab('PT')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'PT' ? 'bg-slate-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+              className={`flex-1 sm:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'PT' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'
                 }`}
             >
-              <i className="fas fa-user mr-1"></i> PT
+              <i className="fas fa-user-lightning mr-2"></i> PT
             </button>
           </div>
 
-          {/* QR Code Button for Trainers */}
-          {currentUser?.role === UserRole.TRAINER && (
-            <button
-              onClick={() => setIsCompletionQROpen(true)}
-              className="bg-green-600 text-white px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-green-700 transition-all flex items-center gap-2 shadow-lg shadow-green-100"
-            >
-              <i className="fas fa-qrcode"></i> Complete Class
-            </button>
-          )}
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* QR Code Button for Trainers */}
+            {currentUser?.role === UserRole.TRAINER && (
+              <button
+                onClick={() => setIsCompletionQROpen(true)}
+                className="flex-1 sm:flex-none bg-emerald-600 text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-50"
+              >
+                <i className="fas fa-qrcode text-base"></i> SCAN COMPLETE
+              </button>
+            )}
 
-          {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.TRAINER) && activeTab === 'GROUP' && (
-            <button
-              onClick={() => setScheduleModalOpen(true)}
-              className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100"
-            >
-              <i className="fas fa-plus-circle"></i> MANAGE
-            </button>
-          )}
+            {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.TRAINER) && activeTab === 'GROUP' && (
+              <button
+                onClick={() => setScheduleModalOpen(true)}
+                className="flex-1 sm:flex-none bg-indigo-600 text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-50"
+              >
+                <i className="fas fa-calendar-plus text-base"></i> MANAGE SLOTS
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
 
       {/* Date Strip */}
       <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">

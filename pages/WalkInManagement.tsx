@@ -149,39 +149,50 @@ const WalkInManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Walk-In Management</h2>
-          <p className="text-gray-500">Track visitors and convert leads to members</p>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Walk-In Management</h2>
+          <p className="text-slate-500 font-medium text-sm">Track visitors and convert leads to members</p>
         </div>
         <button
           onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 active:scale-95"
         >
-          <i className="fas fa-plus"></i> Register Walk-In
+          <i className="fas fa-plus"></i> REGISTER WALK-IN
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {[
-          { label: 'New Leads', count: walkIns.filter(w => w.status === 'NEW').length, color: 'blue' },
-          { label: 'Follow-ups', count: walkIns.filter(w => w.status === 'FOLLOW_UP').length, color: 'amber' },
-          { label: 'Converted', count: walkIns.filter(w => w.status === 'CONVERTED').length, color: 'green' },
-          { label: 'Total', count: walkIns.length, color: 'gray' }
-        ].map((stat, idx) => (
-          <div key={idx} className="bg-white p-4 rounded-2xl border shadow-sm">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
-            <p className={`text-2xl font-black text-${stat.color}-600`}>{stat.count}</p>
-          </div>
-        ))}
+          { label: 'New Leads', count: walkIns.filter(w => w.status === 'NEW').length, color: 'blue', icon: 'fa-star' },
+          { label: 'Follow-ups', count: walkIns.filter(w => w.status === 'FOLLOW_UP').length, color: 'indigo', icon: 'fa-phone' },
+          { label: 'Converted', count: walkIns.filter(w => w.status === 'CONVERTED').length, color: 'emerald', icon: 'fa-check-circle' },
+          { label: 'Total Base', count: walkIns.length, color: 'slate', icon: 'fa-users' }
+        ].map((stat, idx) => {
+          const colors: any = {
+            blue: 'bg-blue-50 text-blue-600 border-blue-100',
+            indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+            emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+            slate: 'bg-slate-50 text-slate-600 border-slate-100'
+          };
+          return (
+            <div key={idx} className={`p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border shadow-sm ${colors[stat.color]} transition-all`}>
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest opacity-60 truncate">{stat.label}</p>
+                <i className={`fas ${stat.icon} text-[10px] opacity-40`}></i>
+              </div>
+              <p className="text-xl md:text-2xl font-black truncate tracking-tight">{stat.count}</p>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex bg-white p-1.5 rounded-2xl border shadow-sm overflow-x-auto scrollbar-hide">
         {(['ALL', 'NEW', 'FOLLOW_UP', 'CONVERTED', 'NOT_INTERESTED'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${filterStatus === status
-              ? 'bg-slate-900 text-white'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border'
+            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterStatus === status
+              ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
+              : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
               }`}
           >
             {status.replace('_', ' ')}
@@ -189,81 +200,92 @@ const WalkInManagement: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {filteredWalkIns.map(walkIn => (
-          <div key={walkIn.id} className="bg-white rounded-2xl border p-6 hover:shadow-xl transition-all">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold text-lg text-gray-900">{walkIn.name}</h3>
-                <p className="text-sm text-gray-500"><i className="fas fa-phone mr-1"></i> {walkIn.phone}</p>
-                {walkIn.email && <p className="text-sm text-gray-500"><i className="fas fa-envelope mr-1"></i> {walkIn.email}</p>}
+          <div key={walkIn.id} className="bg-white rounded-[2rem] border shadow-sm p-6 md:p-8 hover:shadow-xl transition-all relative overflow-hidden group">
+            <div className={`absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 rounded-full opacity-[0.03] transition-transform group-hover:scale-110 ${getStatusColor(walkIn.status).split(' ')[0]}`}></div>
+
+            <div className="flex justify-between items-start mb-6">
+              <div className="min-w-0">
+                <h3 className="font-black text-xl text-slate-900 uppercase tracking-tight truncate">{walkIn.name}</h3>
+                <div className="flex flex-col gap-1 mt-2">
+                  <p className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                    <i className="fas fa-phone text-[10px] text-blue-500"></i> {walkIn.phone}
+                  </p>
+                  {walkIn.email && (
+                    <p className="text-xs font-bold text-slate-500 truncate flex items-center gap-2">
+                      <i className="fas fa-envelope text-[10px] text-blue-500"></i> {walkIn.email}
+                    </p>
+                  )}
+                </div>
               </div>
-              <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusColor(walkIn.status)}`}>
+              <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm ${getStatusColor(walkIn.status)}`}>
                 {walkIn.status.replace('_', ' ')}
               </span>
             </div>
 
-            <div className="space-y-2 text-sm mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Purpose:</span>
-                <span className="font-medium">{getPurposeLabel(walkIn.purpose)}</span>
+            <div className="space-y-3 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
+              <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest">
+                <span className="text-slate-400">Purpose</span>
+                <span className="text-slate-900">{getPurposeLabel(walkIn.purpose)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Source:</span>
-                <span className="font-medium">{walkIn.source.replace('_', ' ')}</span>
+              <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest">
+                <span className="text-slate-400">Channel</span>
+                <span className="text-slate-900">{walkIn.source.replace('_', ' ')}</span>
               </div>
               {walkIn.assignedTo && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Assigned:</span>
-                  <span className="font-medium">{staffMembers.find(s => s.id === walkIn.assignedTo)?.name || 'Unknown'}</span>
+                <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest">
+                  <span className="text-slate-400">Assigned To</span>
+                  <span className="text-blue-600">{staffMembers.find(s => s.id === walkIn.assignedTo)?.name || 'Unknown'}</span>
                 </div>
               )}
               {walkIn.followUpDate && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Follow-up:</span>
-                  <span className={`font-medium ${new Date(walkIn.followUpDate) < new Date() ? 'text-red-600' : ''}`}>
-                    {walkIn.followUpDate}
+                <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest pt-2 border-t border-slate-200/50 mt-1">
+                  <span className="text-slate-400">Follow-up</span>
+                  <span className={`font-black ${new Date(walkIn.followUpDate) < new Date() ? 'text-red-600' : 'text-slate-900'}`}>
+                    <i className="far fa-calendar-alt mr-1"></i> {walkIn.followUpDate}
                   </span>
                 </div>
               )}
             </div>
 
             {walkIn.notes && (
-              <div className="bg-gray-50 p-3 rounded-xl text-sm text-gray-600 mb-4">
-                <i className="fas fa-sticky-note mr-1 text-gray-400"></i> {walkIn.notes}
+              <div className="mb-6 relative">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-full"></div>
+                <p className="text-xs font-medium text-slate-600 pl-4 italic leading-relaxed line-clamp-2">"{walkIn.notes}"</p>
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleEdit(walkIn)}
-                className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
+                className="py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95"
               >
-                EDIT
+                EDIT PROFILE
               </button>
               {walkIn.status !== 'CONVERTED' && (
                 <button
                   onClick={() => handleConvertToMember(walkIn)}
-                  className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors"
+                  className="py-3 bg-emerald-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all active:scale-95 flex items-center justify-center gap-1.5"
                 >
-                  CONVERT
+                  <i className="fas fa-user-plus"></i> CONVERT
                 </button>
               )}
             </div>
 
             {(walkIn.status === 'NEW' || walkIn.status === 'FOLLOW_UP') && (
-              <div className="mt-3 pt-3 border-t flex gap-2">
+              <div className="mt-3 pt-3 flex gap-2 border-t border-dashed border-slate-200">
                 {walkIn.status === 'NEW' && (
                   <button
                     onClick={() => handleStatusChange(walkIn.id, 'FOLLOW_UP')}
-                    className="flex-1 py-2 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold hover:bg-amber-100 transition-colors"
+                    className="flex-1 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[8px] uppercase tracking-widest hover:bg-indigo-100 transition-all"
                   >
-                    FOLLOW-UP
+                    MOVE TO FOLLOW-UP
                   </button>
                 )}
                 <button
                   onClick={() => handleStatusChange(walkIn.id, 'NOT_INTERESTED')}
-                  className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                  className="flex-1 py-3 bg-red-50 text-red-500 rounded-xl font-black text-[8px] uppercase tracking-widest hover:bg-red-100 transition-all"
                 >
                   NOT INTERESTED
                 </button>

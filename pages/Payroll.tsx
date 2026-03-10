@@ -276,7 +276,8 @@ const Payroll: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left min-w-[1000px]">
                         <thead className="bg-slate-50 border-b">
                             <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -391,6 +392,109 @@ const Payroll: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {payrollData.length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 font-bold italic">No staff found for this criteria.</div>
+                    ) : (
+                        payrollData.map((item, idx) => (
+                            <div key={idx} className="p-6 space-y-4 active:bg-slate-50 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <img src={item.user.avatar} className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow-sm" alt="" />
+                                        <div>
+                                            <p className="font-black text-slate-900 text-sm uppercase">{item.user.name}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.user.role.replace('_', ' ')}</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {item.status === 'PAID' && (
+                                            <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                                                PAID
+                                            </span>
+                                        )}
+                                        {item.status === 'GENERATED' && (
+                                            <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                                                PENDING
+                                            </span>
+                                        )}
+                                        {item.status === 'ESTIMATED' && (
+                                            <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                                                ESTIMATE
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Payable Days</p>
+                                        <p className="text-sm font-black text-slate-900">
+                                            {item.data.payableDays}
+                                            <span className="text-[9px] text-slate-400 ml-1">/ {item.isLive ? item.stats.totalDays : item.record?.details?.totalDays || 30}d</span>
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Net Salary</p>
+                                        <p className="text-sm font-black text-emerald-600">{formatCurrency(item.data.netSalary)}</p>
+                                    </div>
+                                </div>
+
+                                {item.data.deductions > 0 && (
+                                    <div className="px-4 py-2 bg-red-50 rounded-xl border border-red-100 flex justify-between items-center text-[9px] font-bold text-red-600 uppercase tracking-widest">
+                                        <span>Total Deductions</span>
+                                        <span>-{formatCurrency(item.data.deductions)}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-end gap-2 pt-2">
+                                    {item.status === 'ESTIMATED' && (
+                                        <button
+                                            onClick={() => handleGenerate(item)}
+                                            disabled={!!processingId}
+                                            className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 active:scale-95 disabled:opacity-50"
+                                        >
+                                            <i className="fas fa-file-invoice mr-2"></i> GENERATE PAYSLIP
+                                        </button>
+                                    )}
+                                    {item.status === 'GENERATED' && (
+                                        <>
+                                            <button
+                                                onClick={() => handleMarkPaid(item.record)}
+                                                disabled={!!processingId}
+                                                className="flex-1 bg-emerald-600 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+                                            >
+                                                <i className="fas fa-check-circle mr-2"></i> MARK PAID
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeletePayroll(item.record)}
+                                                disabled={!!processingId}
+                                                className="bg-amber-100 text-amber-700 p-3 rounded-xl hover:bg-amber-200"
+                                            >
+                                                <i className="fas fa-sync-alt"></i>
+                                            </button>
+                                            <button
+                                                onClick={() => handleViewPayslip(item)}
+                                                className="bg-white border border-slate-200 text-slate-600 p-3 rounded-xl hover:bg-slate-50"
+                                            >
+                                                <i className="fas fa-eye"></i>
+                                            </button>
+                                        </>
+                                    )}
+                                    {item.status === 'PAID' && (
+                                        <button
+                                            onClick={() => handleViewPayslip(item)}
+                                            className="flex-1 bg-blue-50 text-blue-600 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 flex items-center justify-center gap-2"
+                                        >
+                                            <i className="fas fa-file-contract"></i> VIEW PAYSLIP
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 
