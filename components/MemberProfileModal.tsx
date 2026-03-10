@@ -239,23 +239,28 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                                             <div className="flex items-center gap-3 mt-1">
                                                                 <span className="text-[10px] font-bold text-gray-400 border-b border-dashed border-gray-200 uppercase pb-0.5">
                                                                     {(() => {
-                                                                        const matchedSale = memberSales.find(s =>
-                                                                            // Tier 1: Strict saleId Link (New Transactions)
-                                                                            (sub.saleId && s.id === sub.saleId) ||
+                                                                        const normalizeDate = (d: string) => new Date(d).toISOString().split('T')[0];
+                                                                        const subDate = normalizeDate(sub.startDate);
 
-                                                                            // Tier 2: Heuristic Match (Member + Plan + Date)
-                                                                            (!sub.saleId &&
-                                                                                (s.memberId === member.id || (member.memberId && s.memberId === member.memberId)) &&
-                                                                                s.planId === sub.planId &&
-                                                                                Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
-                                                                            ) ||
+                                                                        const matchedSale = memberSales.find(s => {
+                                                                            const saleDate = normalizeDate(s.date);
+                                                                            const diffDays = Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) / (1000 * 60 * 60 * 24);
 
-                                                                            // Tier 3: Loose Match (Member + Date Only) - for renamed/deleted plans or legacy data
-                                                                            (!sub.saleId &&
-                                                                                (s.memberId === member.id || (member.memberId && s.memberId === member.memberId)) &&
-                                                                                Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
-                                                                            )
-                                                                        );
+                                                                            // Tier 1: Strict Link (v4+ purchases)
+                                                                            if (sub.saleId && s.id === sub.saleId) return true;
+
+                                                                            // Tier 2: Plan + Date (Standard - 5 day buffer)
+                                                                            if (s.planId === sub.planId && diffDays <= 5) return true;
+
+                                                                            // Tier 3: Date-only (Plan names changed - 2 day buffer)
+                                                                            if (saleDate === subDate) return true;
+
+                                                                            // Tier 4: Last Resort (Only available sale for this plan)
+                                                                            // If member has exactly one sale for this plan, and no other sub matched it yet
+                                                                            if (s.planId === sub.planId && memberSales.filter(ms => ms.planId === s.planId).length === 1) return true;
+
+                                                                            return false;
+                                                                        });
                                                                         return formatCurrency(matchedSale?.amount || plan?.price || 0);
                                                                     })()} Paid
                                                                 </span>
@@ -272,51 +277,6 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                                         })}
                                     </div>
                                 )}
-                                {/* Debug Section */}
-                                <div className="mt-8 p-4 bg-gray-100 rounded-2xl border border-gray-200">
-                                    <h6 className="text-[10px] font-black uppercase text-gray-400 mb-2">Technical Diagnostics (Temp)</h6>
-                                    <div className="text-[10px] text-gray-600 font-mono space-y-1">
-                                        <p>Member UUID: {member.id}</p>
-                                        <p>Member String ID: {member.memberId || 'N/A'}</p>
-                                        <p>Sales Fetched: {memberSales.length}</p>
-
-                                        <div className="mt-4 border-t border-gray-200 pt-2">
-                                            <p className="font-bold text-[9px] mb-1">Subscriptions Matching:</p>
-                                            {subscriptions.map((sub, idx) => {
-                                                const matchedSale = memberSales.find(s =>
-                                                    (sub.saleId && s.id === sub.saleId) ||
-                                                    (!sub.saleId &&
-                                                        (s.memberId === member.id || (member.memberId && s.memberId === member.memberId)) &&
-                                                        Math.abs(new Date(s.date).getTime() - new Date(sub.startDate).getTime()) <= 172800000
-                                                    )
-                                                );
-                                                return (
-                                                    <div key={idx} className="mb-2 p-1 bg-white border border-gray-200 rounded">
-                                                        <p>Sub: {sub.id.slice(0, 8)} | Date: {sub.startDate} | Plan: {sub.planId.slice(0, 8)}</p>
-                                                        <p className={matchedSale ? 'text-green-600' : 'text-red-500'}>
-                                                            {matchedSale ? `MATCHED: ${matchedSale.id.slice(0, 8)} (${matchedSale.amount})` : 'NO MATCH FOUND'}
-                                                        </p>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <div className="mt-4 border-t border-gray-200 pt-2">
-                                            <p className="font-bold text-[9px] mb-1">Raw Sales List:</p>
-                                            <div className="max-h-32 overflow-y-auto">
-                                                {memberSales.length > 0 ? (
-                                                    memberSales.map((s, idx) => (
-                                                        <div key={idx} className="border-b border-gray-200 py-1">
-                                                            ID: {s.id.slice(0, 8)} | Date: {s.date} | Amt: {s.amount} | M-ID: {s.memberId?.slice(0, 8)} | P-ID: {s.planId?.slice(0, 8) || 'N/A'}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-red-500">No sales found in database.</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
