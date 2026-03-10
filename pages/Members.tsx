@@ -800,6 +800,20 @@ const Members: React.FC = () => {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
                   <input type="number" min="0" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
                 </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex justify-between items-center animate-pulse">
+                  <div>
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Final Payable Amount</p>
+                    <p className="text-2xl font-black text-blue-700">
+                      {formatCurrency(Math.max(0, (plans.find(p => p.id === enrollData.planId)?.price || 0) - (enrollData.discount || 0)))}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none mb-1">Original: {formatCurrency(plans.find(p => p.id === enrollData.planId)?.price || 0)}</p>
+                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-none">Discount: -{formatCurrency(enrollData.discount || 0)}</p>
+                  </div>
+                </div>
+
                 <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 active:scale-95 transition-all">ACTIVATE MEMBERSHIP</button>
               </form>
             </div>
