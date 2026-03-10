@@ -39,6 +39,7 @@ export interface Communication {
   status: 'DELIVERED' | 'FAILED';
   category: 'WELCOME' | 'PAYMENT' | 'REMINDER' | 'ANNOUNCEMENT';
   branchId: string; // Added branchId for tracking
+  user?: { name: string; memberId?: string; role: string }; // Joined from users table
 }
 
 export interface Offer {

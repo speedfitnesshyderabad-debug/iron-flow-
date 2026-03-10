@@ -291,8 +291,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { data: fbData } = await supabase.from('feedback').select('*');
       if (fbData) setFeedback(fbData);
 
-      const { data: cData } = await supabase.from('communications').select('*');
-      if (cData) setCommunications(cData);
+      const { data: cData } = await supabase.from('communications').select('*, user:users!userId(name, memberId, role)');
+      if (cData) setCommunications(cData as any);
       const { data: holidaysData } = await supabase.from('holidays').select('*');
       setHolidays(holidaysData || []);
 
@@ -356,6 +356,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'walk_ins' }, () => {
         supabase.from('walk_ins').select('*').then(({ data }) => { if (data) setWalkIns(data); });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'communications' }, () => {
+        supabase.from('communications').select('*, user:users!userId(name, memberId, role)').then(({ data }) => { if (data) setCommunications(data as any); });
       })
       .subscribe();
 

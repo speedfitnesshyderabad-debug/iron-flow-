@@ -75,7 +75,7 @@ const Communications: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <p className="font-black text-slate-900 text-sm truncate max-w-[150px]">{user?.name || 'System'}</p>
+                        <p className="font-black text-slate-900 text-sm truncate max-w-[150px]">{comm.user?.name || user?.name || 'System'}</p>
                         <p className="text-[10px] text-slate-400 font-bold">{comm.recipient}</p>
                       </td>
                       <td className="px-8 py-6">
