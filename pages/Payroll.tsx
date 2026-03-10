@@ -5,7 +5,7 @@ import { UserRole, Payroll as PayrollType, User } from '../types';
 import PayslipModal from '../components/PayslipModal';
 
 const Payroll: React.FC = () => {
-    const { users, attendance, payroll, branches, addPayroll, updatePayroll, currentUser, holidays, selectedBranchId: globalBranchId, bookings, subscriptions, plans, sales } = useAppContext();
+    const { users, attendance, payroll, branches, addPayroll, updatePayroll, deletePayroll, currentUser, holidays, selectedBranchId: globalBranchId, bookings, subscriptions, plans, sales } = useAppContext();
 
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -210,6 +210,17 @@ const Payroll: React.FC = () => {
         finally { setProcessingId(null); }
     };
 
+    const handleDeletePayroll = async (record: PayrollType) => {
+        if (processingId) return;
+        if (!window.confirm("Are you sure you want to discard this generated payslip and recalculate based on their live base salary?")) return;
+
+        setProcessingId(record.id);
+        try {
+            await deletePayroll(record.id);
+        } catch (e) { console.error(e); }
+        finally { setProcessingId(null); }
+    };
+
     const handleViewPayslip = (item: any) => {
         // Construct data for Modal
         const combinedData = {
@@ -348,6 +359,14 @@ const Payroll: React.FC = () => {
                                                             className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                                         >
                                                             PAY
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeletePayroll(item.record)}
+                                                            disabled={!!processingId}
+                                                            title="Recalculate Payroll based on current Staff Settings"
+                                                            className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl text-[10px] font-black hover:bg-amber-200 transition-all disabled:opacity-50"
+                                                        >
+                                                            <i className="fas fa-sync-alt"></i>
                                                         </button>
                                                         <button
                                                             onClick={() => handleViewPayslip(item)}

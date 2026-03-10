@@ -70,6 +70,7 @@ interface AppContextType {
   deleteExpense: (id: string) => Promise<void>;
   addPayroll: (record: Payroll) => Promise<void>;
   updatePayroll: (id: string, updates: Partial<Payroll>) => Promise<void>;
+  deletePayroll: (id: string) => Promise<void>;
   generateTransactionCode: (targetBranchId?: string) => Promise<string>;
   verifyTransactionCode: (code: string) => Promise<boolean>;
   enrollMember: (userData: Partial<User>, planId?: string, trainerId?: string, password?: string, discount?: number, paymentMethod?: 'CASH' | 'CARD' | 'ONLINE' | 'POS', startDate?: string, staffId?: string, referralCode?: string, pauseAllowance?: number) => Promise<void>;
@@ -1966,6 +1967,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { valid: true, discount, message: 'Coupon applied successfully!' };
   };
 
+  const deletePayroll = async (id: string) => {
+    try {
+      const { error } = await supabase.from('payroll').delete().eq('id', id);
+      if (!error) {
+        setPayroll(prev => prev.filter(p => p.id !== id));
+        showToast('Payroll record discarded. It will now recalculate based on live data.');
+      } else {
+        console.error('Delete payroll error:', error);
+        showToast('Failed to discard payroll record: ' + error.message, 'error');
+      }
+    } catch (err: any) {
+      console.error('Network or logic error during payroll deletion:', err);
+      showToast('Error: ' + (err.message || 'Check your internet connection'), 'error');
+    }
+  };
+
   const value: AppContextType = {
     currentUser,
     setCurrentUser,
@@ -2030,6 +2047,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updatePayroll,
     generateTransactionCode,
     verifyTransactionCode,
+    deletePayroll,
     enrollMember,
     purchaseSubscription,
     pauseMembership,
