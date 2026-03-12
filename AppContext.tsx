@@ -2056,8 +2056,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addCoupon = async (coupon: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => {
     try {
-      const { error } = await supabase.from('coupons').insert({ ...coupon, timesUsed: 0 });
+      const { data, error } = await supabase.from('coupons').insert({ ...coupon, timesUsed: 0 }).select().single();
       if (error) throw error;
+      if (data) setCoupons(prev => [...prev, data]);
       showToast('Coupon created successfully', 'success');
     } catch (err: any) {
       console.error('Add coupon error:', err);
@@ -2069,6 +2070,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('coupons').update(updates).eq('id', id);
       if (error) throw error;
+      setCoupons(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
       showToast('Coupon updated successfully', 'success');
     } catch (err: any) {
       console.error('Update coupon error:', err);
@@ -2080,6 +2082,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const { error } = await supabase.from('coupons').delete().eq('id', id);
       if (error) throw error;
+      setCoupons(prev => prev.filter(c => c.id !== id));
       showToast('Coupon deleted successfully', 'success');
     } catch (err: any) {
       console.error('Delete coupon error:', err);
