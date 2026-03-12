@@ -848,6 +848,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const branchId = item.branchId;
     const saleAmount = item.price * quantity;
     const saleId = crypto.randomUUID();
+
+    // 🕵️ Fetch member name for UI join if not in global state
+    let memberData = users.find(u => u.id === memberId);
+    if (!memberData) {
+      const { data: mData } = await supabase.from('users').select('name, memberId').eq('id', memberId).single();
+      if (mData) memberData = mData as any;
+    }
+
     const newSale: Sale = {
       id: saleId,
       invoiceNo: generateInvoiceNo(branchId),
@@ -859,7 +867,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       branchId,
       paymentMethod,
       transactionCode: (paymentMethod === 'CASH' || paymentMethod === 'POS') ? transactionCode : undefined,
-      razorpayPaymentId: (paymentMethod === 'CARD' || paymentMethod === 'ONLINE') ? razorpayPaymentId : undefined
+      razorpayPaymentId: (paymentMethod === 'CARD' || paymentMethod === 'ONLINE') ? razorpayPaymentId : undefined,
+      member: memberData ? { name: memberData.name, memberId: memberData.memberId } : undefined
     };
 
     const { error: stockError } = await supabase.from('inventory').update({ stock: item.stock - quantity }).eq('id', itemId);
@@ -1397,7 +1406,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           branchId,
           trainerId,
           pauseAllowanceDays: pauseAllowance,
-          saleId: saleId
+          saleId: saleId,
+          member: { name: newUser.name, avatar: newUser.avatar, phone: newUser.phone, memberId: newUser.memberId }
         };
         subEndDate = newSub.endDate;
 
@@ -1413,7 +1423,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           staffId: staffId || currentUser?.id || null, // ❌ Fix FK violation: No 'admin' placeholder
           branchId,
           paymentMethod: 'ONLINE',
-          trainerId
+          trainerId,
+          member: { name: newUser.name, memberId: newUser.memberId }
         };
 
         const { error: subError } = await supabase.from('subscriptions').insert(newSub);
@@ -1612,7 +1623,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       branchId,
       trainerId,
       pauseAllowanceDays: pauseAllowance,
-      saleId: saleId
+      saleId: saleId,
+      member: { name: user.name, avatar: user.avatar, phone: user.phone, memberId: user.memberId }
     };
     const newSale: Sale = {
       id: saleId,
@@ -1625,7 +1637,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       staffId: currentUser?.id || null, // ❌ Fix FK violation: No 'self' placeholder
       branchId,
       paymentMethod,
-      trainerId
+      trainerId,
+      member: { name: user.name, memberId: user.memberId }
     };
 
     try {
