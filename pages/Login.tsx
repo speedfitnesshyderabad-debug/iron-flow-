@@ -75,10 +75,29 @@ const Login: React.FC = () => {
           .from('users')
           .select('*')
           .or(`id.eq.${authUser.id},email.eq.${targetEmail.toLowerCase()}`)
-          .single();
+          .maybeSingle();
 
         if (dbUser && !dbError) {
-          user = dbUser;
+          // 🔄 Handle UID Shift (e.g. Google Login -> Email/Password Login)
+          if (dbUser.id !== authUser.id) {
+            console.log('🔄 UID Shift detected, updating database ID to match current Auth UID...');
+            const { data: migUser, error: migError } = await supabase
+              .from('users')
+              .update({ id: authUser.id })
+              .eq('id', dbUser.id)
+              .select()
+              .single();
+
+            if (!migError && migUser) {
+              console.log('✅ Identity migrated in database');
+              user = migUser;
+            } else {
+              console.error('❌ Identity migration failed:', migError);
+              user = dbUser;
+            }
+          } else {
+            user = dbUser;
+          }
         }
       }
 

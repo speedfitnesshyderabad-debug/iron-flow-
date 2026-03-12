@@ -191,13 +191,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 1. Sync User Profile EARLY (Required for RLS to allow further fetching/seeding)
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        const { data: existingProfile } = await supabase.from('users').select('*').or(`id.eq.${authUser.id},email.eq.${authUser.email}`).single();
-        if (!existingProfile) {
+        // 🔍 Smart Identity Sync: Check by BOTH ID and Email
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('*')
+          .or(`id.eq.${authUser.id},email.eq.${authUser.email}`)
+          .maybeSingle();
+
+        if (existingProfile) {
+          // 🔄 Handle UID Shift (e.g. Google Login -> Email/Password Login with same email)
+          if (existingProfile.id !== authUser.id) {
+            console.log('🔄 Identity mismatch detected, migrating profile ID to new Auth UID...');
+            const { data: updatedProfile, error: updateError } = await supabase
+              .from('users')
+              .update({ id: authUser.id })
+              .eq('id', existingProfile.id)
+              .select()
+              .single();
+
+            if (!updateError && updatedProfile) {
+              console.log('✅ Identity migrated successfully');
+              setCurrentUser(updatedProfile);
+            } else {
+              console.error('❌ Identity migration failed:', updateError);
+              setCurrentUser(existingProfile);
+            }
+          } else {
+            // Already in sync
+            setCurrentUser(existingProfile);
+          }
+        } else {
+          // 🛡️ Secure Profile Reconstruction (If DB record is entirely missing)
           const isGoogle = authUser.app_metadata?.provider === 'google' || authUser.app_metadata?.providers?.includes('google');
 
           if (isGoogle && !authUser.user_metadata?.role) {
             console.warn('Blocked unauthorized Google login for new user:', authUser.email);
-            // Delete the mistakenly created auth user in the background to keep the system clean
             const supabaseUrlClean = import.meta.env.VITE_SUPABASE_URL?.trim();
             fetch(`${supabaseUrlClean}/functions/v1/delete-user`, {
               method: 'POST',
@@ -211,10 +239,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
           }
 
-          // 🛡️ Secure Profile Reconstruction
-          // If DB record is missing, pull details from Auth Metadata (set during enrollment)
           const metadata = authUser.user_metadata;
-          const reconstructedRole = metadata?.role || UserRole.MEMBER; // 🔒 Default to Member for safety
+          const reconstructedRole = metadata?.role || UserRole.MEMBER;
           const reconstructedBranchId = metadata?.branchId || null;
 
           const { data: profile } = await supabase.from('users').upsert({
@@ -227,9 +253,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             emergencyContact: metadata?.emergencyContact || '',
             address: metadata?.address || '',
             memberId: metadata?.memberId || `IF-RECON-${Math.floor(1000 + Math.random() * 9000)}`,
-            avatar: metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
+            avatar: metadata?.avatar || `https://ui-avatars.cc/api/?name=${encodeURIComponent(metadata?.name || 'User')}&background=3b82f6&color=fff`
           }).select().single();
-          if (profile) setUsers(prev => [...prev, profile]);
+
+          if (profile) {
+            setUsers(prev => [...prev, profile]);
+            setCurrentUser(profile);
+          }
         }
       }
 
