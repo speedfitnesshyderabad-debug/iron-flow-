@@ -1395,7 +1395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (!finalAuthData.user) throw new Error('Failed to create auth user');
 
-      const branchId = userData.branchId || currentUser?.branchId || branches[0]?.id || '';
+      const branchId = userData.branchId || currentUser?.branchId || branches[0]?.id || null;
       const newUserId = finalAuthData.user!.id; // Use Auth UUID (from original or retry signup)
       const membershipStartDate = startDate || todayDateStr();
 
@@ -1645,7 +1645,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const effectiveStartDate = customStartDate || todayDateStr();
-    const branchId = user.branchId!;
+    const branchId = user.branchId || null;
 
     const saleId = crypto.randomUUID();
 
