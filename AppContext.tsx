@@ -847,14 +847,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const branchId = item.branchId;
     const saleAmount = item.price * quantity;
+    const saleId = crypto.randomUUID();
     const newSale: Sale = {
-      id: `sale-${Date.now()}`,
+      id: saleId,
       invoiceNo: generateInvoiceNo(branchId),
       date: todayDateStr(),
       amount: saleAmount,
       memberId,
       itemId,
-      staffId: currentUser?.id || 'pos',
+      staffId: currentUser?.id || null, // ❌ Fix FK violation: No 'pos' placeholder
       branchId,
       paymentMethod,
       transactionCode: (paymentMethod === 'CASH' || paymentMethod === 'POS') ? transactionCode : undefined,
@@ -1385,9 +1386,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let subEndDate = '';
 
       if (plan) {
-        const saleId = `sale-${Date.now()}`;
+        const saleId = crypto.randomUUID();
         const newSub: Subscription = {
-          id: `s-${Date.now()}`,
+          id: crypto.randomUUID(),
           memberId: newUserId,
           planId: plan.id,
           startDate: membershipStartDate,
@@ -1409,7 +1410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           discount,
           memberId: newUserId,
           planId: plan.id,
-          staffId: staffId || currentUser?.id || 'admin',
+          staffId: staffId || currentUser?.id || null, // ❌ Fix FK violation: No 'admin' placeholder
           branchId,
           paymentMethod: 'ONLINE',
           trainerId
@@ -1570,18 +1571,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const purchaseSubscription = async (userId: string, planId: string, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', trainerId?: string, referralCode?: string, pauseAllowance: number = 0, discount: number = 0, customStartDate?: string) => {
     setGlobalLoading(true);
     const plan = plans.find(p => p.id === planId);
-    const user = users.find(u => u.id === userId);
-    if (!plan || !user) {
+    let user = users.find(u => u.id === userId);
+
+    // 🕵️ Member Retrieval: Members are excluded from global state. 
+    // Fetch directly from DB if not found locally.
+    if (!user) {
+      console.log('🔄 Member not in local state, fetching from DB...');
+      const { data: fetchedUser, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !fetchedUser) {
+        console.error('❌ Member lookup failed:', userError);
+        setGlobalLoading(false);
+        showToast('Member profile not found.', 'error');
+        return;
+      }
+      user = fetchedUser as User;
+    }
+
+    if (!plan) {
       setGlobalLoading(false);
+      showToast('Selected plan not found.', 'error');
       return;
     }
 
     const effectiveStartDate = customStartDate || todayDateStr();
     const branchId = user.branchId!;
 
-    const saleId = `sale-${Date.now()}`;
+    const saleId = crypto.randomUUID();
     const newSub: Subscription = {
-      id: `s-${Date.now()}`,
+      id: crypto.randomUUID(),
       memberId: userId,
       planId: planId,
       startDate: effectiveStartDate,
@@ -1600,7 +1622,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       discount: discount,
       memberId: userId,
       planId: planId,
-      staffId: currentUser?.id || 'self',
+      staffId: currentUser?.id || null, // ❌ Fix FK violation: No 'self' placeholder
       branchId,
       paymentMethod,
       trainerId
