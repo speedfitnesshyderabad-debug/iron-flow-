@@ -383,7 +383,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supabase.from('class_schedules').select('*').then(({ data }) => { if (data) setClassSchedules(data); });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => {
-        supabase.from('sales').select('*').then(({ data }) => { if (data) setSales(data); });
+        supabase.from('sales').select('*, member:users!memberId(name, memberId)').then(({ data }) => { if (data) setSales(data); });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
         supabase.from('expenses').select('*').then(({ data }) => { if (data) setExpenses(data); });

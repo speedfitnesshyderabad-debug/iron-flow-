@@ -420,7 +420,7 @@ const Members: React.FC = () => {
 
   const renewalPlans = useMemo(() => {
     if (!renewTarget) return [];
-    return plans.filter(p => p.isActive && (p.branchId === renewTarget.member.branchId || p.isMultiBranch));
+    return plans.filter(p => p.isActive !== false && (p.branchId === renewTarget.member.branchId || p.isMultiBranch));
   }, [plans, renewTarget]);
 
   return (
