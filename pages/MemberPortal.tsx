@@ -293,13 +293,25 @@ const MemberPortal: React.FC = () => {
                         <i className="fas fa-receipt text-green-500"></i> Recent Billing
                      </h3>
                      <div className="space-y-3">
-                        {memberSales.slice(0, 3).map(sale => (
-                           <div key={sale.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                              <div className="min-w-0">
-                                 <p className="text-[10px] font-bold text-slate-700 truncate">{plans.find(p => p.id === sale.planId)?.name || 'Retail'}</p>
-                                 <p className="text-[8px] text-slate-400 font-bold uppercase">{sale.date}</p>
+                        {memberSales.slice(0, 5).map(sale => (
+                           <div
+                              key={sale.id}
+                              onClick={() => setViewingSale(sale)}
+                              className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group"
+                           >
+                              <div className="flex items-center gap-3 min-w-0">
+                                 <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                    <i className="fas fa-file-invoice-dollar text-[10px]"></i>
+                                 </div>
+                                 <div className="min-w-0">
+                                    <p className="text-[10px] font-bold text-slate-700 truncate">{plans.find(p => p.id === sale.planId)?.name || 'Retail'}</p>
+                                    <p className="text-[8px] text-slate-400 font-bold uppercase">{sale.date}</p>
+                                 </div>
                               </div>
-                              <span className="text-xs font-black text-slate-900 shrink-0 ml-2">{formatCurrency(sale.amount)}</span>
+                              <div className="flex items-center gap-2">
+                                 <span className="text-xs font-black text-slate-900">{formatCurrency(sale.amount)}</span>
+                                 <i className="fas fa-download text-[10px] text-slate-300 group-hover:text-blue-500 transition-colors"></i>
+                              </div>
                            </div>
                         ))}
                      </div>
@@ -496,7 +508,7 @@ const MemberPortal: React.FC = () => {
          )}
 
          {viewingSale && (
-            <InvoiceModal sale={viewingSale} branch={branches.find(b => b.id === viewingSale.branchId)!} member={currentUser} plan={plans.find(p => p.id === (viewingSale.planId || '')) || { name: 'Retail Store Item', price: viewingSale.amount, durationDays: 0, branchId: viewingSale.branchId, isActive: true, id: '', type: PlanType.GYM }} onClose={() => setViewingSale(null)} />
+            <InvoiceModal sale={viewingSale} branch={branches.find(b => b.id === viewingSale.branchId)!} member={currentUser} item={plans.find(p => p.id === (viewingSale.planId || '')) || { name: 'Retail Store Item', price: viewingSale.amount, durationDays: 0, branchId: viewingSale.branchId, isActive: true, id: '', type: PlanType.GYM }} onClose={() => setViewingSale(null)} />
          )}
 
          {renewTarget && (
