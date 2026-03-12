@@ -171,7 +171,7 @@ const Members: React.FC = () => {
     }
   }, [plans, enrollData.branchId, enrollData.planId]);
 
-  const [manageData, setManageData] = useState({ name: '', email: '', phone: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1, trainerId: '' });
+  const [manageData, setManageData] = useState({ name: '', email: '', phone: '', emergencyContact: '', address: '', avatar: '', maxDevices: 1, trainerId: '', branchId: '' });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isEnrollImageModalOpen, setEnrollImageModalOpen] = useState(false);
   const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
@@ -324,7 +324,8 @@ const Members: React.FC = () => {
         emergencyContact: manageData.emergencyContact,
         address: manageData.address,
         avatar: manageData.avatar,
-        maxDevices: Number(manageData.maxDevices) || 1
+        maxDevices: Number(manageData.maxDevices) || 1,
+        branchId: manageData.branchId || null
       });
 
       // Update trainer on active subscription if changed
@@ -354,7 +355,8 @@ const Members: React.FC = () => {
       address: member.address || '',
       avatar: member.avatar || '',
       maxDevices: member.maxDevices || 1,
-      trainerId: activeSub?.trainerId || ''
+      trainerId: activeSub?.trainerId || '',
+      branchId: member.branchId || ''
     });
     setActiveModal(null); // Ensure no other modal is open
     setTimeout(() => setActiveModal('manage'), 10); // Small delay to ensure state updates
@@ -968,6 +970,25 @@ const Members: React.FC = () => {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Athlete Name</label>
                   <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.name} onChange={e => setManageData({ ...manageData, name: e.target.value })} />
                 </div>
+
+                {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
+                  <div className="space-y-2 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                    <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <i className="fas fa-code-branch"></i> Assign Branch
+                      {!manageData.branchId && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[9px]">No Branch!</span>}
+                    </label>
+                    <select
+                      className="w-full p-3 bg-white border border-amber-100 rounded-xl font-bold text-sm outline-none"
+                      value={manageData.branchId}
+                      onChange={e => setManageData({ ...manageData, branchId: e.target.value })}
+                    >
+                      <option value="">-- No Branch --</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
 
 
