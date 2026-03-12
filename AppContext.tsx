@@ -628,80 +628,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteUser = async (id: string) => {
+    setGlobalLoading(true);
     try {
       showToast('Processing complete data purge...');
 
-      // A. DELETE ALL RELATED RECORDS (Child before Parent)
-
-      // 1. Child-most records
-      await supabase.from('class_completion_codes').delete().eq('memberId', id);
-      await supabase.from('class_completion_codes').delete().eq('trainerId', id);
-
-      // 2. Bookings (Parents to completion codes)
-      await supabase.from('bookings').delete().eq('memberId', id);
-      await supabase.from('bookings').delete().eq('trainerId', id);
-
-      // 3. Other interdependent records
-      const deletePromises = [
-        // As a member
-        supabase.from('attendance').delete().eq('userId', id),
-        supabase.from('metrics').delete().eq('memberId', id),
-        supabase.from('feedback').delete().eq('memberId', id),
-        supabase.from('communications').delete().eq('userId', id),
-        supabase.from('subscriptions').delete().eq('memberId', id),
-        supabase.from('subscriptions').delete().eq('trainerId', id),
-        supabase.from('sales').delete().eq('memberId', id),
-        supabase.from('sales').delete().eq('staffId', id),
-        supabase.from('sales').delete().eq('trainerId', id),
-
-        // Staff specific
-        supabase.from('payroll').delete().eq('staffId', id),
-        supabase.from('walk_ins').delete().eq('staffId', id),
-        supabase.from('walk_ins').delete().eq('assignedTo', id),
-        supabase.from('walk_ins').delete().eq('convertedToMemberId', id),
-        supabase.from('class_templates').delete().eq('trainerId', id),
-        supabase.from('class_schedules').delete().eq('trainerId', id),
-        supabase.from('expenses').delete().eq('recordedBy', id),
-        supabase.from('transaction_codes').delete().eq('generatedBy', id),
+      // 1. Delete all related data first
+      const cleanupTables = [
+        'class_completion_codes',
+        'bookings',
+        'attendance',
+        'metrics',
+        'feedback',
+        'communications',
+        'sales',
+        'subscriptions',
+        'active_sessions',
+        'referrals'
       ];
 
-      await Promise.all(deletePromises);
+      for (const table of cleanupTables) {
+        let column = 'userId';
+        if (['class_completion_codes', 'bookings', 'metrics', 'feedback', 'referrals', 'subscriptions', 'sales'].includes(table)) {
+          column = 'memberId';
+        }
 
-      // B. DELETE THE USER PROFILE
-      const { error } = await supabase.from('users').delete().eq('id', id);
+        const { error } = await supabase.from(table).delete().eq(column, id);
+        if (error) {
+          console.warn(`⚠️ Cleanup failed for table ${table}:`, error.message);
+        }
 
-      if (!error) {
-        // C. DELETE FROM SUPABASE AUTH so the email can be re-used
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-        fetch(`${supabaseUrl}/functions/v1/delete-user`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ userId: id }),
-        }).catch(e => console.warn('Auth user cleanup failed (non-critical):', e));
-
-        // D. UPDATE LOCAL STATE - Remove EVERYTHING related
-        setUsers(prev => prev.filter(u => u.id !== id));
-        setSales(prev => prev.filter(s => s.memberId !== id && s.staffId !== id && s.trainerId !== id));
-        setSubscriptions(prev => prev.filter(s => s.memberId !== id && s.trainerId !== id));
-        setBookings(prev => prev.filter(b => b.memberId !== id && b.trainerId !== id));
-        setExpenses(prev => prev.filter(e => e.recordedBy !== id));
-        setPayroll(prev => prev.filter(p => p.staffId !== id));
-        setAttendance(prev => prev.filter(a => a.userId !== id));
-        setFeedback(prev => prev.filter(f => f.memberId !== id)); // userId wasn't in type, memberId only
-        setCommunications(prev => prev.filter(c => c.userId !== id));
-        setMetrics(prev => prev.filter(m => m.memberId !== id));
-
-        showToast('User and all associated data deleted successfully', 'success');
-      } else {
-        console.error('Delete user error:', error);
-        showToast('Failed to delete user: ' + error.message, 'error');
+        // Also cleanup roles where user might be trainer or staff
+        if (['bookings', 'subscriptions', 'sales', 'class_templates', 'class_schedules'].includes(table)) {
+          const staffCol = table === 'bookings' || table === 'subscriptions' || table === 'sales' || table === 'class_templates' || table === 'class_schedules' ? 'trainerId' : 'staffId';
+          await supabase.from(table).delete().eq(staffCol, id);
+        }
       }
-    } catch (err: any) {
-      console.error('Delete user cascade error:', err);
-      showToast('Failed to process deletion', 'error');
+
+      // Special cases for staff/receptionist
+      await supabase.from('payroll').delete().eq('staffId', id);
+      await supabase.from('walk_ins').delete().eq('assignedTo', id);
+      await supabase.from('expenses').delete().eq('recordedBy', id);
+      await supabase.from('transaction_codes').delete().eq('generatedBy', id);
+
+      // 2. Delete the user profile from DB
+      const { error: dbError } = await supabase.from('users').delete().eq('id', id);
+      if (dbError) throw dbError;
+
+      // 3. Delete from Supabase Auth via Edge Function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+      const deleteResp = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ userId: id }),
+      });
+
+      if (!deleteResp.ok) {
+        const errData = await deleteResp.json().catch(() => ({}));
+        console.warn('⚠️ Auth deletion failed (non-critical):', errData);
+      }
+
+      // 4. Update local state
+      setUsers(prev => prev.filter(u => u.id !== id));
+      setSales(prev => prev.filter(s => s.memberId !== id && s.staffId !== id && s.trainerId !== id));
+      setSubscriptions(prev => prev.filter(s => s.memberId !== id && s.trainerId !== id));
+      setBookings(prev => prev.filter(b => b.memberId !== id && b.trainerId !== id));
+      setAttendance(prev => prev.filter(a => a.userId !== id));
+      setFeedback(prev => prev.filter(f => f.memberId !== id));
+      setCommunications(prev => prev.filter(c => c.userId !== id));
+      setMetrics(prev => prev.filter(m => m.memberId !== id));
+      setPayroll(prev => prev.filter(p => p.staffId !== id));
+
+      showToast('Member and all associated data deleted successfully');
+    } catch (e: any) {
+      console.error('❌ Deletion failed:', e);
+      showToast('Failed to delete member: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+      setGlobalLoading(false);
     }
   };
 
@@ -1410,8 +1415,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           trainerId
         };
 
-        await supabase.from('subscriptions').insert(newSub);
-        await supabase.from('sales').insert(newSale);
+        const { error: subError } = await supabase.from('subscriptions').insert(newSub);
+        if (subError) {
+          console.error('❌ Subscription Creation Failed:', subError);
+          throw new Error(`Subscription creation failed: ${subError.message}`);
+        }
+
+        const { error: saleError } = await supabase.from('sales').insert(newSale);
+        if (saleError) {
+          console.error('❌ Sale Creation Failed:', saleError);
+          // If sale fails, we might want to roll back the subscription, but for now we'll just report it
+          showToast(`Member enrolled, but sale record failed: ${saleError.message}`, 'error');
+        }
 
         setSubscriptions(prev => [...prev, newSub]);
         setSales(prev => [...prev, newSale]);
@@ -1592,8 +1607,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     try {
-      await supabase.from('subscriptions').insert(newSub);
-      await supabase.from('sales').insert(newSale);
+      const { error: subError } = await supabase.from('subscriptions').insert(newSub);
+      if (subError) {
+        console.error('❌ Subscription Creation Failed:', subError);
+        throw new Error(`Subscription creation failed: ${subError.message}`);
+      }
+
+      const { error: saleError } = await supabase.from('sales').insert(newSale);
+      if (saleError) {
+        console.error('❌ Sale Creation Failed:', saleError);
+        showToast(`Subscription created, but sale record failed: ${saleError.message}`, 'error');
+      }
 
       setSubscriptions(prev => [...prev, newSub]);
       setSales(prev => [...prev, newSale]);
@@ -1613,9 +1637,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       showToast(`Payment received! Invoice: ${newSale.invoiceNo}`);
-    } catch (e) {
-      console.error(e);
-      showToast('Transaction failed', 'error');
+    } catch (e: any) {
+      console.error('❌ Transaction failed:', e);
+      showToast('Transaction failed: ' + (e.message || 'Unknown error'), 'error');
     } finally {
       setGlobalLoading(false);
     }
