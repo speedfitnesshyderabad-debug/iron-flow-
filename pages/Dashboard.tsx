@@ -53,10 +53,15 @@ const Dashboard: React.FC = () => {
 
   const handleProcessRenew = async (planId: string, amount: number, paymentMethod: any, discount: number, transactionCode?: string, startDate?: string) => {
     if (renewTarget) {
-      await purchaseSubscription(renewTarget.member.id, planId, paymentMethod, undefined, undefined, 0, discount, startDate);
-      showToast('Membership Renewed Successfully!', 'success');
-      setRenewModalOpen(false);
-      setRenewTarget(null);
+      try {
+        await purchaseSubscription(renewTarget.member.id, planId, paymentMethod, undefined, undefined, 0, discount, startDate);
+        showToast('Membership Renewed Successfully!', 'success');
+      } catch {
+        // purchaseSubscription already showed an error toast
+      } finally {
+        setRenewModalOpen(false);
+        setRenewTarget(null);
+      }
     }
   };
 

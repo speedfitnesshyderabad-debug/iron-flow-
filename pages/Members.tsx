@@ -301,11 +301,16 @@ const Members: React.FC = () => {
 
     // Handle Renewal Payment
     if (pendingRenewal) {
-      await purchaseSubscription(pendingRenewal.memberId, pendingRenewal.planId, pendingRenewal.paymentMethod, undefined, undefined, 0, pendingRenewal.discount, pendingRenewal.customStartDate);
-      showToast('Membership Renewed Successfully!', 'success');
-      setPaymentModalOpen(false);
-      setPendingRenewal(null);
-      setRenewTarget(null);
+      try {
+        await purchaseSubscription(pendingRenewal.memberId, pendingRenewal.planId, pendingRenewal.paymentMethod, undefined, undefined, 0, pendingRenewal.discount, pendingRenewal.customStartDate);
+        showToast('Membership Renewed Successfully!', 'success');
+      } catch {
+        // purchaseSubscription already showed an error toast
+      } finally {
+        setPaymentModalOpen(false);
+        setPendingRenewal(null);
+        setRenewTarget(null);
+      }
     }
   };
 
@@ -412,10 +417,15 @@ const Members: React.FC = () => {
     }
 
     // 3. Process Immediate Renewal (Cash/POS verified)
-    await purchaseSubscription(renewTarget.member.id, planId, paymentMethod, undefined, undefined, 0, discount, startDate);
-    showToast('Membership Renewed Successfully!', 'success');
-    setRenewModalOpen(false);
-    setRenewTarget(null);
+    try {
+      await purchaseSubscription(renewTarget.member.id, planId, paymentMethod, undefined, undefined, 0, discount, startDate);
+      showToast('Membership Renewed Successfully!', 'success');
+    } catch {
+      // purchaseSubscription already showed an error toast
+    } finally {
+      setRenewModalOpen(false);
+      setRenewTarget(null);
+    }
   };
 
   const renewalPlans = useMemo(() => {

@@ -1436,6 +1436,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           branchId,
           trainerId,
           pauseAllowanceDays: pauseAllowance,
+          // Keep for local state only — not in DB schema
           saleId: saleId,
           member: { name: newUser.name, avatar: newUser.avatar, phone: newUser.phone, memberId: newUser.memberId }
         };
@@ -1450,23 +1451,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           discount,
           memberId: newUserId,
           planId: plan.id,
-          staffId: staffId || currentUser?.id || null, // ❌ Fix FK violation: No 'admin' placeholder
+          staffId: staffId || currentUser?.id || null,
           branchId,
           paymentMethod: 'ONLINE',
           trainerId,
+          // Keep for local state only — not in DB schema
           member: { name: newUser.name, memberId: newUser.memberId }
         };
 
-        const { error: subError } = await supabase.from('subscriptions').insert(newSub);
+        // Strip virtual fields (member, saleId) before DB insert — they don't exist in the schema
+        const { member: _subMember, saleId: _saleId, ...subForDB } = newSub as any;
+        const { member: _saleMember, ...saleForDB } = newSale as any;
+
+        const { error: subError } = await supabase.from('subscriptions').insert(subForDB);
         if (subError) {
           console.error('❌ Subscription Creation Failed:', subError);
           throw new Error(`Subscription creation failed: ${subError.message}`);
         }
 
-        const { error: saleError } = await supabase.from('sales').insert(newSale);
+        const { error: saleError } = await supabase.from('sales').insert(saleForDB);
         if (saleError) {
           console.error('❌ Sale Creation Failed:', saleError);
-          // If sale fails, we might want to roll back the subscription, but for now we'll just report it
           showToast(`Member enrolled, but sale record failed: ${saleError.message}`, 'error');
         }
 
@@ -1643,6 +1648,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const branchId = user.branchId!;
 
     const saleId = crypto.randomUUID();
+
+    // Build DB-safe objects — strip virtual join fields not in schema
     const newSub: Subscription = {
       id: crypto.randomUUID(),
       memberId: userId,
@@ -1653,6 +1660,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       branchId,
       trainerId,
       pauseAllowanceDays: pauseAllowance,
+      // Keep member + saleId for local state only (not in DB schema)
       saleId: saleId,
       member: { name: user.name, avatar: user.avatar, phone: user.phone, memberId: user.memberId }
     };
@@ -1664,26 +1672,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       discount: discount,
       memberId: userId,
       planId: planId,
-      staffId: currentUser?.id || null, // ❌ Fix FK violation: No 'self' placeholder
+      staffId: currentUser?.id || null,
       branchId,
       paymentMethod,
       trainerId,
+      // Keep member for local state only (not in DB schema)
       member: { name: user.name, memberId: user.memberId }
     };
 
+    // Strip virtual fields before DB insert
+    const { member: _subMember, saleId: _saleId, ...subForDB } = newSub as any;
+    const { member: _saleMember, ...saleForDB } = newSale as any;
+
     try {
-      const { error: subError } = await supabase.from('subscriptions').insert(newSub);
+      const { error: subError } = await supabase.from('subscriptions').insert(subForDB);
       if (subError) {
         console.error('❌ Subscription Creation Failed:', subError);
         throw new Error(`Subscription creation failed: ${subError.message}`);
       }
 
-      const { error: saleError } = await supabase.from('sales').insert(newSale);
+      const { error: saleError } = await supabase.from('sales').insert(saleForDB);
       if (saleError) {
         console.error('❌ Sale Creation Failed:', saleError);
         showToast(`Subscription created, but sale record failed: ${saleError.message}`, 'error');
       }
 
+      // Update local state with full objects (including virtual fields for UI)
       setSubscriptions(prev => [...prev, newSub]);
       setSales(prev => [...prev, newSale]);
 
@@ -1705,6 +1719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e: any) {
       console.error('❌ Transaction failed:', e);
       showToast('Transaction failed: ' + (e.message || 'Unknown error'), 'error');
+      throw e; // Re-throw so callers don't show a false success toast
     } finally {
       setGlobalLoading(false);
     }
