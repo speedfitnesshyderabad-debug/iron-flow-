@@ -693,11 +693,11 @@ const Members: React.FC = () => {
         isAddModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
-              <div className="bg-blue-600 p-6 text-white flex justify-between items-center sticky top-0 z-10">
-                <h3 className="text-xl font-bold uppercase tracking-tight leading-none">Athlete Enrollment</h3>
-                <button onClick={() => setAddModalOpen(false)}><i className="fas fa-times"></i></button>
+              <div className="bg-blue-600 p-5 md:p-6 text-white flex justify-between items-center sticky top-0 z-10">
+                <h3 className="text-lg md:text-xl font-bold uppercase tracking-tight leading-none">Athlete Enrollment</h3>
+                <button onClick={() => setAddModalOpen(false)} className="p-2 hover:bg-blue-700 rounded-lg transition-colors"><i className="fas fa-times"></i></button>
               </div>
-              <form onSubmit={handleAddMember} className="p-8 space-y-6">
+              <form onSubmit={handleAddMember} className="p-5 md:p-8 space-y-4 md:space-y-6">
 
                 {currentUser?.role === UserRole.SUPER_ADMIN && (
                   <div className="space-y-2">
@@ -931,11 +931,11 @@ const Members: React.FC = () => {
         activeModal === 'manage' && selectedMember && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
-              <div className="bg-indigo-600 p-6 text-white flex justify-between items-center sticky top-0 z-10">
-                <h3 className="text-xl font-bold uppercase tracking-tight leading-none">Manage Profile</h3>
-                <button onClick={() => setActiveModal(null)}><i className="fas fa-times"></i></button>
+              <div className="bg-indigo-600 p-5 md:p-6 text-white flex justify-between items-center sticky top-0 z-10">
+                <h3 className="text-lg md:text-xl font-bold uppercase tracking-tight leading-none">Manage Profile</h3>
+                <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-indigo-700 rounded-lg transition-colors"><i className="fas fa-times"></i></button>
               </div>
-              <form onSubmit={handleUpdateMember} className="p-8 space-y-6">
+              <form onSubmit={handleUpdateMember} className="p-5 md:p-8 space-y-4 md:space-y-6">
                 <div className="flex flex-col items-center gap-3">
                   <div className="relative">
                     <img

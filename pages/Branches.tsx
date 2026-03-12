@@ -290,9 +290,9 @@ const Branches: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-y-auto max-h-[90vh] scrollbar-hide">
-            <h3 className="text-2xl font-bold mb-6 tracking-tight uppercase">{selectedBranch ? 'Update Branch' : 'Register New Branch'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white rounded-3xl w-full max-w-md p-5 md:p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-y-auto max-h-[90vh] scrollbar-hide">
+            <h3 className="text-lg md:text-2xl font-bold mb-6 tracking-tight uppercase sticky top-0 bg-white py-2 z-10">{selectedBranch ? 'Update Branch' : 'Register New Branch'}</h3>
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
 
               <section className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
