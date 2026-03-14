@@ -46,7 +46,12 @@ const Dashboard: React.FC = () => {
     const member = sub.member || users.find((u: any) => u.id === sub.memberId);
     const currentPlan = plans.find(p => p.id === sub.planId);
     if (member) {
-      setRenewTarget({ member, currentPlan });
+      // 🛡️ Robustness: Fallback to sub.branchId if member.branchId is missing
+      const memberWithBranch = {
+        ...member,
+        branchId: member.branchId || sub.branchId || currentUser?.branchId
+      };
+      setRenewTarget({ member: memberWithBranch, currentPlan });
       setRenewModalOpen(true);
     }
   };
@@ -529,7 +534,14 @@ const Dashboard: React.FC = () => {
           onClose={() => setRenewModalOpen(false)}
           member={renewTarget.member}
           currentPlan={renewTarget.currentPlan}
-          plans={plans.filter(p => p.isActive !== false && (p.branchId === renewTarget.member.branchId || p.isMultiBranch))}
+          plans={plans.filter(p =>
+            p.isActive !== false &&
+            (
+              !p.branchId ||
+              p.branchId === renewTarget.member.branchId ||
+              p.isMultiBranch
+            )
+          )}
           onRenew={handleProcessRenew}
         />
       )}
