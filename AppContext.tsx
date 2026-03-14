@@ -3,7 +3,7 @@ import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, 
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
-import { todayDateStr, addDays, daysBetween, clamp } from './utils/dates';
+import { todayDateStr, addDays, daysBetween, clamp, currentYear, currentTimeStr } from './utils/dates';
 import { createClient } from '@supabase/supabase-js';
 
 interface AppContextType {
@@ -52,6 +52,7 @@ interface AppContextType {
   sellInventoryItem: (itemId: string, memberId: string, quantity: number, paymentMethod: 'CASH' | 'POS' | 'CARD' | 'ONLINE', transactionCode?: string, razorpayPaymentId?: string) => Promise<void>;
   addMetric: (metric: BodyMetric) => Promise<void>;
   addOffer: (offer: Offer) => Promise<void>;
+  updateOffer: (id: string, updates: Partial<Offer>) => Promise<void>;
   deleteOffer: (id: string) => Promise<void>;
   addClassTemplate: (template: any) => Promise<void>;
   deleteClassTemplate: (id: string) => Promise<void>;
@@ -525,15 +526,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
               });
             } else if (statusFilter === 'EXPIRING_SOON') {
-              const now = new Date();
-              const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const nowStr = todayDateStr();
+            const sevenDaysFromNow = addDays(nowStr, 7);
 
-              Object.entries(subsByMember).forEach(([memberId, subs]) => {
-                const isExpiringSoon = subs.some(s => {
-                  if (s.status !== SubscriptionStatus.ACTIVE) return false;
-                  const end = new Date(s.endDate);
-                  return end > now && end <= sevenDaysFromNow;
-                });
+            Object.entries(subsByMember).forEach(([memberId, subs]) => {
+              const isExpiringSoon = subs.some(s => {
+                if (s.status !== SubscriptionStatus.ACTIVE) return false;
+                // Strict YYYY-MM-DD string comparisons
+                return s.endDate > nowStr && s.endDate <= sevenDaysFromNow;
+              });
                 if (isExpiringSoon) {
                   validMemberIds.add(memberId);
                 }
@@ -607,7 +608,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const generateInvoiceNo = (branchId: string) => {
     const branch = branches.find(b => b.id === branchId);
     const prefix = branch?.name.slice(0, 3).toUpperCase() || 'IF';
-    const year = new Date().getFullYear();
+    const year = currentYear();
     const count = sales.filter(s => s.branchId === branchId).length + 1001;
     return `INV/${prefix}/${year}/${count}`;
   };
@@ -935,6 +936,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else showToast('Failed to create offer', 'error');
   };
 
+  const updateOffer = async (id: string, updates: Partial<Offer>) => {
+    const { error } = await supabase.from('offers').update(updates).eq('id', id);
+    if (!error) {
+      setOffers(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+      showToast('Campaign updated');
+    } else {
+      console.error('Update offer error:', error);
+      showToast('Failed to update campaign', 'error');
+    }
+  };
+
   const deleteOffer = async (id: string) => {
     const { data, error } = await supabase.from('offers').delete().eq('id', id).select();
     if (error) {
@@ -972,19 +984,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!templates) return;
 
     const newSessions: ClassSession[] = [];
-    const today = new Date();
+    const today = todayDateStr();
     const weeksToGenerate = 4;
 
     // Fetch existing sessions to avoid duplicates (simple check based on date/time/trainer)
     // In a production app, use a more robust upsert logic or ID generation
-    const { data: existingSessions } = await supabase.from('class_schedules').select('*').gte('date', today.toISOString().split('T')[0]);
+    const { data: existingSessions } = await supabase.from('class_schedules').select('*').gte('date', today);
     const existingKeys = new Set(existingSessions?.map(s => `${s.trainerId}-${s.date}-${s.timeSlot}`));
 
     for (let i = 0; i < weeksToGenerate * 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = addDays(today, i);
+      const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Asia/Kolkata' }).format(new Date(dateString + 'T00:00:00')).toUpperCase();
 
       const matchingTemplates = templates.filter(t => t.dayOfWeek === dayName);
 
@@ -1110,7 +1120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newComm: Communication = {
       ...comm,
       id: `comm-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      timestamp: new Date().toISOString(),
+      timestamp: `${todayDateStr()} ${currentTimeStr()}`,
       status: 'DELIVERED',
       branchId: bId
     };
@@ -2191,6 +2201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sellInventoryItem,
     addMetric,
     addOffer,
+    updateOffer,
     deleteOffer,
     addClassTemplate,
     deleteClassTemplate,

@@ -145,6 +145,7 @@ export interface Plan {
   durationDays: number;
   branchId: string;
   isActive: boolean;
+  isHidden?: boolean;
   isMultiBranch?: boolean;
   maxSessions?: number;
   sessionDurationMinutes?: number;

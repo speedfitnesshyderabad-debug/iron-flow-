@@ -37,6 +37,33 @@ export const currentTimeStr = (): string => {
     return formatter.format(now);
 };
 
+/** Returns current month index (0-11) in IST */
+export const currentMonthIdx = (): number => {
+    const now = new Date();
+    const monthStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        month: 'numeric'
+    }).format(now);
+    return parseInt(monthStr) - 1;
+};
+
+/** Returns current year in IST */
+export const currentYear = (): number => {
+    const now = new Date();
+    return parseInt(new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric'
+    }).format(now));
+};
+
+/** Returns a date string for the start of the current month in IST (YYYY-MM-01) */
+export const currentMonthStart = (): string => {
+    const now = new Date();
+    const year = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(now);
+    const month = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: '2-digit' }).format(now);
+    return `${year}-${month}-01`;
+};
+
 /**
  * Calculates the number of whole days between two date strings.
  * Returns a positive number if dateB is after dateA.

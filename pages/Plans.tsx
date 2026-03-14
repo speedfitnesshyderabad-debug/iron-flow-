@@ -14,6 +14,7 @@ const Plans: React.FC = () => {
     durationDays: 30,
     branchId: branches[0]?.id || '',
     isMultiBranch: false,
+    isHidden: false,
     maxSessions: 0,
     sessionDurationMinutes: 60,
     groupCapacity: 15
@@ -34,6 +35,7 @@ const Plans: React.FC = () => {
       durationDays: 30,
       branchId: currentUser?.branchId || branches[0]?.id || '',
       isMultiBranch: false,
+      isHidden: false,
       maxSessions: 0,
       sessionDurationMinutes: 60,
       groupCapacity: 15
@@ -50,6 +52,7 @@ const Plans: React.FC = () => {
       durationDays: plan.durationDays,
       branchId: plan.branchId,
       isMultiBranch: plan.isMultiBranch || false,
+      isHidden: plan.isHidden || false,
       maxSessions: plan.maxSessions || 0,
       sessionDurationMinutes: plan.sessionDurationMinutes || 60,
       groupCapacity: plan.groupCapacity || 15
@@ -109,6 +112,11 @@ const Plans: React.FC = () => {
                   {plan.isMultiBranch && (
                     <span className="bg-indigo-600 text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-sm">
                       ALL BRANCH ACCESS
+                    </span>
+                  )}
+                  {plan.isHidden && (
+                    <span className="bg-slate-900 text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-sm flex items-center gap-1">
+                      <i className="fas fa-eye-slash text-[7px]"></i> HIDDEN
                     </span>
                   )}
                   {plan.maxSessions && (
@@ -262,6 +270,21 @@ const Plans: React.FC = () => {
                     className={`w-12 h-6 rounded-full transition-all relative ${formData.isMultiBranch ? 'bg-indigo-600' : 'bg-slate-200'}`}
                   >
                     <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${formData.isMultiBranch ? 'right-1' : 'left-1'}`}></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer group pt-4 border-t border-gray-50">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-1.5">
+                      <i className="fas fa-eye-slash text-[9px]"></i> Hide from Store
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-medium">Plan will be visible to staff only</span>
+                  </div>
+                  <div
+                    onClick={() => setFormData({ ...formData, isHidden: !formData.isHidden })}
+                    className={`w-12 h-6 rounded-full transition-all relative ${formData.isHidden ? 'bg-rose-500' : 'bg-slate-200'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${formData.isHidden ? 'right-1' : 'left-1'}`}></div>
                   </div>
                 </label>
               </div>

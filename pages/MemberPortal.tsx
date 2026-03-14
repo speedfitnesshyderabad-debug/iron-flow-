@@ -3,13 +3,11 @@ import { useAppContext } from '../AppContext';
 import { PlanType, SubscriptionStatus, Feedback, Sale, BodyMetric, Offer } from '../types';
 import InvoiceModal from '../components/InvoiceModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
-import { PaymentModal } from '../components/PaymentModal';
-
-
+import { PaymentModal } from '../components/PaymentModal';import { todayDateStr } from '../utils/dates';
 
 
 const MemberPortal: React.FC = () => {
-   const { currentUser, subscriptions, plans, bookings, addFeedback, feedback, showToast, updateUser, sales, branches, askGemini, metrics, addMetric, offers, users, purchaseSubscription } = useAppContext();
+    const { currentUser, subscriptions, plans, bookings, addFeedback, feedback, showToast, updateUser, sales, branches, askGemini, metrics, addMetric, offers, users, purchaseSubscription, coupons } = useAppContext();
 
    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'COACH' | 'METRICS' | 'FEEDBACK'>('OVERVIEW');
    const [feedbackType, setFeedbackType] = useState<'SUGGESTION' | 'COMPLAINT'>('SUGGESTION');
@@ -137,7 +135,7 @@ const MemberPortal: React.FC = () => {
    const handleAddMetric = (e: React.FormEvent) => {
       e.preventDefault();
       if (!weight) return;
-      addMetric({ id: `m-${Date.now()}`, memberId: currentUser.id, date: new Date().toISOString().split('T')[0], weight: Number(weight) });
+      addMetric({ id: `m-${Date.now()}`, memberId: currentUser.id, date: todayDateStr(), weight: Number(weight) });
       setWeight('');
       showToast('Weight Logged!', 'success');
    };
@@ -146,7 +144,7 @@ const MemberPortal: React.FC = () => {
       e.preventDefault();
       if (!feedbackContent.trim()) return;
       setIsSubmitting(true);
-      const newFeedback: Feedback = { id: `fb-${Date.now()}`, memberId: currentUser.id, branchId: currentUser.branchId || 'b1', type: feedbackType, content: feedbackContent, status: 'NEW', date: new Date().toISOString().split('T')[0] };
+      const newFeedback: Feedback = { id: `fb-${Date.now()}`, memberId: currentUser.id, branchId: currentUser.branchId || 'b1', type: feedbackType, content: feedbackContent, status: 'NEW', date: todayDateStr() };
       setTimeout(() => { addFeedback(newFeedback); setFeedbackContent(''); setIsSubmitting(false); showToast('Message Sent!', 'success'); }, 800);
    };
 
@@ -183,34 +181,46 @@ const MemberPortal: React.FC = () => {
 
    return (
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
-         {/* ... (rest of the file remains, I need to be careful with replacement context) ... */}
-         {/* actually I should insert handleOpenPurchase before return, and the button inside the JSX. I should use multi_replace or separate calls. */}
-
 
          {/* Offers Billboard - Ultra Responsive */}
-         {activeOffers.length > 0 && (
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 shadow-2xl">
-               <div className="relative w-full min-h-[220px] md:min-h-0 aspect-[16/9] md:aspect-[21/7]">
-                  <img src={activeOffers[0].imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-50 transition-transform duration-[4s]" alt="" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent"></div>
-                  <div className="absolute inset-0 p-6 md:p-12 flex flex-col justify-center max-w-2xl">
-                     <div className="mb-4">
-                        <span className="bg-blue-600 text-white text-[8px] md:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                           {activeOffers[0].branchId === 'GLOBAL' ? 'GLOBAL ACCESS' : 'EXCLUSIVE'}
-                        </span>
+         {activeOffers.length > 0 && (() => {
+            const linkedCoupon = coupons?.find(c => c.code === activeOffers[0].couponCode);
+            return (
+               <div className="mb-8 relative rounded-[2.5rem] overflow-hidden group shadow-2xl">
+                  <img src={activeOffers[0].imageUrl} className="w-full h-48 md:h-80 object-cover group-hover:scale-110 transition-transform duration-1000" alt="Offer" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent flex items-center px-8 md:px-16">
+                     <div className="max-w-xl animate-[slideIn_0.5s_ease-out]">
+                        <div className="flex items-center gap-2 mb-4">
+                           <span className="bg-blue-600 text-white text-[8px] md:text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                              {linkedCoupon ? `${linkedCoupon.type === 'PERCENTAGE' ? linkedCoupon.value + '%' : '₹' + linkedCoupon.value} OFF` : 'FLASH OFFER'}
+                           </span>
+                           {activeOffers[0].couponCode && (
+                              <span className="bg-white/10 text-white text-[8px] md:text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-white/20 backdrop-blur-md">
+                                 CODE: {activeOffers[0].couponCode}
+                              </span>
+                           )}
+                        </div>
+                        <h2 className="text-2xl md:text-5xl font-black text-white uppercase tracking-tighter leading-tight mb-4">{activeOffers[0].title}</h2>
+                        <p className="text-slate-300 text-xs md:text-base font-medium leading-relaxed mb-6 line-clamp-2 opacity-90">{activeOffers[0].description}</p>
+                        <button
+                           onClick={() => {
+                              if (activeOffers[0].couponCode) {
+                                 navigator.clipboard.writeText(activeOffers[0].couponCode);
+                                 showToast(`Code ${activeOffers[0].couponCode} copied! Use it at checkout.`, 'success');
+                              } else {
+                                 showToast(`Offer Claimed: ${activeOffers[0].title}`);
+                              }
+                           }}
+                           className="bg-white text-slate-950 w-fit px-8 py-4 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95 shadow-xl flex items-center gap-2"
+                        >
+                           <i className={activeOffers[0].couponCode ? "fas fa-copy" : "fas fa-check-circle"}></i>
+                           {activeOffers[0].ctaText || (activeOffers[0].couponCode ? 'COPY CODE' : 'CLAIM NOW')}
+                        </button>
                      </div>
-                     <h2 className="text-2xl md:text-5xl font-black text-white uppercase tracking-tighter leading-tight mb-4">{activeOffers[0].title}</h2>
-                     <p className="text-slate-300 text-xs md:text-base font-medium leading-relaxed mb-6 line-clamp-2 opacity-90">{activeOffers[0].description}</p>
-                     <button
-                        onClick={() => showToast(`Offer Claimed: ${activeOffers[0].title}`)}
-                        className="bg-white text-slate-950 w-fit px-8 py-4 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95 shadow-xl"
-                     >
-                        {activeOffers[0].ctaText || 'CLAIM NOW'}
-                     </button>
                   </div>
                </div>
-            </div>
-         )}
+            );
+         })()}
 
          {/* Profile Header */}
          <div className="bg-slate-900 text-white rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden shadow-xl">

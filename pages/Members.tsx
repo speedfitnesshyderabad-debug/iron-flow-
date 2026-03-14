@@ -804,7 +804,7 @@ const Members: React.FC = () => {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
                   <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
-                    {plans.filter(p => p.branchId === enrollData.branchId || p.isMultiBranch).map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
+                    {plans.filter(p => p.branchId === enrollData.branchId || p.isMultiBranch).map(p => <option key={p.id} value={p.id}>{p.name}{p.isHidden ? ' (Hidden)' : ''} - {formatCurrency(p.price)}</option>)}
                   </select>
                 </div>
 

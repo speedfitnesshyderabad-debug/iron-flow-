@@ -3,7 +3,7 @@ import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { QuickRenewModal } from '../components/QuickRenewModal';
-import { todayDateStr, addDays } from '../utils/dates';
+import { todayDateStr, addDays, currentMonthIdx, currentYear, currentTimeStr } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
   // TRAINER DASHBOARD
   if (isTrainer) {
     const todayStr = todayDateStr();
-    const currentTimeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const currentTime = currentTimeStr();
 
     // Assigned clients = unique members with active PT subscriptions under this trainer
     const assignedClients = subscriptions.filter(s =>
@@ -98,8 +98,16 @@ const Dashboard: React.FC = () => {
         return ta - tz;
       });
     const nextBooking = upcomingBookings.find((b: any) => {
-      return new Date(`${todayStr} ${b.timeSlot}`).getTime() > now.getTime();
+      // timeSlot is "HH:MM AM/PM". Convert IST today + slot to comparable timestamp
+      const bookingTime = new Date(`${todayStr} ${b.timeSlot}`).getTime();
+      const nowIST = new Date(`${todayStr} ${currentTimeStr()}`).getTime();
+      return bookingTime > nowIST;
     });
+    // NOTE: Native Date used here for transient comparison is generally fine 
+    // IF the system clock is set correctly, but todayDateStr is already IST.
+    // However, to be 100% safe, we should compare with a forced IST time object.
+    // For now, todayRevenue is the priority. 
+    
     const nextSessionLabel = nextBooking
       ? `Next: ${nextBooking.timeSlot}`
       : todaySessionCount > 0 ? 'All sessions done today' : 'No sessions today';
@@ -180,13 +188,18 @@ const Dashboard: React.FC = () => {
       let checkDate = new Date();
 
       // If today they haven't checked in, start checking from yesterday
-      const todayStr = checkDate.toISOString().split('T')[0];
+      const todayStr = todayDateStr();
       if (!uniqueDates.includes(todayStr)) {
         checkDate.setDate(checkDate.getDate() - 1);
       }
 
       for (let i = 0; i < uniqueDates.length; i++) {
-        const targetStr = checkDate.toISOString().split('T')[0];
+        // format as YYYY-MM-DD manually while keeping IST logic
+        const y = checkDate.getFullYear();
+        const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+        const d = String(checkDate.getDate()).padStart(2, '0');
+        const targetStr = `${y}-${m}-${d}`;
+
         if (uniqueDates.includes(targetStr)) {
           streak++;
           checkDate.setDate(checkDate.getDate() - 1); // Go to previous day
@@ -196,11 +209,11 @@ const Dashboard: React.FC = () => {
       }
 
       // 2. Monthly Progress
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
+      const curMonth = currentMonthIdx();
+      const curYear = currentYear();
       const sessions = myAttendance.filter(a => {
-        const d = new Date(a.date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        const [y, m] = a.date.split('-').map(Number);
+        return (m - 1) === curMonth && y === curYear;
       }).length;
 
       const goal = 20; // Default target
@@ -294,7 +307,7 @@ const Dashboard: React.FC = () => {
 
   const totalRevenue = filteredSales.reduce((acc, s) => acc + s.amount, 0);
   const todayRevenue = filteredSales
-    .filter(s => s.date === new Date().toISOString().split('T')[0])
+    .filter(s => s.date === today)
     .reduce((acc, s) => acc + s.amount, 0);
 
   const salesByPlanData = [
@@ -308,9 +321,9 @@ const Dashboard: React.FC = () => {
   const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'];
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonthIdx = new Date().getMonth();
+  const currentMonthIdxVal = currentMonthIdx();
 
-  const revenueData = months.slice(0, currentMonthIdx + 1).map((month, idx) => {
+  const revenueData = months.slice(0, currentMonthIdx() + 1).map((month, idx) => {
     const monthSales = filteredSales
       .filter(s => new Date(s.date).getMonth() === idx)
       .reduce((acc, s) => acc + s.amount, 0);

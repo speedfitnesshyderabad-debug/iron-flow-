@@ -4,8 +4,9 @@ import { useAppContext } from '../AppContext';
 import { Offer } from '../types';
 
 const Campaigns: React.FC = () => {
-   const { offers, addOffer, deleteOffer, branches, currentUser, showToast, coupons } = useAppContext();
+   const { offers, addOffer, updateOffer, deleteOffer, branches, currentUser, showToast, coupons } = useAppContext();
    const [isModalOpen, setIsModalOpen] = useState(false);
+   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
    const fileInputRef = useRef<HTMLInputElement>(null);
 
    const [formData, setFormData] = useState({
@@ -35,15 +36,36 @@ const Campaigns: React.FC = () => {
          showToast("Please upload an offer graphic!", "error");
          return;
       }
-      const newOffer: Offer = {
-         id: `offer-${Date.now()}`,
-         isActive: true,
-         ...formData
-      };
-      addOffer(newOffer);
+
+      if (editingOffer) {
+         updateOffer(editingOffer.id, formData);
+      } else {
+         const newOffer: Offer = {
+            id: `offer-${Date.now()}`,
+            isActive: true,
+            ...formData
+         };
+         addOffer(newOffer);
+      }
+
       setIsModalOpen(false);
+      setEditingOffer(null);
       setFormData({ title: '', description: '', imageUrl: '', expiryDate: '', branchId: currentUser?.branchId || 'GLOBAL', ctaText: 'CLAIM OFFER', couponCode: '' });
-      showToast("Campaign broadcasted successfully!");
+      showToast(editingOffer ? "Campaign updated successfully!" : "Campaign broadcasted successfully!");
+   };
+
+   const handleEdit = (offer: Offer) => {
+      setEditingOffer(offer);
+      setFormData({
+         title: offer.title,
+         description: offer.description,
+         imageUrl: offer.imageUrl,
+         expiryDate: offer.expiryDate,
+         branchId: offer.branchId,
+         ctaText: offer.ctaText || 'CLAIM OFFER',
+         couponCode: offer.couponCode || ''
+      });
+      setIsModalOpen(true);
    };
 
    const filteredOffers = currentUser?.role === 'SUPER_ADMIN'
@@ -89,12 +111,20 @@ const Campaigns: React.FC = () => {
                         <div className="mt-auto space-y-4">
                            <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-t pt-4">
                               <span>Expires: {offer.expiryDate}</span>
-                              <button
-                                 onClick={() => deleteOffer(offer.id)}
-                                 className="text-red-400 hover:text-red-600 transition-colors"
-                              >
-                                 <i className="fas fa-trash-alt mr-1"></i> End Campaign
-                              </button>
+                              <div className="flex gap-4">
+                                 <button
+                                    onClick={() => handleEdit(offer)}
+                                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                                 >
+                                    <i className="fas fa-edit mr-1"></i> Edit
+                                 </button>
+                                 <button
+                                    onClick={() => deleteOffer(offer.id)}
+                                    className="text-red-400 hover:text-red-600 transition-colors"
+                                 >
+                                    <i className="fas fa-trash-alt mr-1"></i> End
+                                 </button>
+                              </div>
                            </div>
                         </div>
                      </div>
@@ -108,10 +138,12 @@ const Campaigns: React.FC = () => {
                <div className="bg-white rounded-[3rem] w-full max-w-xl md:max-w-3xl shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-hidden max-h-[95vh] flex flex-col">
                   <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
                      <div>
-                        <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">New Broadcast</h3>
+                        <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">
+                           {editingOffer ? 'Edit Broadcast' : 'New Broadcast'}
+                        </h3>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Designing member experience</p>
                      </div>
-                     <button onClick={() => setIsModalOpen(false)} className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl transition-colors">
+                     <button onClick={() => { setIsModalOpen(false); setEditingOffer(null); }} className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl transition-colors">
                         <i className="fas fa-times"></i>
                      </button>
                   </div>
@@ -190,9 +222,9 @@ const Campaigns: React.FC = () => {
                         </div>
                      </div>
 
-                     <button className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95">
-                        Launch Campaign Broadcast
-                     </button>
+                      <button className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95">
+                        {editingOffer ? 'Update Campaign Broadcast' : 'Launch Campaign Broadcast'}
+                      </button>
                   </form>
                   </div>
                </div>
