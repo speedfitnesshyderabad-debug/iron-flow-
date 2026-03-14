@@ -105,7 +105,7 @@ const Campaigns: React.FC = () => {
 
          {isModalOpen && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-               <div className="bg-white rounded-[3rem] w-full max-w-xl shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-hidden">
+               <div className="bg-white rounded-[3rem] w-full max-w-xl md:max-w-3xl shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-hidden max-h-[95vh] flex flex-col">
                   <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
                      <div>
                         <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">New Broadcast</h3>
@@ -116,7 +116,8 @@ const Campaigns: React.FC = () => {
                      </button>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="p-10 space-y-6">
+                  <div className="overflow-y-auto flex-1 scrollbar-hide">
+                     <form onSubmit={handleSubmit} className="p-10 space-y-6">
                      <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Campaign Title</label>
@@ -193,6 +194,7 @@ const Campaigns: React.FC = () => {
                         Launch Campaign Broadcast
                      </button>
                   </form>
+                  </div>
                </div>
             </div>
          )}
