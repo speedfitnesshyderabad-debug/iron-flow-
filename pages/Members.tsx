@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, SubscriptionStatus, User } from '../types';
 import { ImageUploadModal } from '../components/ImageUploadModal';
@@ -39,7 +39,8 @@ const Members: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Form States
   const initialBranchId = currentUser?.branchId || (selectedBranchId !== 'all' ? selectedBranchId : branches[0]?.id) || '';
@@ -184,13 +185,18 @@ const Members: React.FC = () => {
   const members = users.filter(u => u.role === UserRole.MEMBER && isRowVisible(u.branchId));
 
   // Debounce search term
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm);
       setCurrentPage(1); // Reset to first page on search
     }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    containerRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentPage]);
 
   // Fetch paginated data
   const loadMembers = React.useCallback(async () => {
@@ -437,7 +443,7 @@ const Members: React.FC = () => {
   }, [plans, renewTarget]);
 
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="w-full md:w-auto">
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-1">Members Directory</h2>
@@ -534,7 +540,10 @@ const Members: React.FC = () => {
           ].map(f => (
             <button
               key={f.id}
-              onClick={() => setFilter(f.id as any)}
+              onClick={() => {
+                setFilter(f.id as any);
+                setCurrentPage(1); // Reset to first page when filter changes
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${filter === f.id
                 ? (f.color || 'bg-slate-800 text-white border-slate-800 shadow-lg scale-105')
                 : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'
@@ -1158,7 +1167,6 @@ const Members: React.FC = () => {
           <button
             onClick={() => {
               setCurrentPage(prev => Math.max(1, prev - 1));
-              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             disabled={currentPage === 1 || isFetchingMembers}
             className="p-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 font-bold text-xs disabled:opacity-50 hover:bg-slate-50 transition-colors flex items-center shadow-sm"
@@ -1180,7 +1188,6 @@ const Members: React.FC = () => {
                     key={p}
                     onClick={() => {
                       setCurrentPage(p);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`w-8 h-8 rounded-lg font-black text-[10px] transition-all duration-200 ${currentPage === p
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110'
@@ -1201,7 +1208,6 @@ const Members: React.FC = () => {
           <button
             onClick={() => {
               setCurrentPage(prev => Math.min(totalPages, prev + 1));
-              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             disabled={currentPage === totalPages || isFetchingMembers}
             className="p-2 px-4 rounded-xl bg-blue-600 text-white font-bold text-xs disabled:opacity-50 hover:opacity-90 transition-opacity flex items-center shadow-md shadow-blue-100"
