@@ -7,6 +7,7 @@ import { PaymentModal } from '../components/PaymentModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
 import ActiveSessionsModal from '../components/ActiveSessionsModal';
 import MemberProfileModal from '../components/MemberProfileModal';
+import { todayDateStr, isSubscriptionActive } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -574,8 +575,9 @@ const Members: React.FC = () => {
         ) : (
           <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300 ${isFetchingMembers ? 'opacity-30' : 'opacity-100'}`}>
             {filteredMembers.map(member => {
+              const now = todayDateStr();
               const memberSubs = subscriptions.filter(s => s.memberId === member.id);
-              const activeSub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE);
+              const activeSub = memberSubs.find(s => isSubscriptionActive(s, now));
               const latestSub = memberSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
 
               const sub = activeSub || latestSub;

@@ -3,7 +3,7 @@ import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { QuickRenewModal } from '../components/QuickRenewModal';
-import { todayDateStr, addDays, currentMonthIdx, currentYear, currentTimeStr } from '../utils/dates';
+import { todayDateStr, addDays, currentMonthIdx, currentYear, currentTimeStr, isSubscriptionActive } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -77,9 +77,8 @@ const Dashboard: React.FC = () => {
 
     // Assigned clients = unique members with active PT subscriptions under this trainer
     const assignedClients = subscriptions.filter(s =>
-      s.trainerId === currentUser.id && s.status === SubscriptionStatus.ACTIVE
+      s.trainerId === currentUser.id && isSubscriptionActive(s, todayStr)
     ).length;
-
     // Today's sessions = bookings assigned to this trainer today (any status except CANCELLED)
     const todayBookings = (bookings || []).filter((b: any) =>
       b.trainerId === currentUser.id &&
@@ -303,7 +302,7 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const activeCount = filteredSubs.filter(s => s.status === SubscriptionStatus.ACTIVE).length;
+  const activeCount = filteredSubs.filter(s => isSubscriptionActive(s, today)).length;
 
   const totalRevenue = filteredSales.reduce((acc, s) => acc + s.amount, 0);
   const todayRevenue = filteredSales

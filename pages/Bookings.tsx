@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus, Booking, ClassSession } from '../types';
 import { ClassCompletionQR } from '../components/ClassCompletionQR';
+import { todayDateStr, isSubscriptionActive } from '../utils/dates';
 
 const Bookings: React.FC = () => {
   const { currentUser, bookings, users, plans, subscriptions, addBooking, showToast, branches, classSchedules, addClassTemplate, deleteClassSession, isRowVisible } = useAppContext();
@@ -103,9 +104,10 @@ const Bookings: React.FC = () => {
     }
 
     // Check Plan Validity
+    const nowStr = todayDateStr();
     const activeSub = subscriptions.find(s =>
       s.memberId === currentUser.id &&
-      s.status === SubscriptionStatus.ACTIVE &&
+      isSubscriptionActive(s, nowStr) &&
       plans.find(p => p.id === s.planId)?.type === PlanType.GROUP
     );
 
@@ -174,7 +176,7 @@ const Bookings: React.FC = () => {
     const activePTSub = subscriptions.find(s => {
       const plan = plans.find(p => p.id === s.planId);
       return s.memberId === currentUser.id &&
-        s.status === SubscriptionStatus.ACTIVE &&
+        isSubscriptionActive(s, todayDateStr()) &&
         plan?.type === PlanType.PT;
     });
 
@@ -340,7 +342,7 @@ const Bookings: React.FC = () => {
             const activePTSub = subscriptions.find(s => {
               const p = plans.find(pl => pl.id === s.planId);
               return s.memberId === currentUser?.id &&
-                s.status === SubscriptionStatus.ACTIVE &&
+                isSubscriptionActive(s, todayDateStr()) &&
                 p?.type === PlanType.PT;
             });
             if (!activePTSub) return null;

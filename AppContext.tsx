@@ -3,7 +3,7 @@ import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, 
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
-import { todayDateStr, addDays, daysBetween, clamp, currentYear, currentTimeStr } from './utils/dates';
+import { todayDateStr, addDays, daysBetween, clamp, currentYear, currentTimeStr, isSubscriptionActive } from './utils/dates';
 import { createClient } from '@supabase/supabase-js';
 
 interface AppContextType {
@@ -504,9 +504,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
             // If nobody has a plan, then NO_PLAN means everyone (query stays untouched)
           } else {
+            const nowStr = todayDateStr();
             if (statusFilter === 'ACTIVE') {
               Object.entries(subsByMember).forEach(([memberId, subs]) => {
-                if (subs.some(s => s.status === SubscriptionStatus.ACTIVE)) {
+                if (subs.some(s => isSubscriptionActive(s, nowStr))) {
                   validMemberIds.add(memberId);
                 }
               });
@@ -518,8 +519,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               });
             } else if (statusFilter === 'EXPIRED') {
               Object.entries(subsByMember).forEach(([memberId, subs]) => {
-                const hasActiveOrPaused = subs.some(s => s.status === SubscriptionStatus.ACTIVE || s.status === SubscriptionStatus.PAUSED);
-                const hasExpired = subs.some(s => s.status === SubscriptionStatus.EXPIRED);
+                const hasActiveOrPaused = subs.some(s => isSubscriptionActive(s, nowStr) || s.status === SubscriptionStatus.PAUSED);
+                const hasExpired = subs.some(s => s.status === SubscriptionStatus.EXPIRED || (s.status === SubscriptionStatus.ACTIVE && s.endDate < nowStr));
                 // Must have at least one expired plan AND NO currently active/paused plans
                 if (hasExpired && !hasActiveOrPaused) {
                   validMemberIds.add(memberId);

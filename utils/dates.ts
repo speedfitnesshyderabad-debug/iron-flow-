@@ -88,6 +88,13 @@ export const addDays = (dateStr: string, days: number): string => {
 };
 
 /**
+ * Checks if a subscription is effectively active based on its status and date.
+ */
+export const isSubscriptionActive = (sub: { status: string; endDate: string }, today: string): boolean => {
+    return sub.status === 'ACTIVE' && sub.endDate >= today;
+};
+
+/**
  * Clamp a number between min and max (inclusive).
  * Useful for capping pausedDaysUsed, stock, etc.
  */

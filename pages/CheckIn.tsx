@@ -3,7 +3,7 @@ import { useAppContext } from '../AppContext';
 import { SubscriptionStatus, PlanType, UserRole } from '../types';
 import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../src/lib/supabase';
-import { todayDateStr, currentTimeStr } from '../utils/dates';
+import { todayDateStr, currentTimeStr, isSubscriptionActive } from '../utils/dates';
 
 const CheckIn: React.FC = () => {
   const { users, subscriptions, plans, recordAttendance, updateAttendance, attendance, currentUser, branches, showToast, bookings, updateBooking } = useAppContext();
@@ -536,7 +536,8 @@ const CheckIn: React.FC = () => {
 
     // MEMBER LOGIC
     if (currentUser.role === UserRole.MEMBER) {
-      const activeSubs = subscriptions.filter(s => s.memberId === currentUser.id && s.status === SubscriptionStatus.ACTIVE);
+      const nowStr = todayDateStr();
+      const activeSubs = subscriptions.filter(s => s.memberId === currentUser.id && isSubscriptionActive(s, nowStr));
       const gymSub = activeSubs.find(s => {
         const plan = plans.find(p => p.id === s.planId);
         return plan?.type === PlanType.GYM;

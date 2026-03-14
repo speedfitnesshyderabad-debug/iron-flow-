@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../AppContext';
-import { PlanType, SubscriptionStatus, Feedback, Sale, BodyMetric, Offer } from '../types';
+import { Offer, Feedback, CommType, SubscriptionStatus, Sale, PlanType } from '../types';
 import InvoiceModal from '../components/InvoiceModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
-import { PaymentModal } from '../components/PaymentModal';import { todayDateStr } from '../utils/dates';
+import { PaymentModal } from '../components/PaymentModal';
+import { todayDateStr, isSubscriptionActive } from '../utils/dates';
 
 
 const MemberPortal: React.FC = () => {
@@ -277,7 +278,7 @@ const MemberPortal: React.FC = () => {
                               </button>
                            </div>
                         )}
-                        {memberSubs.map(sub => {
+                        {memberSubs.filter(s => isSubscriptionActive(s, todayDateStr())).map(sub => {
                            const plan = plans.find(p => p.id === sub.planId);
                            return (
                               <div key={sub.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
