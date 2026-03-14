@@ -529,7 +529,7 @@ const Dashboard: React.FC = () => {
           onClose={() => setRenewModalOpen(false)}
           member={renewTarget.member}
           currentPlan={renewTarget.currentPlan}
-          plans={plans}
+          plans={plans.filter(p => p.isActive !== false && (p.branchId === renewTarget.member.branchId || p.isMultiBranch))}
           onRenew={handleProcessRenew}
         />
       )}

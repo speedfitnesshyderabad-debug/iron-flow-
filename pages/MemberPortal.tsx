@@ -517,7 +517,7 @@ const MemberPortal: React.FC = () => {
                onClose={() => setRenewModalOpen(false)}
                member={renewTarget.member}
                currentPlan={renewTarget.currentPlan}
-               plans={plans}
+               plans={plans.filter(p => p.isActive !== false && (p.branchId === currentUser.branchId || p.isMultiBranch))}
                onRenew={handleProcessRenew}
                allowedPaymentMethods={['ONLINE', 'CARD']}
             />
