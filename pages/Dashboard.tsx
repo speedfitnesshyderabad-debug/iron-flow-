@@ -333,7 +333,22 @@ const Dashboard: React.FC = () => {
     };
   });
 
-  const recentTransactions = [...filteredSales].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5);
+  const recentTransactions = useMemo(() => {
+    return [...filteredSales]
+      .sort((a, b) => {
+        // Primary: Sort by createdAt (ISO timestamp)
+        if (a.createdAt && b.createdAt) {
+          return b.createdAt.localeCompare(a.createdAt);
+        }
+        // Secondary: Sort by date (YYYY-MM-DD)
+        if (a.date !== b.date) {
+          return b.date.localeCompare(a.date);
+        }
+        // Tertiary: Fallback to ID
+        return b.id.localeCompare(a.id);
+      })
+      .slice(0, 5);
+  }, [filteredSales]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">

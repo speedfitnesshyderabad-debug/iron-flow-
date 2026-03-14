@@ -184,6 +184,7 @@ export interface Sale {
   transactionCode?: string; // For Cash/POS payments
   razorpayPaymentId?: string; // For Card/Online payments
   member?: { name: string; memberId?: string }; // Joined for logs
+  createdAt?: string;
 }
 
 export interface Referral {

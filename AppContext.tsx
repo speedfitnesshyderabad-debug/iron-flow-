@@ -383,8 +383,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'class_schedules' }, () => {
         supabase.from('class_schedules').select('*').then(({ data }) => { if (data) setClassSchedules(data); });
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => {
-        supabase.from('sales').select('*, member:users!memberId(name, memberId)').then(({ data }) => { if (data) setSales(data); });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newSale = payload.new as Sale;
+          // Fetch member name for the new sale
+          supabase
+            .from('users')
+            .select('name, memberId')
+            .eq('id', newSale.memberId)
+            .single()
+            .then(({ data: memberData }) => {
+              const saleWithMember = {
+                ...newSale,
+                member: memberData ? { name: memberData.name, memberId: memberData.memberId } : undefined
+              };
+              setSales(prev => {
+                // Prevent duplicates if local action already added it
+                if (prev.some(s => s.id === saleWithMember.id)) return prev;
+                return [saleWithMember, ...prev];
+              });
+            });
+        } else {
+          // For UPDATE/DELETE, a full refresh is safer for now
+          supabase.from('sales').select('*, member:users!memberId(name, memberId)').then(({ data }) => {
+            if (data) setSales(data);
+          });
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
         supabase.from('expenses').select('*').then(({ data }) => { if (data) setExpenses(data); });
@@ -900,7 +924,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod,
       transactionCode: (paymentMethod === 'CASH' || paymentMethod === 'POS') ? transactionCode : undefined,
       razorpayPaymentId: (paymentMethod === 'CARD' || paymentMethod === 'ONLINE') ? razorpayPaymentId : undefined,
-      member: memberData ? { name: memberData.name, memberId: memberData.memberId } : undefined
+      member: memberData ? { name: memberData.name, memberId: memberData.memberId } : undefined,
+      createdAt: new Date().toISOString()
     };
 
     const { error: stockError } = await supabase.from('inventory').update({ stock: item.stock - quantity }).eq('id', itemId);
@@ -1466,6 +1491,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           branchId,
           paymentMethod: 'ONLINE',
           trainerId,
+          createdAt: new Date().toISOString(),
           // Keep for local state only — not in DB schema
           member: { name: newUser.name, memberId: newUser.memberId }
         };
@@ -1688,7 +1714,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod,
       trainerId,
       // Keep member for local state only (not in DB schema)
-      member: { name: user.name, memberId: user.memberId }
+      member: { name: user.name, memberId: user.memberId },
+      createdAt: new Date().toISOString()
     };
 
     // Strip virtual fields before DB insert

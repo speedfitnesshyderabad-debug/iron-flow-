@@ -115,7 +115,8 @@ CREATE TABLE IF NOT EXISTS public.sales (
   "paymentMethod" TEXT NOT NULL,
   "trainerId" TEXT REFERENCES public.users(id) ON DELETE SET NULL,
   "transactionCode" TEXT,
-  "razorpayPaymentId" TEXT
+  "razorpayPaymentId" TEXT,
+  "createdAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ATTENDANCE
