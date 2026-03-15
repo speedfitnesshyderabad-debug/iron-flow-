@@ -591,7 +591,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const { data, count, error } = await query
-        .order('createdAt', { ascending: false })
+        .order('name', { ascending: true })
         .range(start, end);
 
       if (error) throw error;
