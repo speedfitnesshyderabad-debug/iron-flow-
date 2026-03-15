@@ -469,8 +469,11 @@ const Members: React.FC = () => {
         <div className="flex-1 relative">
           <i className="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"></i>
           <input
+            id="member-search-main"
+            name="memberSearch"
             type="text"
             placeholder="Search by name, ID, or mobile..."
+            aria-label="Search members by name, ID, or mobile"
             className="w-full bg-slate-50 pl-14 pr-6 py-4 rounded-2xl font-bold text-slate-700 outline-none border-2 border-transparent focus:border-slate-900 focus:bg-white transition-all"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
@@ -479,6 +482,9 @@ const Members: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <select
+            id="member-status-filter"
+            name="statusFilter"
+            aria-label="Filter members by status"
             className="flex-1 sm:w-48 bg-slate-50 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-transparent focus:border-slate-900 outline-none transition-all"
             value={filter}
             onChange={e => setFilter(e.target.value as any)}
@@ -519,8 +525,11 @@ const Members: React.FC = () => {
         <div className="flex flex-col md:flex-row items-center gap-4 w-full">
           <div className="flex-1 relative w-full">
             <input
+              id="member-search-secondary"
+              name="memberSearchSecondary"
               type="text"
               placeholder="Search by name or ID..."
+              aria-label="Search members by name or ID"
               className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -724,8 +733,10 @@ const Members: React.FC = () => {
 
                 {currentUser?.role === UserRole.SUPER_ADMIN && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
+                    <label htmlFor="enroll-branch" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
                     <select
+                      id="enroll-branch"
+                      name="branchId"
                       className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
                       value={enrollData.branchId}
                       onChange={e => {
@@ -768,53 +779,53 @@ const Members: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Name</label>
-                  <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="Arjun Reddy" value={enrollData.name} onChange={e => setEnrollData({ ...enrollData, name: e.target.value })} />
+                  <label htmlFor="enroll-name" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Name</label>
+                  <input required id="enroll-name" name="name" type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="Arjun Reddy" value={enrollData.name} onChange={e => setEnrollData({ ...enrollData, name: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
-                  <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" placeholder="Street, City, State, PIN" value={enrollData.address} onChange={e => setEnrollData({ ...enrollData, address: e.target.value })} rows={2}></textarea>
+                  <label htmlFor="enroll-address" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
+                  <textarea id="enroll-address" name="address" className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" placeholder="Street, City, State, PIN" value={enrollData.address} onChange={e => setEnrollData({ ...enrollData, address: e.target.value })} rows={2}></textarea>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
-                  <input required type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="+91 XXXXX XXXXX" value={enrollData.mobile} onChange={e => setEnrollData(prev => ({ ...prev, mobile: e.target.value }))} />
+                  <label htmlFor="enroll-mobile" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
+                  <input required id="enroll-mobile" name="mobile" type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="+91 XXXXX XXXXX" value={enrollData.mobile} onChange={e => setEnrollData(prev => ({ ...prev, mobile: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
-                  <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <label htmlFor="enroll-emergency" className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                     <i className="fas fa-truck-medical"></i> Emergency Contact Number
                   </label>
-                  <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" placeholder="+91 XXXXX XXXXX" value={enrollData.emergencyContact} onChange={e => setEnrollData(prev => ({ ...prev, emergencyContact: e.target.value }))} />
+                  <input required id="enroll-emergency" name="emergencyContact" type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" placeholder="+91 XXXXX XXXXX" value={enrollData.emergencyContact} onChange={e => setEnrollData(prev => ({ ...prev, emergencyContact: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
-                  <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
+                  <label htmlFor="enroll-email" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
+                  <input required id="enroll-email" name="email" type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="athlete@ironflow.in" value={enrollData.email} onChange={e => setEnrollData({ ...enrollData, email: e.target.value })} />
                 </div>
 
                 <div className="space-y-2 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
-                  <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <label htmlFor="enroll-referral" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                     <i className="fas fa-gift"></i> Referral Code (Optional)
                   </label>
-                  <input type="text" className="w-full p-3 bg-white border border-indigo-100 rounded-xl font-black text-indigo-700 uppercase tracking-wider placeholder:text-indigo-200" placeholder="IF-REF-CODE" value={enrollData.referralCode} onChange={e => setEnrollData({ ...enrollData, referralCode: e.target.value.toUpperCase() })} />
+                  <input id="enroll-referral" name="referralCode" type="text" className="w-full p-3 bg-white border border-indigo-100 rounded-xl font-black text-indigo-700 uppercase tracking-wider placeholder:text-indigo-200" placeholder="IF-REF-CODE" value={enrollData.referralCode} onChange={e => setEnrollData({ ...enrollData, referralCode: e.target.value.toUpperCase() })} />
                 </div>
 
                 {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
                   <div className="space-y-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <label htmlFor="enroll-pause" className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <i className="fas fa-pause-circle"></i> Pause Allowance (Days)
                     </label>
-                    <input type="number" min="0" max="365" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-black text-blue-700" placeholder="0" value={enrollData.pauseAllowance} onChange={e => setEnrollData({ ...enrollData, pauseAllowance: parseInt(e.target.value) || 0 })} />
+                    <input id="enroll-pause" name="pauseAllowance" type="number" min="0" max="365" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-black text-blue-700" placeholder="0" value={enrollData.pauseAllowance} onChange={e => setEnrollData({ ...enrollData, pauseAllowance: parseInt(e.target.value) || 0 })} />
                   </div>
                 )}
 
                 <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
-                  <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
+                  <label htmlFor="enroll-plan" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
+                  <select id="enroll-plan" name="planId" className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
                     {plans.filter(p => p.branchId === enrollData.branchId || p.isMultiBranch).map(p => <option key={p.id} value={p.id}>{p.name}{p.isHidden ? ' (Hidden)' : ''} - {formatCurrency(p.price)}</option>)}
                   </select>
                 </div>
@@ -822,10 +833,12 @@ const Members: React.FC = () => {
                 {/* Trainer assignment - only shown for PT plans */}
                 {plans.find(p => p.id === enrollData.planId)?.type === 'PT' && (
                   <div className="space-y-2 p-4 bg-purple-50 border border-purple-100 rounded-2xl">
-                    <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <label htmlFor="enroll-trainer" className="text-[10px] font-black text-purple-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <i className="fas fa-user-tie"></i> Assign Expert Coach
                     </label>
                     <select
+                      id="enroll-trainer"
+                      name="trainerId"
                       className="w-full p-3 bg-white border border-purple-100 rounded-xl font-bold text-sm text-slate-800"
                       value={enrollData.trainerId}
                       onChange={e => setEnrollData({ ...enrollData, trainerId: e.target.value })}
@@ -842,10 +855,12 @@ const Members: React.FC = () => {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                  <label htmlFor="enroll-start" className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
                     <i className="fas fa-calendar-alt"></i> Membership Start Date
                   </label>
                   <input
+                    id="enroll-start"
+                    name="startDate"
                     type="date"
                     required
                     className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-xl font-bold"
@@ -856,8 +871,8 @@ const Members: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Method</label>
-                  <select className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.paymentMethod} onChange={e => setEnrollData({ ...enrollData, paymentMethod: e.target.value as any })}>
+                  <label htmlFor="enroll-payment" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Method</label>
+                  <select id="enroll-payment" name="paymentMethod" className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.paymentMethod} onChange={e => setEnrollData({ ...enrollData, paymentMethod: e.target.value as any })}>
                     <option value="ONLINE">Online (UPI / Gateway)</option>
                     <option value="CASH">Cash</option>
                     <option value="CARD">Credit / Debit Card</option>
@@ -866,10 +881,12 @@ const Members: React.FC = () => {
 
                 {(enrollData.paymentMethod === 'CASH' || enrollData.paymentMethod === 'CARD') && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                    <label htmlFor="enroll-pin" className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
                       <i className="fas fa-lock"></i> Transaction Authorization Code
                     </label>
                     <input
+                      id="enroll-pin"
+                      name="transactionCode"
                       type="text"
                       required
                       disabled={isVerifying}
@@ -883,8 +900,8 @@ const Members: React.FC = () => {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
-                  <input type="number" min="0" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
+                  <label htmlFor="enroll-discount" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
+                  <input id="enroll-discount" name="discount" type="number" min="0" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
                 </div>
 
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex justify-between items-center animate-pulse">
@@ -978,17 +995,19 @@ const Members: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Athlete Name</label>
-                  <input required type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.name} onChange={e => setManageData({ ...manageData, name: e.target.value })} />
+                  <label htmlFor="manage-name" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Athlete Name</label>
+                  <input required id="manage-name" name="name" type="text" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.name} onChange={e => setManageData({ ...manageData, name: e.target.value })} />
                 </div>
 
                 {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
                   <div className="space-y-2 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                    <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <label htmlFor="manage-branch" className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <i className="fas fa-code-branch"></i> Assign Branch
                       {!manageData.branchId && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[9px]">No Branch!</span>}
                     </label>
                     <select
+                      id="manage-branch"
+                      name="branchId"
                       className="w-full p-3 bg-white border border-amber-100 rounded-xl font-bold text-sm outline-none"
                       value={manageData.branchId}
                       onChange={e => setManageData({ ...manageData, branchId: e.target.value })}
@@ -1004,25 +1023,25 @@ const Members: React.FC = () => {
 
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
-                  <textarea className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" value={manageData.address} onChange={e => setManageData({ ...manageData, address: e.target.value })} rows={2}></textarea>
+                  <label htmlFor="manage-address" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
+                  <textarea id="manage-address" name="address" className="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm" value={manageData.address} onChange={e => setManageData({ ...manageData, address: e.target.value })} rows={2}></textarea>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
-                  <input required type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.phone} onChange={e => setManageData({ ...manageData, phone: e.target.value })} />
+                  <label htmlFor="manage-mobile" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile Number</label>
+                  <input required id="manage-mobile" name="mobile" type="tel" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.phone} onChange={e => setManageData({ ...manageData, phone: e.target.value })} />
                 </div>
 
                 <div className="space-y-2 p-4 bg-red-50 rounded-2xl border border-red-100">
-                  <label className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <label htmlFor="manage-emergency" className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                     <i className="fas fa-truck-medical"></i> Emergency Contact Number
                   </label>
-                  <input required type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" value={manageData.emergencyContact} onChange={e => setManageData({ ...manageData, emergencyContact: e.target.value })} />
+                  <input required id="manage-emergency" name="emergencyContact" type="tel" className="w-full p-3 bg-white border border-red-100 rounded-xl font-black text-red-700" value={manageData.emergencyContact} onChange={e => setManageData({ ...manageData, emergencyContact: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Email</label>
-                  <input required type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.email} onChange={e => setManageData({ ...manageData, email: e.target.value })} />
+                  <label htmlFor="manage-email" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Email</label>
+                  <input required id="manage-email" name="email" type="email" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" value={manageData.email} onChange={e => setManageData({ ...manageData, email: e.target.value })} />
                 </div>
                 <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-[10px] font-black uppercase text-blue-600 tracking-widest leading-relaxed">
                   <i className="fas fa-info-circle mr-2"></i>
@@ -1030,9 +1049,11 @@ const Members: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Max Devices</label>
+                  <label htmlFor="manage-max-devices" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Max Devices</label>
                   <div className="flex gap-2">
                     <input
+                      id="manage-max-devices"
+                      name="maxDevices"
                       type="number"
                       min="1"
                       max="10"
@@ -1054,10 +1075,12 @@ const Members: React.FC = () => {
 
                 {/* Trainer assignment for management */}
                 <div className="space-y-2 p-4 bg-purple-50 border border-purple-100 rounded-2xl">
-                  <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <label htmlFor="manage-trainer" className="text-[10px] font-black text-purple-600 uppercase tracking-widest flex items-center gap-2 mb-1">
                     <i className="fas fa-user-tie"></i> Update Personal Coach
                   </label>
                   <select
+                    id="manage-trainer"
+                    name="trainerId"
                     className="w-full p-3 bg-white border border-purple-100 rounded-xl font-bold text-sm text-slate-800"
                     value={manageData.trainerId}
                     onChange={e => setManageData({ ...manageData, trainerId: e.target.value })}

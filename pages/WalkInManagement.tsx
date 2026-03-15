@@ -318,8 +318,9 @@ const WalkInManagement: React.FC = () => {
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               {currentUser?.role === UserRole.SUPER_ADMIN && (
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
+                  <label htmlFor="walkin-branch" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign Branch</label>
                   <select
+                    id="walkin-branch" name="branchId"
                     className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs"
                     value={formData.branchId}
                     onChange={e => {
@@ -335,8 +336,9 @@ const WalkInManagement: React.FC = () => {
 
               {selectedWalkIn && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Status</label>
+                  <label htmlFor="walkin-status" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Status</label>
                   <select
+                    id="walkin-status" name="status"
                     className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold text-xs uppercase"
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as WalkIn['status'] })}
@@ -351,41 +353,45 @@ const WalkInManagement: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Name</label>
+                  <label htmlFor="walkin-name" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Name</label>
                   <input
+                    id="walkin-name" name="name"
                     required
                     type="text"
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone</label>
+                  <label htmlFor="walkin-phone" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone</label>
                   <input
+                    id="walkin-phone" name="phone"
                     required
                     type="tel"
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold"
                     value={formData.phone}
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email (Optional)</label>
+                  <label htmlFor="walkin-email" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email (Optional)</label>
                   <input
+                    id="walkin-email" name="email"
                     type="email"
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Purpose</label>
+                  <label htmlFor="walkin-purpose" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Purpose</label>
                   <select
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    id="walkin-purpose" name="purpose"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold uppercase text-xs"
                     value={formData.purpose}
                     onChange={e => setFormData({ ...formData, purpose: e.target.value as WalkIn['purpose'] })}
                   >
@@ -399,9 +405,10 @@ const WalkInManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Source</label>
+                  <label htmlFor="walkin-source" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Source</label>
                   <select
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    id="walkin-source" name="source"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold uppercase text-xs"
                     value={formData.source}
                     onChange={e => setFormData({ ...formData, source: e.target.value as WalkIn['source'] })}
                   >
@@ -415,9 +422,10 @@ const WalkInManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign To</label>
+                  <label htmlFor="walkin-assignee" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Assign To</label>
                   <select
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    id="walkin-assignee" name="assignedTo"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold uppercase text-xs"
                     value={formData.assignedTo}
                     onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
                   >
@@ -429,20 +437,22 @@ const WalkInManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Follow-up Date</label>
+                  <label htmlFor="walkin-followup" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Follow-up Date</label>
                   <input
+                    id="walkin-followup" name="followUpDate"
                     type="date"
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 font-bold"
                     value={formData.followUpDate}
                     onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notes</label>
+                  <label htmlFor="walkin-notes" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notes</label>
                   <textarea
+                    id="walkin-notes" name="notes"
                     rows={3}
-                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 resize-none"
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none mt-1 resize-none font-medium text-sm"
                     value={formData.notes}
                     onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   />

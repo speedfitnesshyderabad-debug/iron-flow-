@@ -90,6 +90,9 @@ const Sales: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
           {currentUser?.role === 'SUPER_ADMIN' && (
             <select
+              id="branch-filter-sales"
+              name="branchFilter"
+              aria-label="Filter sales by branch"
               className="p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm"
               value={selectedBranchId}
               onChange={e => setSelectedBranchId(e.target.value)}
@@ -130,8 +133,11 @@ const Sales: React.FC = () => {
         <div className="relative">
           <i className="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"></i>
           <input
+            id="sales-search"
+            name="salesSearch"
             type="text"
             placeholder="Search by Invoice No or Member Name..."
+            aria-label="Search sales by invoice number or member name"
             className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}

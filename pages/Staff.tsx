@@ -626,35 +626,37 @@ const Staff: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                <input required className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                <label htmlFor="staff-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                <input required id="staff-name" name="name" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-red-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <label htmlFor="staff-emergency" className="text-[10px] font-black text-red-500 uppercase tracking-widest ml-1 flex items-center gap-2">
                   <i className="fas fa-life-ring"></i> Emergency Contact Number
                 </label>
-                <input required type="tel" className="w-full p-4 bg-red-50 border border-red-100 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 font-black text-sm text-red-700 placeholder:text-red-200" placeholder="+91 XXXXX XXXXX" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} />
+                <input required id="staff-emergency" name="emergencyContact" type="tel" className="w-full p-4 bg-red-50 border border-red-100 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 font-black text-sm text-red-700 placeholder:text-red-200" placeholder="+91 XXXXX XXXXX" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <label htmlFor="staff-phone" className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1 flex items-center gap-2">
                   Mobile Number
                 </label>
-                <input type="tel" className="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-black text-sm text-blue-700 placeholder:text-blue-300" placeholder="+91 XXXXX XXXXX" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                <input id="staff-phone" name="phone" type="tel" className="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-black text-sm text-blue-700 placeholder:text-blue-300" placeholder="+91 XXXXX XXXXX" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
-                  <input required type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                  <label htmlFor="staff-email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                  <input required id="staff-email" name="email" type="email" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                 </div>
 
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Primary Role</label>
+                <label htmlFor="staff-role" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Primary Role</label>
                 <select
+                  id="staff-role"
+                  name="role"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase"
                   value={formData.role}
                   onChange={e => {
@@ -685,8 +687,8 @@ const Staff: React.FC = () => {
 
               {formData.role !== UserRole.KIOSK && (
                 <div className="space-y-1 animate-[fadeIn_0.3s_ease-out]">
-                  <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Monthly Salary (₹)</label>
-                  <input type="number" className="w-full p-4 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm" value={formData.monthlySalary} onChange={e => setFormData({ ...formData, monthlySalary: Number(e.target.value) })} />
+                  <label htmlFor="staff-salary" className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Monthly Salary (₹)</label>
+                  <input id="staff-salary" name="monthlySalary" type="number" className="w-full p-4 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm" value={formData.monthlySalary} onChange={e => setFormData({ ...formData, monthlySalary: Number(e.target.value) })} />
                 </div>
               )}
 
@@ -695,29 +697,29 @@ const Staff: React.FC = () => {
                   {formData.role === UserRole.MANAGER && (
                     <>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                        <label htmlFor="staff-sales-comm" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
                           Gym Membership Commission (%)
                         </label>
                         <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
+                          <input id="staff-sales-comm" name="salesCommissionPercentage" type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                        <label htmlFor="staff-pt-comm" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
                           Personal Training Commission (%)
                         </label>
                         <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.ptCommissionPercentage} onChange={e => setFormData({ ...formData, ptCommissionPercentage: Number(e.target.value) })} />
+                          <input id="staff-pt-comm" name="ptCommissionPercentage" type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.ptCommissionPercentage} onChange={e => setFormData({ ...formData, ptCommissionPercentage: Number(e.target.value) })} />
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                        <label htmlFor="staff-group-comm" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
                           Group Class Commission (%)
                         </label>
                         <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.groupCommissionPercentage} onChange={e => setFormData({ ...formData, groupCommissionPercentage: Number(e.target.value) })} />
+                          <input id="staff-group-comm" name="groupCommissionPercentage" type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.groupCommissionPercentage} onChange={e => setFormData({ ...formData, groupCommissionPercentage: Number(e.target.value) })} />
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
                         </div>
                       </div>
@@ -727,20 +729,20 @@ const Staff: React.FC = () => {
                   {formData.role === UserRole.TRAINER && (
                     <>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                        <label htmlFor="staff-session-comm" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
                           Session Commission (%)
                         </label>
                         <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.commissionPercentage} onChange={e => setFormData({ ...formData, commissionPercentage: Number(e.target.value) })} />
+                          <input id="staff-session-comm" name="commissionPercentage" type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.commissionPercentage} onChange={e => setFormData({ ...formData, commissionPercentage: Number(e.target.value) })} />
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                        <label htmlFor="staff-sales-comm-trainer" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">
                           Sales Commission (%)
                         </label>
                         <div className="relative">
-                          <input type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
+                          <input id="staff-sales-comm-trainer" name="salesCommissionPercentage" type="number" min="0" max="100" className="w-full p-4 bg-white border border-indigo-100 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-sm" value={formData.salesCommissionPercentage} onChange={e => setFormData({ ...formData, salesCommissionPercentage: Number(e.target.value) })} />
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-indigo-300">%</span>
                         </div>
                       </div>
@@ -750,8 +752,10 @@ const Staff: React.FC = () => {
               )}
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
+                <label htmlFor="staff-branch" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
                 <select
+                  id="staff-branch"
+                  name="branchId"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase"
                   value={formData.branchId}
                   onChange={e => setFormData({ ...formData, branchId: e.target.value })}
@@ -766,7 +770,7 @@ const Staff: React.FC = () => {
               {formData.role !== UserRole.MEMBER && (
                 <div className="space-y-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-[fadeIn_0.3s_ease-out]">
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    <label htmlFor="staff-max-devices" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
                       Max Login Devices
                     </label>
                     {isEditModalOpen && (
@@ -776,7 +780,7 @@ const Staff: React.FC = () => {
                     )}
                   </div>
                   <div className="relative">
-                    <input type="number" min="1" max="10" className="w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-400 font-black text-sm" value={formData.maxDevices} onChange={e => setFormData({ ...formData, maxDevices: parseInt(e.target.value) || 1 })} />
+                    <input id="staff-max-devices" name="maxDevices" type="number" min="1" max="10" className="w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-400 font-black text-sm" value={formData.maxDevices} onChange={e => setFormData({ ...formData, maxDevices: parseInt(e.target.value) || 1 })} />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-300 text-[10px] uppercase">Devices</span>
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold ml-1 mt-1">Controls simultaneous active sessions for security.</p>
@@ -861,12 +865,12 @@ const Staff: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Starts At</label>
-                              <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.start} onChange={e => handleShiftChange(index, 'start', e.target.value)} />
+                              <label htmlFor={`shift-${index}-start`} className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Starts At</label>
+                              <input id={`shift-${index}-start`} name={`shiftStart-${index}`} type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.start} onChange={e => handleShiftChange(index, 'start', e.target.value)} />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ends At</label>
-                              <input type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.end} onChange={e => handleShiftChange(index, 'end', e.target.value)} />
+                              <label htmlFor={`shift-${index}-end`} className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ends At</label>
+                              <input id={`shift-${index}-end`} name={`shiftEnd-${index}`} type="time" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500" value={shift.end} onChange={e => handleShiftChange(index, 'end', e.target.value)} />
                             </div>
                           </div>
                         </div>

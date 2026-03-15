@@ -164,20 +164,34 @@ const Inventory: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <h3 className="text-2xl font-bold mb-6">{selectedItem ? 'Edit Item' : 'Add New Item'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input required placeholder="Item Name" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-              <select className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value as any })}>
-                <option value="SUPPLEMENT">Supplement</option>
-                <option value="GEAR">Gear</option>
-                <option value="BEVERAGE">Beverage</option>
-                <option value="OTHER">Other</option>
-              </select>
-              <div className="grid grid-cols-2 gap-4">
-                <input type="number" placeholder="Price" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
-                <input type="number" placeholder="Stock" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
+              <div className="space-y-1">
+                <label htmlFor="inv-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Item Name</label>
+                <input required id="inv-name" name="name" placeholder="Item Name" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
+                <label htmlFor="inv-category" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+                <select id="inv-category" name="category" className="w-full p-3 bg-gray-50 border rounded-xl outline-none" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value as any })}>
+                  <option value="SUPPLEMENT">Supplement</option>
+                  <option value="GEAR">Gear</option>
+                  <option value="BEVERAGE">Beverage</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label htmlFor="inv-price" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (₹)</label>
+                  <input id="inv-price" name="price" type="number" placeholder="Price" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="inv-stock" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Initial Stock</label>
+                  <input id="inv-stock" name="stock" type="number" placeholder="Stock" className="w-full p-3 bg-gray-50 border rounded-xl" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="inv-branch" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
                 <select
+                  id="inv-branch"
+                  name="branchId"
                   className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none font-bold text-xs uppercase tracking-widest"
                   value={formData.branchId}
                   onChange={e => setFormData({ ...formData, branchId: e.target.value })}
@@ -202,19 +216,19 @@ const Inventory: React.FC = () => {
             <p className="text-slate-400 text-sm mb-6">Selling: {selectedItem.name}</p>
             <form onSubmit={handleSell} className="space-y-4">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Member (Bill To)</label>
-                <select required className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.memberId} onChange={e => setSellData({ ...sellData, memberId: e.target.value })}>
+                <label htmlFor="sell-member" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Member (Bill To)</label>
+                <select id="sell-member" name="memberId" required className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.memberId} onChange={e => setSellData({ ...sellData, memberId: e.target.value })}>
                   <option value="">Select Member...</option>
                   {users.filter(u => u.role === 'MEMBER' && isRowVisible(u.branchId)).map(m => <option key={m.id} value={m.id}>{m.name} ({m.memberId})</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantity</label>
-                <input type="number" min="1" max={selectedItem.stock} className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.quantity} onChange={e => setSellData({ ...sellData, quantity: Number(e.target.value) })} />
+                <label htmlFor="sell-quantity" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantity</label>
+                <input id="sell-quantity" name="quantity" type="number" min="1" max={selectedItem.stock} className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.quantity} onChange={e => setSellData({ ...sellData, quantity: Number(e.target.value) })} />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Method</label>
-                <select required className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.paymentMethod} onChange={e => setSellData({ ...sellData, paymentMethod: e.target.value as any, transactionCode: '' })}>
+                <label htmlFor="sell-payment" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Method</label>
+                <select id="sell-payment" name="paymentMethod" required className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.paymentMethod} onChange={e => setSellData({ ...sellData, paymentMethod: e.target.value as any, transactionCode: '' })}>
                   <option value="CASH">Cash</option>
                   <option value="POS">POS</option>
                   <option value="CARD">Card (Razorpay)</option>
@@ -223,8 +237,10 @@ const Inventory: React.FC = () => {
               </div>
               {(sellData.paymentMethod === 'CASH' || sellData.paymentMethod === 'POS') && (
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transaction Code</label>
+                  <label htmlFor="sell-pin" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transaction Code</label>
                   <input
+                    id="sell-pin"
+                    name="transactionCode"
                     type="text"
                     required
                     placeholder="Enter PIN from Sales page"

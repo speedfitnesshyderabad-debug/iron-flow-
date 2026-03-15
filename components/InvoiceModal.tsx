@@ -93,7 +93,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item,
             <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95">
               <i className="fas fa-print"></i> PRINT
             </button>
-            <button onClick={onClose} className="bg-white/10 p-2 rounded-xl hover:bg-white/20 transition-colors">
+            <button onClick={onClose} aria-label="Close invoice" className="bg-white/10 p-2 rounded-xl hover:bg-white/20 transition-colors">
               <i className="fas fa-times"></i>
             </button>
           </div>

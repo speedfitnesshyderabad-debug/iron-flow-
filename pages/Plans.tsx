@@ -168,8 +168,9 @@ const Plans: React.FC = () => {
             <h3 className="text-2xl font-black mb-6 tracking-tight uppercase text-slate-900">{selectedPlan ? 'Edit Plan' : 'New Membership Plan'}</h3>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Plan Name</label>
+                <label htmlFor="plan-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Plan Name</label>
                 <input
+                  id="plan-name" name="name"
                   required placeholder="e.g., Summer Special"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm"
                   value={formData.name}
@@ -177,8 +178,9 @@ const Plans: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Plan Type</label>
+                <label htmlFor="plan-type" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Plan Type</label>
                 <select
+                  id="plan-type" name="type"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-black text-xs uppercase tracking-widest"
                   value={formData.type}
                   onChange={e => {
@@ -201,8 +203,9 @@ const Plans: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (INR)</label>
+                  <label htmlFor="plan-price" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (INR)</label>
                   <input
+                    id="plan-price" name="price"
                     type="number" required placeholder="Price"
                     className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                     value={formData.price || ''}
@@ -210,8 +213,9 @@ const Plans: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Validity (Days)</label>
+                  <label htmlFor="plan-validity" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Validity (Days)</label>
                   <input
+                    id="plan-validity" name="durationDays"
                     type="number" required placeholder="Days"
                     className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                     value={formData.durationDays || ''}
@@ -223,8 +227,9 @@ const Plans: React.FC = () => {
               {(formData.type === PlanType.PT || formData.type === PlanType.GROUP) && (
                 <div className="grid grid-cols-2 gap-4 animate-[fadeIn_0.3s_ease-out]">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">Session Quota</label>
+                    <label htmlFor="plan-sessions" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">Session Quota</label>
                     <input
+                      id="plan-sessions" name="maxSessions"
                       type="number"
                       placeholder="e.g. 12"
                       className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
@@ -233,8 +238,9 @@ const Plans: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">Mins / Session</label>
+                    <label htmlFor="plan-mins" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">Mins / Session</label>
                     <input
+                      id="plan-mins" name="sessionDurationMinutes"
                       type="number"
                       placeholder="e.g. 60"
                       className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
@@ -247,10 +253,11 @@ const Plans: React.FC = () => {
 
               {formData.type === PlanType.GROUP && (
                 <div className="space-y-1 p-4 bg-orange-50 border border-orange-100 rounded-2xl animate-[fadeIn_0.3s_ease-out]">
-                  <label className="text-[10px] font-black text-orange-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <label htmlFor="plan-capacity" className="text-[10px] font-black text-orange-600 uppercase tracking-widest ml-1 flex items-center gap-2">
                     <i className="fas fa-users-viewfinder"></i> Maximum Participants per Session
                   </label>
                   <input
+                    id="plan-capacity" name="groupCapacity"
                     type="number"
                     className="w-full p-4 bg-white border border-orange-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-black text-sm"
                     value={formData.groupCapacity}
@@ -290,8 +297,9 @@ const Plans: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
+                <label htmlFor="plan-branch" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Home Branch</label>
                 <select
+                  id="plan-branch" name="branchId"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold text-xs uppercase tracking-widest"
                   value={formData.branchId}
                   onChange={e => setFormData({ ...formData, branchId: e.target.value })}
