@@ -22,7 +22,8 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
           skipWaiting: true,
           clientsClaim: true,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // Increase to 5MB
         },
         manifest: {
           name: 'IronFlow Gym Manager',
@@ -57,10 +58,18 @@ export default defineConfig(({ mode }) => {
         output: {
           entryFileNames: `assets/[name].[hash].js`,
           chunkFileNames: `assets/[name].[hash].js`,
-          assetFileNames: `assets/[name].[hash].[ext]`
+          assetFileNames: `assets/[name].[hash].[ext]`,
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-recharts': ['recharts'],
+            'vendor-ui': ['html2canvas', 'jspdf']
+          }
         }
-      }
+      },
+      chunkSizeWarningLimit: 1000
     },
+
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
