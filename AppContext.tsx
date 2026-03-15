@@ -1494,7 +1494,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           planId: plan.id,
           staffId: staffId || currentUser?.id || null,
           branchId,
-          paymentMethod: 'ONLINE',
+          paymentMethod: paymentMethod,
           trainerId,
           createdAt: new Date().toISOString(),
           // Keep for local state only — not in DB schema
