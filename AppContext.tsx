@@ -747,10 +747,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.or(`recipient.ilike.%${searchTerm}%,body.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%`);
       }
 
-      const { data, count, error } = await query
+      let { data, count, error } = await query
         .order('timestamp', { ascending: false })
-        .order('created_at', { ascending: false })
         .range(start, end);
+
+      if (error && (error.message.includes('column') || error.message.includes('order'))) {
+        console.warn('⚠️ Order by timestamp failed, retrying without order...', error.message);
+        const retry = await query.range(start, end);
+        data = retry.data;
+        count = retry.count;
+        error = retry.error;
+      }
 
       if (error) throw error;
 

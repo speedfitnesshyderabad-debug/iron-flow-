@@ -97,8 +97,8 @@ const Communications: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard label="Total Sent" value={totalCount} icon="fa-paper-plane" color="blue" />
-        <StatCard label="Emails" value={filter === CommType.SMS ? 0 : (filter === CommType.EMAIL ? totalCount : '...') } icon="fa-envelope" color="indigo" />
-        <StatCard label="SMS" value={filter === CommType.EMAIL ? 0 : (filter === CommType.SMS ? totalCount : '...') } icon="fa-comment-dots" color="amber" />
+        <StatCard label="Emails Delivered" value={sessionComms.filter(c => c.type === CommType.EMAIL && (selectedBranchId === 'all' || c.branchId === selectedBranchId)).length} icon="fa-envelope" color="indigo" />
+        <StatCard label="SMS Delivered" value={sessionComms.filter(c => c.type === CommType.SMS && (selectedBranchId === 'all' || c.branchId === selectedBranchId)).length} icon="fa-comment-dots" color="amber" />
       </div>
 
       {/* Search Bar */}
