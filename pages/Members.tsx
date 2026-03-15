@@ -385,7 +385,7 @@ const Members: React.FC = () => {
     const sub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE) ||
       memberSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
 
-    const currentPlan = sub ? plans.find(p => p.id === sub.planId) : plans[0]; // Default to first plan if none
+    const currentPlan = sub ? plans.find(p => p.id === sub.planId) : undefined;
 
     // Calculate Suggested Start Date:
     // If active, suggest day after expiry. If expired/none, suggest today.

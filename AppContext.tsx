@@ -737,12 +737,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const generateInvoiceNo = (branchId: string) => {
+  const generateInvoiceNo = (branchId: string, paymentMethod: string = 'ONLINE') => {
     const branch = branches.find(b => b.id === branchId);
-    const prefix = branch?.name.slice(0, 3).toUpperCase() || 'IF';
+    const branchPrefix = branch?.name.slice(0, 3).toUpperCase() || 'IF';
     const year = currentYear();
-    const count = sales.filter(s => s.branchId === branchId).length + 1001;
-    return `INV/${prefix}/${year}/${count}`;
+
+    // TI = Tax Invoice (Digital), CR = Cash Receipt (Cash)
+    const typePrefix = paymentMethod === 'CASH' ? 'CR' : 'TI';
+
+    // Count only same-type sales in this branch for independent sequencing
+    const sameTypeSales = sales.filter(s =>
+      s.branchId === branchId &&
+      (typePrefix === 'CR' ? s.paymentMethod === 'CASH' : s.paymentMethod !== 'CASH')
+    );
+
+    const count = sameTypeSales.length + 1001;
+    return `${typePrefix}/${branchPrefix}/${year}/${count}`;
   };
 
   const addBranch = async (b: Branch) => {
@@ -1021,7 +1031,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newSale: Sale = {
       id: saleId,
-      invoiceNo: generateInvoiceNo(branchId),
+      invoiceNo: generateInvoiceNo(branchId, paymentMethod),
       date: todayDateStr(),
       amount: saleAmount,
       memberId,
@@ -1593,7 +1603,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const finalAmount = Math.max(0, plan.price - discount);
         const newSale: Sale = {
           id: saleId,
-          invoiceNo: generateInvoiceNo(branchId),
+          invoiceNo: generateInvoiceNo(branchId, paymentMethod),
           date: todayDateStr(),
           amount: finalAmount,
           discount,
@@ -1816,7 +1826,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     const newSale: Sale = {
       id: saleId,
-      invoiceNo: generateInvoiceNo(branchId),
+      invoiceNo: generateInvoiceNo(branchId, paymentMethod),
       date: todayDateStr(),
       amount: plan.price - discount,
       discount: discount,

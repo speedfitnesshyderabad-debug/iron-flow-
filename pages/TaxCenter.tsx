@@ -54,7 +54,7 @@ const TaxCenter: React.FC = () => {
 
    const taxStats = useMemo(() => {
       const gstRate = currentBranch?.gstPercentage || 18;
-      return filteredSales.reduce((acc, s) => {
+      return gstApplicableSales.reduce((acc, s) => {
          const total = s.amount;
          const taxableValue = total / (1 + (gstRate / 100));
          return {
@@ -360,7 +360,7 @@ const TaxCenter: React.FC = () => {
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-slate-100">
-                              {filteredSales.map(sale => {
+                              {gstApplicableSales.map(sale => {
                                  const gstRate = currentBranch?.gstPercentage || 18;
                                  const taxable = sale.amount / (1 + (gstRate / 100));
                                  return (
@@ -378,7 +378,7 @@ const TaxCenter: React.FC = () => {
 
                      {/* GST Mobile Cards */}
                      <div className="md:hidden space-y-4">
-                        {filteredSales.map(sale => {
+                        {gstApplicableSales.map(sale => {
                            const gstRate = currentBranch?.gstPercentage || 18;
                            const taxable = sale.amount / (1 + (gstRate / 100));
                            return (
