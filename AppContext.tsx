@@ -726,37 +726,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
-      let query = supabase
-        .from('communications')
-        .select('*, user:users!userId(name, memberId, role)', { count: 'exact' });
+      // Build the base query without order yet
+      const getBaseQuery = () => {
+        let q = supabase
+          .from('communications')
+          .select('*, user:users!userId(name, memberId, role)', { count: 'exact' });
 
-      // Branch filter
-      if (branchId && branchId !== 'all') {
-        query = query.eq('branchId', branchId);
-      } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
-        query = query.eq('branchId', currentUser.branchId);
-      }
+        if (branchId && branchId !== 'all') {
+          q = q.eq('branchId', branchId);
+        } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+          q = q.eq('branchId', currentUser.branchId);
+        }
 
-      // Type filter (EMAIL/SMS)
-      if (typeFilter && typeFilter !== 'ALL') {
-        query = query.eq('type', typeFilter);
-      }
+        if (typeFilter && typeFilter !== 'ALL') {
+          q = q.eq('type', typeFilter);
+        }
 
-      // Search term (Recipient or Body)
-      if (searchTerm) {
-        query = query.or(`recipient.ilike.%${searchTerm}%,body.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%`);
-      }
+        if (searchTerm) {
+          q = q.or(`recipient.ilike.%${searchTerm}%,body.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%`);
+        }
+        return q;
+      };
 
-      let { data, count, error } = await query
-        .order('created_at', { ascending: false })
+      let { data, count, error } = await getBaseQuery()
         .order('timestamp', { ascending: false })
         .range(start, end);
 
-      if (error && (error.message.includes('column') || error.message.includes('order'))) {
-        console.warn('⚠️ Order by created_at failed, retrying with just timestamp...', error.message);
-        const retry = await query
-          .order('timestamp', { ascending: false })
-          .range(start, end);
+      if (error) {
+        console.warn('⚠️ Order by timestamp failed, retrying without order...', error.message);
+        const retry = await getBaseQuery().range(start, end);
         data = retry.data;
         count = retry.count;
         error = retry.error;
