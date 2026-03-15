@@ -662,12 +662,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       let { data, count, error } = await query
+        .order('createdAt', { ascending: false })
         .order('date', { ascending: false })
         .range(start, end);
 
-      if (error && (error.message.includes('date') || error.message.includes('column'))) {
-         console.warn('⚠️ date field issues, retrying with created_at...');
+      if (error && (error.message.includes('createdAt') || error.message.includes('column'))) {
+         console.warn('⚠️ createdAt field issues, retrying with date/created_at...');
          const retry = await query
+           .order('date', { ascending: false })
            .order('created_at', { ascending: false })
            .range(start, end);
 
