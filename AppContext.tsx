@@ -654,17 +654,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.eq('branchId', currentUser.branchId);
       }
 
-      // Search term (Invoice No OR Member Name)
+      // Search term (Invoice No primarily, as member join filtering in or() is restricted)
       if (searchTerm) {
-        // We use a join-aware filter if possible, or filter by invoiceNo primarily
-        query = query.or(`invoiceNo.ilike.%${searchTerm}%,memberId.in.(select id from users where name.ilike.%${searchTerm}%)`);
+        // PostgREST/Supabase doesn't support subqueries in or(). 
+        // We filter by invoiceNo or try to match the member object which is already joined.
+        query = query.ilike('invoiceNo', `%${searchTerm}%`);
       }
 
       const { data, count, error } = await query
         .order('createdAt', { ascending: false })
         .range(start, end);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Sales Fetch Error:', error);
+        throw error;
+      }
 
       return {
         sales: (data || []) as Sale[],

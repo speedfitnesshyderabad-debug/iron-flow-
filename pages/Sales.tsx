@@ -25,9 +25,20 @@ const Sales: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedBranchId, setSelectedBranchId] = useState<'all' | string>(currentUser?.role === 'SUPER_ADMIN' ? 'all' : (currentUser?.branchId || ''));
+  const [selectedBranchId, setSelectedBranchId] = useState<'all' | string>('all');
   const pageSize = 10;
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync selectedBranchId with user branch on mount/login
+  React.useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'SUPER_ADMIN') {
+        setSelectedBranchId('all');
+      } else if (currentUser.branchId) {
+        setSelectedBranchId(currentUser.branchId);
+      }
+    }
+  }, [currentUser]);
 
   // Debounce search term
   React.useEffect(() => {
