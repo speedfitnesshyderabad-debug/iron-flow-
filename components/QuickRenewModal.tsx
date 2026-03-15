@@ -11,6 +11,7 @@ interface QuickRenewModalProps {
     onRenew: (planId: string, amount: number, paymentMethod: 'CASH' | 'CARD' | 'ONLINE' | 'POS', discount: number, transactionCode?: string, startDate?: string) => void;
     allowedPaymentMethods?: ('CASH' | 'CARD' | 'ONLINE' | 'POS')[];
     requirePin?: boolean;
+    initialStartDate?: string;
 }
 
 export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
@@ -21,13 +22,14 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     plans,
     onRenew,
     allowedPaymentMethods = ['CASH', 'CARD', 'ONLINE', 'POS'],
-    requirePin = false
+    requirePin = false,
+    initialStartDate
 }) => {
     const [selectedPlanId, setSelectedPlanId] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'ONLINE' | 'POS'>(allowedPaymentMethods[0]);
     const [discount, setDiscount] = useState(0);
     const [transactionCode, setTransactionCode] = useState('');
-    const [startDate, setStartDate] = useState(todayDateStr());
+    const [startDate, setStartDate] = useState(initialStartDate || todayDateStr());
 
     const [prevOpen, setPrevOpen] = useState(false);
 
@@ -45,10 +47,10 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
             }
             setTransactionCode('');
             setDiscount(0);
-            setStartDate(todayDateStr());
+            setStartDate(initialStartDate || todayDateStr());
         }
         setPrevOpen(isOpen);
-    }, [isOpen, currentPlan, plans, allowedPaymentMethods, prevOpen, paymentMethod]);
+    }, [isOpen, currentPlan, plans, allowedPaymentMethods, prevOpen, paymentMethod, initialStartDate]);
 
     if (!isOpen) return null;
 

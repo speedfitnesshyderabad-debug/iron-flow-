@@ -7,7 +7,7 @@ import { PaymentModal } from '../components/PaymentModal';
 import { QuickRenewModal } from '../components/QuickRenewModal';
 import ActiveSessionsModal from '../components/ActiveSessionsModal';
 import MemberProfileModal from '../components/MemberProfileModal';
-import { todayDateStr, isSubscriptionActive } from '../utils/dates';
+import { todayDateStr, isSubscriptionActive, addDays } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -180,7 +180,7 @@ const Members: React.FC = () => {
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
   const [pendingEnrollment, setPendingEnrollment] = useState<any>(null);
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
-  const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
+  const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any, suggestedDate?: string } | null>(null);
 
   const members = users.filter(u => u.role === UserRole.MEMBER && isRowVisible(u.branchId));
 
@@ -381,10 +381,20 @@ const Members: React.FC = () => {
   };
 
   const handleOpenRenew = (member: User) => {
-    const sub = subscriptions.find(s => s.memberId === member.id && (s.status === SubscriptionStatus.ACTIVE || s.status === SubscriptionStatus.EXPIRED));
+    const memberSubs = subscriptions.filter(s => s.memberId === member.id);
+    const sub = memberSubs.find(s => s.status === SubscriptionStatus.ACTIVE) ||
+      memberSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
+
     const currentPlan = sub ? plans.find(p => p.id === sub.planId) : plans[0]; // Default to first plan if none
 
-    setRenewTarget({ member, currentPlan });
+    // Calculate Suggested Start Date:
+    // If active, suggest day after expiry. If expired/none, suggest today.
+    let suggestedDate = todayDateStr();
+    if (sub && sub.endDate >= suggestedDate) {
+      suggestedDate = addDays(sub.endDate, 1);
+    }
+
+    setRenewTarget({ member, currentPlan, suggestedDate });
     setRenewModalOpen(true);
   };
 
@@ -1148,6 +1158,7 @@ const Members: React.FC = () => {
             onClose={() => setRenewModalOpen(false)}
             member={renewTarget.member}
             currentPlan={renewTarget.currentPlan}
+            initialStartDate={renewTarget.suggestedDate}
             plans={renewalPlans}
             onRenew={handleProcessRenew}
             requirePin={true} // Admin facing, so require PIN for cash/pos
