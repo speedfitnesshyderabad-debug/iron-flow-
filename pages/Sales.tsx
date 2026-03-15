@@ -13,7 +13,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Sales: React.FC = () => {
-  const { fetchPaginatedSales, isFetchingSales, users, plans, branches, inventory, currentUser, generateTransactionCode, isRowVisible } = useAppContext();
+  const { fetchPaginatedSales, isFetchingSales, salesChangeTrigger, users, plans, branches, inventory, currentUser, generateTransactionCode, isRowVisible } = useAppContext();
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
   const [generatedPIN, setGeneratedPIN] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,11 +49,11 @@ const Sales: React.FC = () => {
     setPaginatedSales(result.sales);
     setTotalCount(result.totalCount);
     setPeriodRevenue(result.periodRevenue);
-  }, [currentPage, debouncedSearch, selectedBranchId, fetchPaginatedSales]);
+  }, [currentPage, debouncedSearch, selectedBranchId, salesChangeTrigger, fetchPaginatedSales]);
 
   React.useEffect(() => {
     loadSales();
-  }, [loadSales]);
+  }, [loadSales, salesChangeTrigger]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 

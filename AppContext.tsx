@@ -109,6 +109,7 @@ interface AppContextType {
     branchId?: string | 'all';
   }) => Promise<{ sales: Sale[]; totalCount: number; periodRevenue: number }>;
   isFetchingSales: boolean;
+  salesChangeTrigger: number;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
 }
@@ -188,6 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isGlobalLoading, setGlobalLoading] = useState(false);
   const [isFetchingMembers, setIsFetchingMembers] = useState(false);
   const [isFetchingSales, setIsFetchingSales] = useState(false);
+  const [salesChangeTrigger, setSalesChangeTrigger] = useState(0);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -417,6 +419,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (data) setSales(data);
           });
         }
+        // Increment trigger for components relying on paginated fetches
+        setSalesChangeTrigger(prev => prev + 1);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
         supabase.from('expenses').select('*').then(({ data }) => { if (data) setExpenses(data); });
@@ -2359,6 +2363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isFetchingMembers,
     fetchPaginatedSales,
     isFetchingSales,
+    salesChangeTrigger,
     markNotificationAsRead,
     markAllNotificationsAsRead
   };
