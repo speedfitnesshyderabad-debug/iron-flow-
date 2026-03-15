@@ -654,11 +654,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.eq('branchId', currentUser.branchId);
       }
 
-      // Search term (Invoice No or Member Name)
+      // Search term (Invoice No primarily, as member join filtering in or() is restricted)
       if (searchTerm) {
-        // PostgREST/Supabase doesn't support easy joining for OR filters across tables.
-        // We handle this by using the !inner join or filtering by member name if it matches.
-        query = query.or(`invoiceNo.ilike.%${searchTerm}%,member:users!memberId.name.ilike.%${searchTerm}%`);
+        // PostgREST/Supabase doesn't support easy joining for OR filters across tables in or().
+        // We filter by invoiceNo.
+        query = query.ilike('invoiceNo', `%${searchTerm}%`);
       }
 
       let { data, count, error } = await query
@@ -667,9 +667,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (error && (error.message.includes('createdAt') || error.message.includes('column'))) {
          console.warn('⚠️ createdAt field issues, retrying with created_at...');
-         const retry = await supabase
-           .from('sales')
-           .select('*, member:users!memberId(name, memberId)', { count: 'exact' })
+         const retry = await query
            .order('created_at', { ascending: false })
            .range(start, end);
 
@@ -680,11 +678,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (error) {
         console.error('❌ Sales Fetch Error:', error);
-        // Fallback: return empty if sorting/filtering fails entirely
+        // Fallback: return un-ordered if sorting fails entirely
+        const fallback = await query.range(start, end);
         return {
-          sales: [],
-          totalCount: 0,
-          periodRevenue: 0
+          sales: (fallback.data || []) as Sale[],
+          totalCount: fallback.count || 0,
+          periodRevenue
         };
       }
 
