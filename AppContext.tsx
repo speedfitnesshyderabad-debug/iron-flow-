@@ -748,12 +748,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       let { data, count, error } = await query
+        .order('created_at', { ascending: false })
         .order('timestamp', { ascending: false })
         .range(start, end);
 
       if (error && (error.message.includes('column') || error.message.includes('order'))) {
-        console.warn('⚠️ Order by timestamp failed, retrying without order...', error.message);
-        const retry = await query.range(start, end);
+        console.warn('⚠️ Order by created_at failed, retrying with just timestamp...', error.message);
+        const retry = await query
+          .order('timestamp', { ascending: false })
+          .range(start, end);
         data = retry.data;
         count = retry.count;
         error = retry.error;
