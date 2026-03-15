@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Sale, Branch, User, Plan, InventoryItem } from '../types';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface InvoiceModalProps {
   sale: Sale;
@@ -11,6 +13,7 @@ interface InvoiceModalProps {
 }
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item, onClose }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
   const isCash = sale.paymentMethod === 'CASH';
   const gstRate = branch.gstPercentage || 18;
 
@@ -33,6 +36,42 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item,
     window.print();
   };
 
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('tax-invoice-document');
+    if (!element) return;
+
+    setIsDownloading(true);
+    try {
+      // Capture the element
+      const canvas = await html2canvas(element, {
+        scale: 2, // High resolution
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Invoice_${sale.invoiceNo}.pdf`);
+    } catch (err) {
+      console.error('PDF Generation failed', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-container">
       <div className="bg-white w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] flex flex-col max-h-[90vh] modal-content relative">
@@ -43,6 +82,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item,
             <span className="font-black uppercase tracking-widest text-xs">{isCash ? 'Payment Receipt' : 'Tax Invoice'}: {sale.invoiceNo}</span>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={handleDownloadPDF} 
+              disabled={isDownloading}
+              className="bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 disabled:opacity-50"
+            >
+              {isDownloading ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-download"></i>}
+              {isDownloading ? 'PREPARING...' : 'DOWNLOAD PDF'}
+            </button>
             <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95">
               <i className="fas fa-print"></i> PRINT
             </button>

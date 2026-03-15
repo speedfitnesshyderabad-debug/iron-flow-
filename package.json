@@ -11,7 +11,9 @@
   "dependencies": {
     "@google/genai": "^1.35.0",
     "@supabase/supabase-js": "^2.96.0",
+    "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
+    "jspdf": "^4.2.0",
     "path": "^0.12.7",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.3",

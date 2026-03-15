@@ -102,6 +102,13 @@ interface AppContextType {
     statusFilter?: string;
   }) => Promise<{ members: User[]; totalCount: number }>;
   isFetchingMembers: boolean;
+  fetchPaginatedSales: (config: {
+    page: number;
+    pageSize: number;
+    searchTerm?: string;
+    branchId?: string | 'all';
+  }) => Promise<{ sales: Sale[]; totalCount: number; periodRevenue: number }>;
+  isFetchingSales: boolean;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
 }
@@ -180,6 +187,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isGlobalLoading, setGlobalLoading] = useState(false);
   const [isFetchingMembers, setIsFetchingMembers] = useState(false);
+  const [isFetchingSales, setIsFetchingSales] = useState(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -499,11 +507,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (statusFilter && statusFilter !== 'ALL') {
         // We need subqueries/intermediate mapping for complex subscription states
         // because a user can have multiple subscriptions
-        // ⚠️ Only compute statuses based on GYM plans, PT/Group are add-ons
-        const subQuery = supabase
+        let subQuery = supabase
           .from('subscriptions')
-          .select('memberId, status, endDate, plans!inner(type)')
-          .eq('plans.type', 'GYM');
+          .select('memberId, status, endDate, plans!inner(type)');
+
+        // Optimization: Apply branch filter to subquery if present
+        if (branchId && branchId !== 'all') {
+          subQuery = subQuery.eq('branchId', branchId);
+        } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+          subQuery = subQuery.eq('branchId', currentUser.branchId);
+        }
 
         const { data: allSubs } = await subQuery;
 
@@ -520,13 +533,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }, {} as Record<string, typeof allSubs>);
 
           if (statusFilter === 'NO_PLAN') {
-            // Find ALL members in the current view first, then exclude those who have a GYM plan
-            // A more efficient way: `not.in` with the list of people who DO have plans.
+            // Find ALL members in the current view first, then exclude those who have ANY plan
             const membersWithPlans = Object.keys(subsByMember);
             if (membersWithPlans.length > 0) {
               query = query.not('id', 'in', `(${membersWithPlans.map(id => `"${id}"`).join(',')})`);
             }
-            // If nobody has a plan, then NO_PLAN means everyone (query stays untouched)
           } else {
             const nowStr = todayDateStr();
             if (statusFilter === 'ACTIVE') {
@@ -545,13 +556,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               Object.entries(subsByMember).forEach(([memberId, subs]) => {
                 const hasActiveOrPaused = subs.some(s => isSubscriptionActive(s, nowStr) || s.status === SubscriptionStatus.PAUSED);
                 const hasExpired = subs.some(s => s.status === SubscriptionStatus.EXPIRED || (s.status === SubscriptionStatus.ACTIVE && s.endDate < nowStr));
-                // Must have at least one expired plan AND NO currently active/paused plans
                 if (hasExpired && !hasActiveOrPaused) {
                   validMemberIds.add(memberId);
                 }
               });
             } else if (statusFilter === 'EXPIRING_SOON') {
-            const nowStr = todayDateStr();
             const sevenDaysFromNow = addDays(nowStr, 7);
 
             Object.entries(subsByMember).forEach(([memberId, subs]) => {
@@ -592,6 +601,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { members: [], totalCount: 0 };
     } finally {
       setIsFetchingMembers(false);
+    }
+  }, [currentUser]);
+
+  const fetchPaginatedSales = useCallback(async (config: {
+    page: number;
+    pageSize: number;
+    searchTerm?: string;
+    branchId?: string | 'all';
+  }) => {
+    setIsFetchingSales(true);
+    // Artificial delay to ensure user sees the loading state
+    await new Promise(r => setTimeout(r, 400));
+    try {
+      const { page, pageSize, searchTerm, branchId } = config;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      // 1. Get total revenue for the current filter (ignoring range)
+      let totalQuery = supabase
+        .from('sales')
+        .select('amount');
+
+      if (branchId && branchId !== 'all') {
+        totalQuery = totalQuery.eq('branchId', branchId);
+      } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+        totalQuery = totalQuery.eq('branchId', currentUser.branchId);
+      }
+
+      if (searchTerm) {
+        // For revenue calculation, we still need to filter by search if possible
+        // but it's complex with joins. For now, let's at least filter by InvoiceNo.
+        totalQuery = totalQuery.ilike('invoiceNo', `%${searchTerm}%`);
+      }
+
+      const { data: revData } = await totalQuery;
+      const periodRevenue = revData?.reduce((acc, s) => acc + s.amount, 0) || 0;
+
+      // 2. Get paginated sales with joins
+      let query = supabase
+        .from('sales')
+        .select('*, member:users!memberId(name, memberId)', { count: 'exact' });
+
+      // Branch filter
+      if (branchId && branchId !== 'all') {
+        query = query.eq('branchId', branchId);
+      } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+        query = query.eq('branchId', currentUser.branchId);
+      }
+
+      // Search term (Invoice No OR Member Name)
+      if (searchTerm) {
+        // We use a join-aware filter if possible, or filter by invoiceNo primarily
+        query = query.or(`invoiceNo.ilike.%${searchTerm}%,memberId.in.(select id from users where name.ilike.%${searchTerm}%)`);
+      }
+
+      const { data, count, error } = await query
+        .order('createdAt', { ascending: false })
+        .range(start, end);
+
+      if (error) throw error;
+
+      return {
+        sales: (data || []) as Sale[],
+        totalCount: count || 0,
+        periodRevenue
+      };
+    } catch (error) {
+      console.error('Error fetching paginated sales:', error);
+      return { sales: [], totalCount: 0, periodRevenue: 0 };
+    } finally {
+      setIsFetchingSales(false);
     }
   }, [currentUser]);
 
@@ -2277,6 +2357,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchData,
     fetchPaginatedMembers,
     isFetchingMembers,
+    fetchPaginatedSales,
+    isFetchingSales,
     markNotificationAsRead,
     markAllNotificationsAsRead
   };

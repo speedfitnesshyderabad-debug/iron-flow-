@@ -13,14 +13,49 @@ const formatCurrency = (amount: number) => {
 };
 
 const Sales: React.FC = () => {
-  const { sales, users, plans, branches, inventory, currentUser, generateTransactionCode, isRowVisible } = useAppContext();
+  const { fetchPaginatedSales, isFetchingSales, users, plans, branches, inventory, currentUser, generateTransactionCode, isRowVisible } = useAppContext();
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
   const [generatedPIN, setGeneratedPIN] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const filteredSales = sales.filter(s => isRowVisible(s.branchId));
+  // Pagination & Search state
+  const [paginatedSales, setPaginatedSales] = useState<Sale[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [periodRevenue, setPeriodRevenue] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState<'all' | string>(currentUser?.role === 'SUPER_ADMIN' ? 'all' : (currentUser?.branchId || ''));
+  const pageSize = 10;
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const totalRev = filteredSales.reduce((acc, s) => acc + s.amount, 0);
+  // Debounce search term
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Fetch paginated data
+  const loadSales = React.useCallback(async () => {
+    const result = await fetchPaginatedSales({
+      page: currentPage,
+      pageSize,
+      searchTerm: debouncedSearch,
+      branchId: selectedBranchId
+    });
+    setPaginatedSales(result.sales);
+    setTotalCount(result.totalCount);
+    setPeriodRevenue(result.periodRevenue);
+  }, [currentPage, debouncedSearch, selectedBranchId, fetchPaginatedSales]);
+
+  React.useEffect(() => {
+    loadSales();
+  }, [loadSales]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const closeInvoice = () => setViewingSale(null);
 
@@ -45,9 +80,10 @@ const Sales: React.FC = () => {
           {currentUser?.role === 'SUPER_ADMIN' && (
             <select
               className="p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm"
-              value={selectedBranchForPIN}
-              onChange={e => setSelectedBranchForPIN(e.target.value)}
+              value={selectedBranchId}
+              onChange={e => setSelectedBranchId(e.target.value)}
             >
+              <option value="all">Global (All Branches)</option>
               {branches.map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -63,7 +99,7 @@ const Sales: React.FC = () => {
           </button>
           <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 shadow-sm flex-1 sm:flex-none text-center sm:text-left">
             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Period Revenue</p>
-            <p className="text-xl font-black text-emerald-700">{formatCurrency(totalRev)}</p>
+            <p className="text-xl font-black text-emerald-700">{formatCurrency(periodRevenue)}</p>
           </div>
         </div>
       </div>
@@ -78,12 +114,31 @@ const Sales: React.FC = () => {
         </div>
       )}
 
+      {/* Search Bar */}
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="relative">
+          <i className="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"></i>
+          <input
+            type="text"
+            placeholder="Search by Invoice No or Member Name..."
+            className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
       {/* Mobile Card View */}
       <div className="grid grid-cols-1 gap-4 md:hidden pb-10">
-        {filteredSales.length === 0 ? (
+        {isFetchingSales ? (
+          <div className="py-20 text-center space-y-4">
+             <i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Revenue Data...</p>
+          </div>
+        ) : paginatedSales.length === 0 ? (
           <div className="bg-white p-10 rounded-3xl border border-slate-100 text-center text-slate-400 italic">No sales data recorded yet.</div>
         ) : (
-          [...filteredSales].reverse().map(sale => {
+          paginatedSales.map(sale => {
             const memberName = sale.member?.name || 'Unknown Member';
             const plan = plans.find(p => p.id === sale.planId);
             const inventoryItem = inventory.find(i => i.id === sale.itemId);
@@ -123,7 +178,7 @@ const Sales: React.FC = () => {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mb-10">
+      <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50/50 border-b border-slate-100">
@@ -137,12 +192,21 @@ const Sales: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredSales.length === 0 ? (
+              {isFetchingSales ? (
+                <tr>
+                   <td colSpan={6} className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Synchronizing Ledger...</p>
+                      </div>
+                   </td>
+                </tr>
+              ) : paginatedSales.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center text-slate-400 italic font-medium">No sales data recorded yet.</td>
                 </tr>
               ) : (
-                [...filteredSales].reverse().map(sale => {
+                paginatedSales.map(sale => {
                   const memberName = sale.member?.name || 'Unknown Member';
                   const plan = plans.find(p => p.id === sale.planId);
                   const inventoryItem = inventory.find(i => i.id === sale.itemId);
@@ -189,6 +253,31 @@ const Sales: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm mb-10">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Showing Page {currentPage} of {totalPages} ({totalCount} Sales)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1 || isFetchingSales}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="px-6 py-3 bg-slate-50 text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 hover:bg-slate-100 transition-all active:scale-95"
+            >
+              Previous
+            </button>
+            <button
+              disabled={currentPage === totalPages || isFetchingSales}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 shadow-xl shadow-slate-100 hover:bg-slate-800 transition-all active:scale-95"
+            >
+              Next Page
+            </button>
+          </div>
+        </div>
+      )}
 
       {viewingSale && (
         <InvoiceModal

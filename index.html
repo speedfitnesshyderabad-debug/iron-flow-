@@ -100,7 +100,17 @@
             search: window.location.search,
             hash: window.location.hash
         };
+
+        // Aggressive Update Check on Focus
+        window.addEventListener('focus', () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.update().catch(console.error);
+                });
+            }
+        });
     </script>
+
     <script type="module" src="/index.tsx"></script>
 </body>
 

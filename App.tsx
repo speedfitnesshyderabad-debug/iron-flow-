@@ -32,6 +32,8 @@ import GateQR from './pages/GateQR';
 import Payroll from './pages/Payroll';
 import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
+import ReloadPrompt from './components/ReloadPrompt';
+
 
 // -----------------------------------------------------------------------------
 // Detect if the page was loaded with Supabase auth tokens.
@@ -244,8 +246,10 @@ const App: React.FC = () => {
         <AuthGate>
           <AppRoutes />
         </AuthGate>
+        <ReloadPrompt />
       </Router>
     </AppProvider>
+
   );
 };
 
