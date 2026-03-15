@@ -661,13 +661,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.ilike('invoiceNo', `%${searchTerm}%`);
       }
 
-      const { data, count, error } = await query
+      let { data, count, error } = await query
         .order('createdAt', { ascending: false })
         .range(start, end);
 
+      if (error && error.message.includes('createdAt')) {
+         console.warn('⚠️ createdAt field not found, retrying with created_at...');
+         const retry = await query
+           .order('created_at', { ascending: false })
+           .range(start, end);
+         data = retry.data;
+         count = retry.count;
+         error = retry.error;
+      }
+
       if (error) {
         console.error('❌ Sales Fetch Error:', error);
-        throw error;
+        // Fallback: return un-ordered if sorting fails entirely
+        const fallback = await query.range(start, end);
+        return {
+          sales: (fallback.data || []) as Sale[],
+          totalCount: fallback.count || 0,
+          periodRevenue
+        };
       }
 
       return {

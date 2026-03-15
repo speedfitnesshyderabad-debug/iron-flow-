@@ -34,12 +34,12 @@ const Dashboard: React.FC = () => {
   const expiringSubs = filteredSubs.filter(s =>
     s.status === SubscriptionStatus.ACTIVE &&
     s.endDate <= next7Days &&
-    s.endDate > today // Exclusive of today
+    s.endDate >= today // Inclusive of today
   );
 
   const expiredSubs = filteredSubs.filter(s =>
     s.status === SubscriptionStatus.EXPIRED ||
-    (s.status === SubscriptionStatus.ACTIVE && s.endDate <= today) // Inclusive of today
+    (s.status === SubscriptionStatus.ACTIVE && s.endDate < today) // Strict less than today
   );
 
   const handleOpenRenew = (sub: any) => {
