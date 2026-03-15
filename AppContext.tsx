@@ -112,6 +112,14 @@ interface AppContextType {
   salesChangeTrigger: number;
   markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
+  fetchPaginatedCommunications: (config: {
+    page: number;
+    pageSize: number;
+    searchTerm?: string;
+    branchId?: string | 'all';
+    typeFilter?: string | 'ALL';
+  }) => Promise<{ communications: Communication[]; totalCount: number }>;
+  isFetchingCommunications: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -189,6 +197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isGlobalLoading, setGlobalLoading] = useState(false);
   const [isFetchingMembers, setIsFetchingMembers] = useState(false);
   const [isFetchingSales, setIsFetchingSales] = useState(false);
+  const [isFetchingCommunications, setIsFetchingCommunications] = useState(false);
   const [salesChangeTrigger, setSalesChangeTrigger] = useState(0);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -699,6 +708,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { sales: [], totalCount: 0, periodRevenue: 0 };
     } finally {
       setIsFetchingSales(false);
+    }
+  }, [currentUser]);
+
+  const fetchPaginatedCommunications = useCallback(async (config: {
+    page: number;
+    pageSize: number;
+    searchTerm?: string;
+    branchId?: string | 'all';
+    typeFilter?: string | 'ALL';
+  }) => {
+    setIsFetchingCommunications(true);
+    // Artificial delay to ensure user sees the loading state
+    await new Promise(r => setTimeout(r, 400));
+    try {
+      const { page, pageSize, searchTerm, branchId, typeFilter } = config;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      let query = supabase
+        .from('communications')
+        .select('*, user:users!userId(name, memberId, role)', { count: 'exact' });
+
+      // Branch filter
+      if (branchId && branchId !== 'all') {
+        query = query.eq('branchId', branchId);
+      } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+        query = query.eq('branchId', currentUser.branchId);
+      }
+
+      // Type filter (EMAIL/SMS)
+      if (typeFilter && typeFilter !== 'ALL') {
+        query = query.eq('type', typeFilter);
+      }
+
+      // Search term (Recipient or Body)
+      if (searchTerm) {
+        query = query.or(`recipient.ilike.%${searchTerm}%,body.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%`);
+      }
+
+      const { data, count, error } = await query
+        .order('timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(start, end);
+
+      if (error) throw error;
+
+      return {
+        communications: (data || []).map((c: any) => ({ ...c, isRead: !!c.is_read })),
+        totalCount: count || 0
+      };
+    } catch (e) {
+      console.error('Fetch communications error:', e);
+      showToast('Failed to load communications', 'error');
+      return { communications: [], totalCount: 0 };
+    } finally {
+      setIsFetchingCommunications(false);
     }
   }, [currentUser]);
 
@@ -2398,7 +2463,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isFetchingSales,
     salesChangeTrigger,
     markNotificationAsRead,
-    markAllNotificationsAsRead
+    markAllNotificationsAsRead,
+    fetchPaginatedCommunications,
+    isFetchingCommunications
   };
 
   return (

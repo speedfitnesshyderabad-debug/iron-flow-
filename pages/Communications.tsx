@@ -1,17 +1,64 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppContext } from '../AppContext';
 import { CommType } from '../types';
 
 const Communications: React.FC = () => {
-  const { communications, users, branches, currentUser } = useAppContext();
+  const { 
+    fetchPaginatedCommunications, 
+    isFetchingCommunications, 
+    communications: sessionComms, 
+    users, 
+    branches, 
+    currentUser 
+  } = useAppContext();
+  
   const [filter, setFilter] = useState<'ALL' | CommType>('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [paginatedComms, setPaginatedComms] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<'all' | string>('all');
+  
+  const pageSize = 10;
 
-  const filteredComms = communications.filter(c => {
-    const matchesType = filter === 'ALL' || c.type === filter;
-    const matchesBranch = currentUser?.role === 'SUPER_ADMIN' || c.branchId === currentUser?.branchId;
-    return matchesType && matchesBranch;
-  });
+  // Sync selectedBranchId with user branch on mount/login
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'SUPER_ADMIN') {
+        setSelectedBranchId('all');
+      } else if (currentUser.branchId) {
+        setSelectedBranchId(currentUser.branchId);
+      }
+    }
+  }, [currentUser]);
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  const loadComms = useCallback(async () => {
+    const result = await fetchPaginatedCommunications({
+      page: currentPage,
+      pageSize,
+      searchTerm: debouncedSearch,
+      branchId: selectedBranchId,
+      typeFilter: filter
+    });
+    setPaginatedComms(result.communications);
+    setTotalCount(result.totalCount);
+  }, [currentPage, debouncedSearch, selectedBranchId, filter, fetchPaginatedCommunications]);
+
+  useEffect(() => {
+    loadComms();
+  }, [loadComms]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="space-y-6 animate-[fadeIn_0.5s_ease-out]">
@@ -21,23 +68,51 @@ const Communications: React.FC = () => {
           <p className="text-slate-500 font-medium">Monitoring automated SMS & Gmail interactions</p>
         </div>
 
-        <div className="flex bg-white p-1 rounded-2xl shadow-sm border">
-          {['ALL', CommType.EMAIL, CommType.SMS].map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilter(t as any)}
-              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === t ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+          {currentUser?.role === 'SUPER_ADMIN' && (
+            <select
+              className="p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm"
+              value={selectedBranchId}
+              onChange={e => { setSelectedBranchId(e.target.value); setCurrentPage(1); }}
             >
-              {t}
-            </button>
-          ))}
+              <option value="all">Global (All Branches)</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          )}
+          <div className="flex bg-white p-1 rounded-2xl shadow-sm border">
+            {['ALL', CommType.EMAIL, CommType.SMS].map((t) => (
+              <button
+                key={t}
+                onClick={() => { setFilter(t as any); setCurrentPage(1); }}
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === t ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard label="Total Sent" value={communications.length} icon="fa-paper-plane" color="blue" />
-        <StatCard label="Emails Delivered" value={communications.filter(c => c.type === CommType.EMAIL).length} icon="fa-envelope" color="indigo" />
-        <StatCard label="SMS Delivered" value={communications.filter(c => c.type === CommType.SMS).length} icon="fa-comment-dots" color="amber" />
+        <StatCard label="Total Sent" value={totalCount} icon="fa-paper-plane" color="blue" />
+        <StatCard label="Emails" value={filter === CommType.SMS ? 0 : (filter === CommType.EMAIL ? totalCount : '...') } icon="fa-envelope" color="indigo" />
+        <StatCard label="SMS" value={filter === CommType.EMAIL ? 0 : (filter === CommType.SMS ? totalCount : '...') } icon="fa-comment-dots" color="amber" />
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="relative">
+          <i className="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"></i>
+          <input
+            type="text"
+            placeholder="Search by Recipient, Subject or Content..."
+            className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
@@ -55,18 +130,27 @@ const Communications: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredComms.length === 0 ? (
+              {isFetchingCommunications ? (
+                <tr>
+                  <td colSpan={6} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fetching latest interactions...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedComms.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center text-slate-400 italic font-medium">
                     <div className="flex flex-col items-center gap-3">
                       <i className="fas fa-inbox text-4xl opacity-10"></i>
-                      <p>No communications recorded in current session.</p>
+                      <p>No communications recorded.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredComms.map((comm) => {
-                  const user = users.find(u => u.id === comm.userId);
+                paginatedComms.map((comm) => {
+                  const userMatched = users.find(u => u.id === comm.userId);
                   const branch = branches.find(b => b.id === comm.branchId);
                   return (
                     <tr key={comm.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -77,7 +161,7 @@ const Communications: React.FC = () => {
                       </td>
                       <td className="px-8 py-6">
                         <p className="font-black text-slate-900 text-sm truncate max-w-[150px]">
-                          {(Array.isArray(comm.user) ? comm.user[0]?.name : comm.user?.name) || user?.name || 'System'}
+                          {(Array.isArray(comm.user) ? comm.user[0]?.name : comm.user?.name) || userMatched?.name || 'System'}
                         </p>
                         <p className="text-[10px] text-slate-400 font-bold">{comm.recipient}</p>
                       </td>
@@ -124,14 +208,19 @@ const Communications: React.FC = () => {
 
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-slate-100">
-          {filteredComms.length === 0 ? (
+          {isFetchingCommunications ? (
+            <div className="py-20 text-center space-y-4">
+              <i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Interactions...</p>
+            </div>
+          ) : paginatedComms.length === 0 ? (
             <div className="px-8 py-20 text-center text-slate-400 italic font-medium">
               <i className="fas fa-inbox text-4xl opacity-10 mb-3 block"></i>
               <p>No communications recorded.</p>
             </div>
           ) : (
-            filteredComms.map((comm) => {
-              const user = users.find(u => u.id === comm.userId);
+            paginatedComms.map((comm) => {
+              const userMatched = users.find(u => u.id === comm.userId);
               const branch = branches.find(b => b.id === comm.branchId);
               return (
                 <div key={comm.id} className="p-6 space-y-4 active:bg-slate-50 transition-colors">
@@ -142,7 +231,7 @@ const Communications: React.FC = () => {
                       </div>
                       <div>
                         <p className="font-black text-slate-900 text-sm uppercase">
-                          {(Array.isArray(comm.user) ? comm.user[0]?.name : comm.user?.name) || user?.name || 'System'}
+                          {(Array.isArray(comm.user) ? comm.user[0]?.name : comm.user?.name) || userMatched?.name || 'System'}
                         </p>
                         <p className="text-[10px] text-slate-400 font-bold">{comm.timestamp}</p>
                       </div>
@@ -177,6 +266,31 @@ const Communications: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm mb-10">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Showing Page {currentPage} of {totalPages} ({totalCount} Messages)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1 || isFetchingCommunications}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="px-6 py-3 bg-slate-50 text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 hover:bg-slate-100 transition-all active:scale-95"
+            >
+              Previous
+            </button>
+            <button
+              disabled={currentPage === totalPages || isFetchingCommunications}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 shadow-xl shadow-slate-100 hover:bg-slate-800 transition-all active:scale-95"
+            >
+              Next Page
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
