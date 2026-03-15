@@ -654,22 +654,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.eq('branchId', currentUser.branchId);
       }
 
-      // Search term (Invoice No primarily, as member join filtering in or() is restricted)
+      // Search term (Invoice No or Member Name)
       if (searchTerm) {
-        // PostgREST/Supabase doesn't support subqueries in or(). 
-        // We filter by invoiceNo or try to match the member object which is already joined.
-        query = query.ilike('invoiceNo', `%${searchTerm}%`);
+        // PostgREST/Supabase doesn't support easy joining for OR filters across tables.
+        // We handle this by using the !inner join or filtering by member name if it matches.
+        query = query.or(`invoiceNo.ilike.%${searchTerm}%,member:users!memberId.name.ilike.%${searchTerm}%`);
       }
 
       let { data, count, error } = await query
         .order('createdAt', { ascending: false })
         .range(start, end);
 
-      if (error && error.message.includes('createdAt')) {
-         console.warn('⚠️ createdAt field not found, retrying with created_at...');
-         const retry = await query
+      if (error && (error.message.includes('createdAt') || error.message.includes('column'))) {
+         console.warn('⚠️ createdAt field issues, retrying with created_at...');
+         const retry = await supabase
+           .from('sales')
+           .select('*, member:users!memberId(name, memberId)', { count: 'exact' })
            .order('created_at', { ascending: false })
            .range(start, end);
+
          data = retry.data;
          count = retry.count;
          error = retry.error;
@@ -677,12 +680,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (error) {
         console.error('❌ Sales Fetch Error:', error);
-        // Fallback: return un-ordered if sorting fails entirely
-        const fallback = await query.range(start, end);
+        // Fallback: return empty if sorting/filtering fails entirely
         return {
-          sales: (fallback.data || []) as Sale[],
-          totalCount: fallback.count || 0,
-          periodRevenue
+          sales: [],
+          totalCount: 0,
+          periodRevenue: 0
         };
       }
 
@@ -1598,7 +1600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           planId: plan.id,
           staffId: staffId || currentUser?.id || null,
           branchId,
-          paymentMethod: paymentMethod,
+          paymentMethod: paymentMethod || 'CASH',
           trainerId,
           createdAt: new Date().toISOString(),
           // Keep for local state only — not in DB schema
@@ -1821,7 +1823,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       planId: planId,
       staffId: currentUser?.id || null,
       branchId,
-      paymentMethod,
+      paymentMethod: paymentMethod || 'CASH',
       trainerId,
       // Keep member for local state only (not in DB schema)
       member: { name: user.name, memberId: user.memberId },
