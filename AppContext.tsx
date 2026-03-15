@@ -942,7 +942,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setInventory(prev => prev.map(i => i.id === itemId ? { ...i, stock: i.stock - quantity } : i));
-    setSales(prev => [...prev, newSale]);
+    setSales(prev => [newSale, ...prev]); // Add to top for Real-time Recent Sales
     showToast(`Sold ${item.name} x ${quantity}!`);
   };
 
@@ -1153,7 +1153,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const { error } = await supabase.from('communications').insert(newComm);
     if (!error) {
-      setCommunications(prev => [newComm, ...prev]);
+      // Add joined user object for immediate UI update in Comm Hub
+      const commWithUser = {
+        ...newComm,
+        user: user ? { name: user.name, memberId: user.memberId, role: user.role } : undefined
+      };
+      setCommunications(prev => [commWithUser, ...prev]);
 
       // 📧 Real Email Delivery via SendGrid (Supabase Edge Function)
       // emailOverride is used when the user was just created and isn't yet in the users state array
@@ -1513,7 +1518,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         setSubscriptions(prev => [...prev, newSub]);
-        setSales(prev => [...prev, newSale]);
+        setSales(prev => [newSale, ...prev]); // Add to top for Real-time Recent Sales
 
         // Trigger referral reward
         if (referralCode) {
@@ -1682,7 +1687,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const effectiveStartDate = customStartDate || todayDateStr();
-    const branchId = user.branchId || null;
+    // 🛡️ Robustness: Fallback to current staff's branch if member has none assigned yet
+    const branchId = user.branchId || currentUser?.branchId || branches[0]?.id || null;
 
     const saleId = crypto.randomUUID();
 
@@ -1737,7 +1743,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Update local state with full objects (including virtual fields for UI)
       setSubscriptions(prev => [...prev, newSub]);
-      setSales(prev => [...prev, newSale]);
+      setSales(prev => [newSale, ...prev]); // Add to top for Real-time Recent Sales
 
       // Trigger referral reward
       if (referralCode) {
