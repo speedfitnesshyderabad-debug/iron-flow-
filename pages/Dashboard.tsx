@@ -17,6 +17,13 @@ const Dashboard: React.FC = () => {
   const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible, bookings } = useAppContext();
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  React.useEffect(() => {
+    // Delay chart mounting slightly to ensure container dimensions are settled
+    const timer = setTimeout(() => setIsMounted(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!currentUser) return null;
 
@@ -441,25 +448,27 @@ const Dashboard: React.FC = () => {
           <h3 className="text-sm md:text-base font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
             <i className="fas fa-chart-line text-blue-500"></i> Performance Trends
           </h3>
-          <div className="h-64 md:h-80 w-full relative">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(val) => `${val / 1000}k`} stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value) => formatCurrency(Number(value))}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#3b82f6"
-                  strokeWidth={4}
-                  dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-64 md:h-80 w-full relative overflow-hidden">
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={(val) => `${val / 1000}k`} stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value) => formatCurrency(Number(value))}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#3b82f6"
+                    strokeWidth={4}
+                    dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -467,18 +476,20 @@ const Dashboard: React.FC = () => {
           <h3 className="text-sm md:text-base font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
             <i className="fas fa-chart-pie text-indigo-500"></i> Subscription Mix
           </h3>
-          <div className="h-64 md:h-80 w-full relative">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
-              <PieChart>
-                <Pie data={salesByPlanData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
-                  {salesByPlanData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="h-64 md:h-80 w-full relative overflow-hidden">
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+                <PieChart>
+                  <Pie data={salesByPlanData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
+                    {salesByPlanData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
