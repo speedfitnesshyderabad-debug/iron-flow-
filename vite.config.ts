@@ -54,7 +54,9 @@ export default defineConfig(({ mode }) => {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     build: {
+      outDir: 'dist',
       rollupOptions: {
+        input: path.resolve(__dirname, 'index.html'),
         output: {
           entryFileNames: `assets/[name].[hash].js`,
           chunkFileNames: `assets/[name].[hash].js`,
@@ -69,6 +71,7 @@ export default defineConfig(({ mode }) => {
       },
       chunkSizeWarningLimit: 1000
     },
+
 
     resolve: {
       alias: {
