@@ -1,0 +1,29 @@
+﻿commit 68af4486da5dec3cef4a6fa12b23d8b939f8d073
+Author: krishnatanniru <94739268+krishnatanniru@users.noreply.github.com>
+Date:   Sun Mar 15 13:59:14 2026 +0530
+
+    fix: improve sales hub fetching and search logic
+
+commit a31f09d635a4cbe919b5542f75afa89470f43ab6
+Author: krishnatanniru <94739268+krishnatanniru@users.noreply.github.com>
+Date:   Sun Mar 15 13:26:23 2026 +0530
+
+    fix: renewal expiry logic and robust sales fetch handling
+
+commit 4594c871bc07fd86eef2fdc80422f50999c71365
+Author: krishnatanniru <94739268+krishnatanniru@users.noreply.github.com>
+Date:   Sun Mar 15 12:58:28 2026 +0530
+
+    fix: improve sales hub robustness and fix invalid search filter
+
+commit d86ca4d5c08d7339070f591d50e941de3a7bc7ba
+Author: krishnatanniru <94739268+krishnatanniru@users.noreply.github.com>
+Date:   Sun Mar 15 12:51:28 2026 +0530
+
+    fix: restore real-time updates for paginated sales hub
+
+commit db9a6974134887eeaa66ef0b52bf97c48d4c8214
+Author: krishnatanniru <94739268+krishnatanniru@users.noreply.github.com>
+Date:   Sun Mar 15 12:44:39 2026 +0530
+
+    fix: explicitly define build entry point and output directory

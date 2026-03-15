@@ -441,8 +441,8 @@ const Dashboard: React.FC = () => {
           <h3 className="text-sm md:text-base font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
             <i className="fas fa-chart-line text-blue-500"></i> Performance Trends
           </h3>
-          <div className="h-64 md:h-80 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 md:h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
@@ -467,8 +467,8 @@ const Dashboard: React.FC = () => {
           <h3 className="text-sm md:text-base font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
             <i className="fas fa-chart-pie text-indigo-500"></i> Subscription Mix
           </h3>
-          <div className="h-64 md:h-80 w-full flex items-center justify-center min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 md:h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie data={salesByPlanData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
                   {salesByPlanData.map((entry, index) => (

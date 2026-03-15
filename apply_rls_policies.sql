@@ -11,6 +11,12 @@
 CREATE OR REPLACE FUNCTION public.is_super_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
+  -- 1. Check JWT metadata (fast, reliable for Auth users)
+  IF (auth.jwt() -> 'user_metadata' ->> 'role') = 'SUPER_ADMIN' THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 2. Fallback to users table
   RETURN EXISTS (
     SELECT 1 FROM public.users
     WHERE id = auth.uid()::text
@@ -22,7 +28,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 -- Function to get the current user's branchId
 CREATE OR REPLACE FUNCTION public.get_user_branch()
 RETURNS TEXT AS $$
+DECLARE
+  branch_id TEXT;
 BEGIN
+  -- 1. Check JWT metadata
+  branch_id := (auth.jwt() -> 'user_metadata' ->> 'branchId');
+  IF branch_id IS NOT NULL AND branch_id != '' THEN
+    RETURN branch_id;
+  END IF;
+
+  -- 2. Fallback to users table
   RETURN (
     SELECT "branchId"
     FROM public.users
@@ -35,6 +50,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 CREATE OR REPLACE FUNCTION public.is_branch_staff_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
+  -- 1. Check JWT metadata
+  IF (auth.jwt() -> 'user_metadata' ->> 'role') IN ('BRANCH_ADMIN', 'MANAGER', 'RECEPTIONIST') THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 2. Fallback to users table
   RETURN EXISTS (
     SELECT 1 FROM public.users
     WHERE id = auth.uid()::text
