@@ -1245,7 +1245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const sendNotification = async (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>, emailOverride?: string) => {
+  const sendNotification = async (comm: Omit<Communication, 'id' | 'timestamp' | 'status'>, userInfo?: { name: string; memberId?: string; role: string; email?: string; phone?: string }) => {
     const user = users.find(u => u.id === comm.userId);
     const bId = comm.branchId || user?.branchId || branches[0]?.id;
     const branch = branches.find(b => b.id === bId);
@@ -1263,13 +1263,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Add joined user object for immediate UI update in Comm Hub
       const commWithUser = {
         ...newComm,
-        user: user ? { name: user.name, memberId: user.memberId, role: user.role } : undefined
+        user: userInfo || (user ? { name: user.name, memberId: user.memberId, role: user.role } : undefined)
       };
       setCommunications(prev => [commWithUser, ...prev]);
 
       // 📧 Real Email Delivery via SendGrid (Supabase Edge Function)
-      // emailOverride is used when the user was just created and isn't yet in the users state array
-      const emailTo = emailOverride || user?.email;
+      // userInfo.email is used when the user was just created and isn't yet in the users state array
+      const emailTo = userInfo?.email || user?.email || (comm.recipient.includes('@') ? comm.recipient : undefined);
       if (emailTo && emailTo.includes('@')) {
         const bName = branch?.name || 'IronFlow';
         const categorySubjects: Record<string, string> = {
@@ -1443,7 +1443,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: `Congratulations! You earned ${rewardDays} free days because your friend joined ${bName}. Your membership has been extended to ${targetSub ? (new Date(new Date(targetSub.endDate).getTime() + rewardDays * 86400000).toISOString().split('T')[0]) : 'N/A'}.`,
         category: 'ANNOUNCEMENT',
         branchId: referrer.branchId || branches[0]?.id || ''
-      });
+      }, { name: referrer.name, memberId: referrer.memberId, role: referrer.role, email: referrer.email, phone: referrer.phone });
 
     } catch (err) {
       console.error('Referral processing failed:', err);
@@ -1649,7 +1649,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: welcomeBody,
         category: 'WELCOME',
         branchId: branchId
-      }, userData.email); // ✅ emailOverride bypasses stale users state
+      }, { name: newUser.name, memberId: newUser.memberId, role: newUser.role, email: newUser.email, phone: newUser.phone });
 
     } catch (e: any) {
       console.error(e);
@@ -1864,7 +1864,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: `Payment successful! Your ${plan.name} is active until ${newSub.endDate}. Ref: ${newSale.invoiceNo}`,
         category: 'PAYMENT',
         branchId: branchId
-      });
+      }, { name: user.name, memberId: user.memberId, role: user.role, email: user.email, phone: user.phone });
 
       showToast(`Payment received! Invoice: ${newSale.invoiceNo}`);
     } catch (e: any) {

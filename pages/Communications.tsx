@@ -76,7 +76,9 @@ const Communications: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <p className="font-black text-slate-900 text-sm truncate max-w-[150px]">{comm.user?.name || user?.name || 'System'}</p>
+                        <p className="font-black text-slate-900 text-sm truncate max-w-[150px]">
+                          {(Array.isArray(comm.user) ? comm.user[0]?.name : comm.user?.name) || user?.name || 'System'}
+                        </p>
                         <p className="text-[10px] text-slate-400 font-bold">{comm.recipient}</p>
                       </td>
                       <td className="px-8 py-6">
@@ -139,7 +141,9 @@ const Communications: React.FC = () => {
                         <i className={`fas ${comm.type === CommType.EMAIL ? 'fa-envelope' : 'fa-sms'} text-sm`}></i>
                       </div>
                       <div>
-                        <p className="font-black text-slate-900 text-sm uppercase">{comm.user?.name || user?.name || 'System'}</p>
+                        <p className="font-black text-slate-900 text-sm uppercase">
+                          {(Array.isArray(comm.user) ? comm.user[0]?.name : comm.user?.name) || user?.name || 'System'}
+                        </p>
                         <p className="text-[10px] text-slate-400 font-bold">{comm.timestamp}</p>
                       </div>
                     </div>
