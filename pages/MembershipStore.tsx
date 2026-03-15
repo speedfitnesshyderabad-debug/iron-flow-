@@ -28,7 +28,7 @@ const MembershipStore: React.FC = () => {
 
   if (!currentUser) return null;
 
-  const branchPlans = plans.filter(p => isRowVisible(p.branchId) && p.isActive);
+  const branchPlans = plans.filter(p => isRowVisible(p.branchId) && p.isActive && !p.isHidden);
   const filteredPlans = filter === 'ALL' ? branchPlans : branchPlans.filter(p => p.type === filter);
   const userBranch = branches.find(b => b.id === currentUser.branchId);
 

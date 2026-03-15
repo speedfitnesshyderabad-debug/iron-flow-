@@ -105,7 +105,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
                                 onChange={(e) => setSelectedPlanId(e.target.value)}
                                 className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                             >
-                                {plans.filter(p => !p.isHidden).map(plan => (
+                                {plans.map(plan => (
                                     <option key={plan.id} value={plan.id}>
                                         {plan.name} - ₹{plan.price} ({plan.durationDays} Days)
                                     </option>

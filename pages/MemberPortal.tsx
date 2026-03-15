@@ -530,6 +530,7 @@ const MemberPortal: React.FC = () => {
                currentPlan={renewTarget.currentPlan}
                plans={plans.filter(p =>
                   p.isActive !== false &&
+                  !p.isHidden &&
                   (
                      !p.branchId ||
                      p.branchId === currentUser.branchId ||
