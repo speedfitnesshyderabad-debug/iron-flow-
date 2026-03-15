@@ -197,7 +197,8 @@ CREATE TABLE IF NOT EXISTS public.communications (
   timestamp TIMESTAMPTZ DEFAULT NOW(),
   status TEXT NOT NULL,
   category TEXT NOT NULL,
-  "branchId" TEXT REFERENCES public.branches(id) ON DELETE SET NULL
+  "branchId" TEXT REFERENCES public.branches(id) ON DELETE SET NULL,
+  is_read BOOLEAN DEFAULT FALSE
 );
 
 -- CLASS TEMPLATES

@@ -279,8 +279,8 @@ async function main() {
         process.exit(1);
     }
 
-    // Use the first branch for testing
-    const branch = branches[0] || null;
+    // Use the second branch for testing (Titan Strength) as it has a key
+    const branch = branches[1] || branches[0] || null;
 
     // Run tests
     await testEmail(branch);
