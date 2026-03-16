@@ -264,6 +264,24 @@ const AppRoutes: React.FC = () => {
 // App
 // -----------------------------------------------------------------------------
 const App: React.FC = () => {
+  useEffect(() => {
+    const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (!canGoBack) {
+        // Show a confirmation dialog (using your UI framework or browser confirm)
+        const confirmed = window.confirm("Are you sure you want to exit?");
+        if (confirmed) {
+          CapApp.exitApp();
+        }
+      } else {
+        window.history.back();
+      }
+    });
+
+    return () => {
+      backButtonListener.then(l => l.remove());
+    };
+  }, []);
+
   return (
     <AppProvider>
       <Router>
