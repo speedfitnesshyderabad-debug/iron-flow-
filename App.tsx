@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { App as CapApp } from '@capacitor/app';
 import { supabase } from './src/lib/supabase';
 import { UserRole } from './types';
 import { AppProvider, useAppContext } from './AppContext';
@@ -109,9 +110,17 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       release(false);
     }, 12000);
 
+    // Capacitor Deep Link Listener
+    const appUrlListener = CapApp.addListener('appUrlOpen', (data) => {
+      console.log('🔗 Deep link received:', data.url);
+      // Supabase will automatically pick up the URL if it's in the hash/search
+      // But we might need to nudge it if it's a cold start or specific flow.
+    });
+
     return () => {
       subscription.unsubscribe();
       clearTimeout(timer);
+      appUrlListener.then(l => l.remove());
     };
   }, [gating, navigate]);
 

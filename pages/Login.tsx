@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 import { UserRole } from '../types';
 import { supabase } from '../src/lib/supabase';
+import { Capacitor } from '@capacitor/core';
 
 const Login: React.FC = () => {
   const { users, setCurrentUser, createSession } = useAppContext();
@@ -52,7 +53,9 @@ const Login: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: Capacitor.isNativePlatform() 
+            ? 'com.ironflow.gym://' 
+            : window.location.origin
         }
       });
       if (error) throw error;

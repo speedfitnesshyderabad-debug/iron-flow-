@@ -21,7 +21,7 @@ const ReloadPrompt: React.FC = () => {
     setNeedRefresh(false);
   };
 
-  if (!offlineReady && !needRefresh) return null;
+  if (!needRefresh) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] animate-[slideUp_0.3s_ease-out]">

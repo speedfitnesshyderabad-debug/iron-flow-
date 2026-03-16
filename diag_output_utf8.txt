@@ -1,0 +1,72 @@
+﻿
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ    ≡ƒôí  Email & SMS Diagnostic Tool ΓÇö IronFlow Gym      Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+Γ£à  Connected to Supabase. Found 4 branch(es).
+    1. IronFlow Bangalore East (b2)
+       Email API Key: ΓÜá∩╕Å  NOT SET
+       SMS Provider:  TWILIO
+       SMS API Key:   ΓÜá∩╕Å  NOT SET
+    2. Titan Strength(Dammaiguda) (b-1771726419524)
+       Email API Key: SG.wb_Hk... (69 chars)
+       SMS Provider:  TWILIO
+       SMS API Key:   ΓÜá∩╕Å  NOT SET
+    3. Speed Fitness Elite(SUNCITY BRANCH) (b-1771923594361)
+       Email API Key: SG.wb_Hk... (69 chars)
+       SMS Provider:  TWILIO
+       SMS API Key:   ΓÜá∩╕Å  NOT SET
+    4. Speed Fitness (Beeramguda Branch) (b-1771923811259)
+       Email API Key: SG.wb_Hk... (69 chars)
+       SMS Provider:  TWILIO
+       SMS API Key:   ΓÜá∩╕Å  NOT SET
+
+≡ƒôº  Testing EMAIL...
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Branch:         IronFlow Bangalore East
+Email Provider: SENDGRID
+From Address:   noreply@ironflow.app
+Branch API Key: ΓÜá∩╕Å  NOT SET ΓÇö will use Supabase secret SENDGRID_API_KEY
+Sending to:     krishnatanniru009@gmail.com
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γ¥î  EMAIL: FAILED ΓÇö HTTP 502
+    Response: {
+  "error": "SendGrid error 401",
+  "detail": "{\"errors\":[{\"message\":\"The provided authorization grant is invalid, expired, or revoked\",\"field\":null,\"help\":null}]}"
+}
+
+≡ƒöº  Likely causes:
+    ΓåÆ SendGrid API key is INVALID or REVOKED.
+      1. Go to https://app.sendgrid.com/settings/api_keys
+      2. Create a new key with "Mail Send" permission
+      3. Update Supabase Secret SENDGRID_API_KEY in:
+         Dashboard ΓåÆ Project Settings ΓåÆ Edge Functions ΓåÆ Secrets
+      4. Also update Branch Settings ΓåÆ Email API Key field in the app
+
+≡ƒÅù∩╕Å   Checking SMS Infrastructure...
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γ£à  send-sms Edge Function: EXISTS and responding
+
+≡ƒô▒  Testing SMS...
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Branch:       IronFlow Bangalore East
+SMS Provider: TWILIO
+API Key:      Γ¥î NOT SET
+Sender ID:    Γ¥î NOT SET
+Sending to:   +919999999999
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Γ¥î  SMS: SKIPPED ΓÇö No SMS API Key configured in Branch Settings.
+    Go to the app ΓåÆ Branch Settings ΓåÆ SMS Gateway and add your key.
+
+≡ƒöº  NOTE: Your app currently has NO backend SMS edge function!
+    SMS is stored as a communication record in the DB, but no actual
+    SMS is sent to the phone. You need a Supabase Edge Function for SMS.
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+≡ƒôï  SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Email: Powered by SendGrid via Supabase Edge Function (send-email)
+SMS:   Currently ONLY logged in DB ΓÇö no actual SMS is sent.
+       A "send-sms" Edge Function needs to be built to dispatch real SMS.
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
