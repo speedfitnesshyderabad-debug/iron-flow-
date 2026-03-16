@@ -54,7 +54,7 @@ const Login: React.FC = () => {
         provider: 'google',
         options: {
           redirectTo: Capacitor.isNativePlatform() 
-            ? 'com.ironflow.gym://' 
+            ? 'com.ironflow.gym://auth' 
             : window.location.origin
         }
       });

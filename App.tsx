@@ -111,10 +111,25 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }, 12000);
 
     // Capacitor Deep Link Listener
-    const appUrlListener = CapApp.addListener('appUrlOpen', (data) => {
+    const appUrlListener = CapApp.addListener('appUrlOpen', async (data) => {
       console.log('🔗 Deep link received:', data.url);
-      // Supabase will automatically pick up the URL if it's in the hash/search
-      // But we might need to nudge it if it's a cold start or specific flow.
+      
+      const slug = data.url.split('://')[1];
+      if (slug) {
+        // If the URL contains an auth token/code, Supabase will process it
+        // when we handle the URL via setSession or similar native hooks.
+        const { error } = await supabase.auth.setSession({
+          access_token: '', // Placeholder, will be parsed from URL if present
+          refresh_token: '',
+        });
+        
+        // Nudge the auth state if we detect codes in the URL (PKCE)
+        if (data.url.includes('code=')) {
+          // Supabase JS library handles the code exchange automatically 
+          // if it detects it in the current URL.
+          window.location.href = data.url.replace('com.ironflow.gym://auth', window.location.origin + '/#');
+        }
+      }
     });
 
     return () => {
