@@ -5,6 +5,7 @@ import { useAppContext } from '../AppContext';
 import { UserRole } from '../types';
 import { supabase } from '../src/lib/supabase';
 import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 const Login: React.FC = () => {
   const { users, setCurrentUser, createSession } = useAppContext();
@@ -50,18 +51,27 @@ const Login: React.FC = () => {
     setIsAuthenticating(true);
     setError('');
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: Capacitor.isNativePlatform() 
-            ? 'com.ironflow.gym://auth' 
-            : window.location.origin
-        }
-      });
-      if (error) throw error;
+      if (Capacitor.isNativePlatform()) {
+        const user = await GoogleAuth.signIn();
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: user.authentication.idToken,
+        });
+        if (error) throw error;
+        if (data.user) await processAuthUser(data.user);
+      } else {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin
+          }
+        });
+        if (error) throw error;
+      }
     } catch (err: any) {
       console.error('Google login error:', err);
       setError(err.message || 'Failed to authenticate with Google.');
+    } finally {
       setIsAuthenticating(false);
     }
   };
