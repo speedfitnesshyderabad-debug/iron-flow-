@@ -1,33 +1,41 @@
 {
   "project_info": {
-    "project_number": "1000822016456",
-    "project_id": "gen-lang-client-0650784389",
-    "storage_bucket": "gen-lang-client-0650784389.firebasestorage.app"
+    "project_number": "816191578392",
+    "project_id": "curious-drive-467103-u9",
+    "storage_bucket": "curious-drive-467103-u9.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1000822016456:android:ca07bbc88e49e394b1d8fd",
+        "mobilesdk_app_id": "1:816191578392:android:573ae1141b3e76e5327e6d",
         "android_client_info": {
           "package_name": "com.ironflow.gym"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1000822016456-s9bciv81l47lc2dte63nje2j3cic4keq.apps.googleusercontent.com",
+          "client_id": "816191578392-b175364i36qc7l1bn3gp1b4f77vhdjkc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ironflow.gym",
+            "certificate_hash": "055b773cff6f4b3d922adfdc729bd101fd281083"
+          }
+        },
+        {
+          "client_id": "816191578392-49u8dl5m58n9l6jl0vht23jtpki6soij.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCVkMPS-jwJFBg1DYq7-xcdL8LHJuxKCE0"
+          "current_key": "AIzaSyC11eBXDSXOK-Gema3kc-GIKMChM78NC5s"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "1000822016456-s9bciv81l47lc2dte63nje2j3cic4keq.apps.googleusercontent.com",
+              "client_id": "816191578392-49u8dl5m58n9l6jl0vht23jtpki6soij.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

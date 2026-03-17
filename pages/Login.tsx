@@ -50,48 +50,68 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     setIsAuthenticating(true);
     setError('');
+    console.log('🚀 [Diagnostic] Google Login clicked');
     try {
       if (Capacitor.isNativePlatform()) {
-        console.log('🚀 Initializing Google Auth...');
+        console.log('🚀 [Diagnostic] Platform is Native');
         try {
-          // Initialize plugin (often required for Android/iOS to prevent crashes)
+          console.log('🚀 [Diagnostic] Initializing Google Auth with Client ID:', '816191578392-49u8dl5m58n9l6jl0vht23jtpki6soij.apps.googleusercontent.com');
           await GoogleAuth.initialize({
-            clientId: '1000822016456-s9bciv81l47lc2dte63nje2j3cic4keq.apps.googleusercontent.com',
+            clientId: '816191578392-49u8dl5m58n9l6jl0vht23jtpki6soij.apps.googleusercontent.com',
           });
-          console.log('✅ Google Auth Initialized');
+          console.log('✅ [Diagnostic] Google Auth Initialized');
         } catch (initErr) {
-          console.warn('⚠️ Google Auth already initialized or failed:', initErr);
+          console.warn('⚠️ [Diagnostic] Google Auth initialization warning (possibly already initialized):', initErr);
         }
 
-        console.log('🚀 Triggering Google Sign-In...');
+        console.log('🚀 [Diagnostic] Triggering GoogleAuth.signIn()...');
         const user = await GoogleAuth.signIn();
         
-        if (!user || !user.authentication.idToken) {
-          throw new Error('No ID token received from Google.');
+        if (!user) {
+          console.error('❌ [Diagnostic] No user object returned from signIn()');
+          throw new Error('Google Sign-In returned no data');
         }
 
-        console.log('🚀 Signing in to Supabase with ID Token...');
-        const { data, error } = await supabase.auth.signInWithIdToken({
+        console.log('✅ [Diagnostic] Google User received:', user.email);
+
+        if (!user.authentication || !user.authentication.idToken) {
+          console.error('❌ [Diagnostic] Missing idToken in user object');
+          throw new Error('Google Sign-In failed: No ID token received. Check your SHA-1 and Client ID in Google Cloud Console.');
+        }
+
+        console.log('🚀 [Diagnostic] Signing in to Supabase with ID Token...');
+        const { data, error: sbError } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: user.authentication.idToken,
         });
         
-        if (error) throw error;
-        if (data.user) await processAuthUser(data.user);
+        if (sbError) {
+          console.error('❌ [Diagnostic] Supabase Auth Error:', sbError);
+          throw sbError;
+        }
+        
+        if (data.user) {
+          console.log('✅ [Diagnostic] Supabase Auth Success');
+          await processAuthUser(data.user);
+        }
       } else {
-        const { error } = await supabase.auth.signInWithOAuth({
+        console.log('🚀 [Diagnostic] Platform is Web, using OAuth redirect');
+        const { error: redirectError } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
             redirectTo: window.location.origin
           }
         });
-        if (error) throw error;
+        if (redirectError) throw redirectError;
       }
     } catch (err: any) {
-      console.error('❌ Google login error:', err);
+      console.error('❌ [Diagnostic] CRITICAL LOGIN ERROR:', err);
       // Detailed error for native crashes/failures
       const errorMsg = err.message || JSON.stringify(err);
-      setError(`Google Auth Error: ${errorMsg}`);
+      setError(`Google Login Error: ${errorMsg}`);
+      
+      // If it's a native crash, this UI update might not even render before the app closes.
+      // That's why Logcat is essential.
     } finally {
       setIsAuthenticating(false);
     }
