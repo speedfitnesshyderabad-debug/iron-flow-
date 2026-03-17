@@ -31,6 +31,20 @@ subprojects {
                 if (project.android.hasProperty('compileSdk')) {
                     compileSdk = rootProject.ext.compileSdkVersion
                 }
+                
+                // Fix for: getDefaultProguardFile('proguard-android.txt') is no longer supported
+                if (project.android.hasProperty('buildTypes')) {
+                    project.android.buildTypes.all { buildType ->
+                        def files = buildType.proguardFiles
+                        def updatedFiles = files.collect { file ->
+                            if (file instanceof File && file.name == 'proguard-android.txt') {
+                                return project.android.getDefaultProguardFile('proguard-android-optimize.txt')
+                            }
+                            return file
+                        }
+                        buildType.setProguardFiles(updatedFiles)
+                    }
+                }
             }
         }
     }

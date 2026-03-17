@@ -368,33 +368,33 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* RENEWAL ALERTS & ACTIONS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 gap-6 md:gap-8">
         {/* Expiring Soon */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 md:p-8 rounded-[2rem] border border-amber-100 shadow-sm relative overflow-hidden">
+        <div className="bg-[#FFF9F2] p-6 md:p-8 rounded-[2.5rem] border border-orange-100/50 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-center mb-6 relative z-10">
-            <h3 className="text-sm md:text-base font-black flex items-center gap-2 uppercase tracking-tight text-amber-900">
-              <i className="fas fa-clock text-amber-600"></i> Expiring Soon (Next 7 Days)
+            <h3 className="text-sm md:text-base font-black flex items-center gap-2 uppercase tracking-tighter text-orange-900">
+              <i className="fas fa-clock text-orange-600"></i> EXPIRING SOON (NEXT 7 DAYS)
             </h3>
-            <span className="bg-white/50 px-2 py-1 rounded-lg text-[10px] font-black text-amber-700">{expiringSubs.length}</span>
+            <span className="bg-orange-100 px-2 py-1 rounded-lg text-[10px] font-black text-orange-700">{expiringSubs.length}</span>
           </div>
-          <div className="space-y-3 relative z-10">
+          <div className="space-y-4 relative z-10">
             {expiringSubs.length === 0 ? (
-              <p className="text-xs text-amber-700/60 font-medium italic">No memberships expiring this week. Great retention!</p>
+              <p className="text-xs text-orange-700/60 font-medium italic">No memberships expiring this week. Great retention!</p>
             ) : (
               expiringSubs.slice(0, 3).map(sub => {
-                const member = sub.member;
+                const member = sub.member || users.find((u: any) => u.id === sub.memberId);
                 const plan = plans.find(p => p.id === sub.planId);
                 return (
-                  <div key={sub.id} className="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <img src={member?.avatar || `https://ui-avatars.com/api/?name=${member?.name}`} className="w-8 h-8 rounded-lg bg-gray-100 object-cover" alt="" />
+                  <div key={sub.id} className="bg-white p-4 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-orange-50">
+                    <div className="flex items-center gap-4">
+                      <img src={member?.avatar || `https://ui-avatars.com/api/?name=${member?.name}`} className="w-12 h-12 rounded-2xl bg-gray-100 object-cover" alt="" />
                       <div>
-                        <p className="text-xs font-bold text-gray-900">{member?.name || 'Unknown'}</p>
-                        <p className="text-[9px] text-gray-400 font-mono">{plan?.name} • Ends {sub.endDate}</p>
+                        <p className="text-sm font-black text-gray-900">{member?.name || 'Unknown'}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{plan?.name} • Ends {sub.endDate}</p>
                       </div>
                     </div>
-                    <button onClick={() => handleOpenRenew(sub)} className="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-colors">
-                      Renew
+                    <button onClick={() => handleOpenRenew(sub)} className="bg-[#FFF4E5] text-[#D97706] hover:bg-orange-100 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95">
+                      RENEW
                     </button>
                   </div>
                 );
@@ -402,44 +402,44 @@ const Dashboard: React.FC = () => {
             )}
           </div>
           {/* Decor */}
-          <i className="fas fa-hourglass-half absolute -bottom-6 -right-6 text-[100px] text-amber-500/10 rotate-12"></i>
+          <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-orange-100/20 rounded-full blur-3xl"></div>
         </div>
 
         {/* Expired Memberships */}
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 p-6 md:p-8 rounded-[2rem] border border-red-100 shadow-sm relative overflow-hidden">
+        <div className="bg-[#FFF5F5] p-6 md:p-8 rounded-[2.5rem] border border-red-100/50 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-center mb-6 relative z-10">
-            <h3 className="text-sm md:text-base font-black flex items-center gap-2 uppercase tracking-tight text-red-900">
-              <i className="fas fa-exclamation-circle text-red-600"></i> Recently Expired
+            <h3 className="text-sm md:text-base font-black flex items-center gap-2 uppercase tracking-tighter text-red-900">
+              <i className="fas fa-exclamation-circle text-red-600"></i> RECENTLY EXPIRED
             </h3>
-            <span className="bg-white/50 px-2 py-1 rounded-lg text-[10px] font-black text-red-700">{expiredSubs.length}</span>
+            <span className="bg-red-100 px-2 py-1 rounded-lg text-[10px] font-black text-red-700">{expiredSubs.length}</span>
           </div>
-          <div className="space-y-3 relative z-10">
+          <div className="space-y-4 relative z-10">
             {expiredSubs.length === 0 ? (
               <p className="text-xs text-red-700/60 font-medium italic">No expired memberships pending renewal.</p>
             ) : (
               expiredSubs.slice(0, 3).map(sub => {
-                const member = sub.member;
+                const member = sub.member || users.find((u: any) => u.id === sub.memberId);
                 const plan = plans.find(p => p.id === sub.planId);
                 return (
-                  <div key={sub.id} className="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm border border-red-100 opacity-75 hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-500 font-bold text-[10px]">
+                  <div key={sub.id} className="bg-white p-4 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-red-50">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-red-400 font-black text-xs">
                         Ex
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-gray-900">{member?.name || 'Unknown'}</p>
-                        <p className="text-[9px] text-red-400 font-black uppercase">Expired {sub.endDate}</p>
+                        <p className="text-sm font-black text-gray-900">{member?.name || 'Unknown'}</p>
+                        <p className="text-[10px] text-red-500 font-black uppercase tracking-tight">EXPIRED {sub.endDate}</p>
                       </div>
                     </div>
-                    <button onClick={() => handleOpenRenew(sub)} className="bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide transition-colors shadow-lg shadow-red-200">
-                      Renew Now
+                    <button onClick={() => handleOpenRenew(sub)} className="bg-[#EF4444] text-white hover:bg-red-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-200">
+                      RENEW NOW
                     </button>
                   </div>
                 );
               })
             )}
           </div>
-          <i className="fas fa-calendar-times absolute -bottom-6 -right-6 text-[100px] text-red-500/10 rotate-12"></i>
+          <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-red-100/20 rounded-full blur-3xl"></div>
         </div>
       </div>
 
@@ -599,17 +599,17 @@ const StatCard = ({ title, value, icon, color }: any) => {
   const colorMap: any = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
-    amber: 'bg-amber-50 text-amber-600',
+    amber: 'bg-amber-50 text-orange-600',
     indigo: 'bg-indigo-50 text-indigo-600',
   };
   return (
-    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl transition-all group flex items-start justify-between min-w-0">
+    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-xl transition-all group flex items-center justify-between min-w-0">
       <div className="min-w-0">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">{title}</p>
-        <p className="text-2xl font-black text-gray-900 truncate tracking-tight">{value}</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{title}</p>
+        <p className="text-3xl font-black text-gray-900 tracking-tighter">{value}</p>
       </div>
-      <div className={`${colorMap[color]} w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-        <i className={`fas ${icon} text-sm md:text-lg`}></i>
+      <div className={`${colorMap[color]} w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
+        <i className={`fas ${icon} text-lg md:text-xl`}></i>
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
             <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-[scaleIn_0.3s_ease-out] relative overflow-hidden">
                 {/* Decoration */}
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>

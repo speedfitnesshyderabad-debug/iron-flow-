@@ -733,7 +733,7 @@ const Members: React.FC = () => {
       {/* Add Member Modal */}
       {
         isAddModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
               <div className="bg-blue-600 p-5 md:p-6 text-white flex justify-between items-center sticky top-0 z-10">
                 <h3 className="text-lg md:text-xl font-bold uppercase tracking-tight leading-none">Athlete Enrollment</h3>
@@ -823,19 +823,19 @@ const Members: React.FC = () => {
                 </div>
 
                 {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
-                  <div className="space-y-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                  <div className="space-y-3 p-6 bg-blue-50/50 border border-blue-100/50 rounded-[2.5rem]">
                     <label htmlFor="enroll-pause" className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 mb-1">
-                      <i className="fas fa-pause-circle"></i> Pause Allowance (Days)
+                      <i className="fas fa-pause-circle text-sm"></i> PAUSE ALLOWANCE (DAYS)
                     </label>
-                    <input id="enroll-pause" name="pauseAllowance" type="number" min="0" max="365" className="w-full p-3 bg-white border border-blue-100 rounded-xl font-black text-blue-700" placeholder="0" value={enrollData.pauseAllowance} onChange={e => setEnrollData({ ...enrollData, pauseAllowance: parseInt(e.target.value) || 0 })} />
+                    <input id="enroll-pause" name="pauseAllowance" type="number" min="0" max="365" className="w-full p-4 bg-white border border-blue-100 rounded-2xl font-black text-blue-800 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" placeholder="0" value={enrollData.pauseAllowance} onChange={e => setEnrollData({ ...enrollData, pauseAllowance: parseInt(e.target.value) || 0 })} />
                   </div>
                 )}
 
                 <p className="text-[10px] text-gray-400 font-medium">Auto-generated password will be sent via SMS/Email.</p>
 
                 <div className="space-y-2">
-                  <label htmlFor="enroll-plan" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
-                  <select id="enroll-plan" name="planId" className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
+                  <label htmlFor="enroll-plan" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Initial Plan</label>
+                  <select id="enroll-plan" name="planId" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-black uppercase text-xs tracking-wider outline-none focus:ring-2 focus:ring-blue-500" value={enrollData.planId} onChange={e => setEnrollData({ ...enrollData, planId: e.target.value, trainerId: '' })}>
                     {plans.filter(p => p.branchId === enrollData.branchId || p.isMultiBranch).map(p => <option key={p.id} value={p.id}>{p.name}{p.isHidden ? ' (Hidden)' : ''} - {formatCurrency(p.price)}</option>)}
                   </select>
                 </div>
@@ -864,25 +864,30 @@ const Members: React.FC = () => {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <label htmlFor="enroll-start" className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
-                    <i className="fas fa-calendar-alt"></i> Membership Start Date
+                <div className="space-y-3 p-6 bg-indigo-50/50 border border-indigo-100 rounded-[2.5rem]">
+                  <label htmlFor="enroll-start" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <i className="fas fa-calendar-alt text-sm"></i> MEMBERSHIP START DATE
                   </label>
-                  <input
-                    id="enroll-start"
-                    name="startDate"
-                    type="date"
-                    required
-                    className="w-full p-4 bg-indigo-50 border border-indigo-100 rounded-xl font-bold"
-                    value={enrollData.startDate}
-                    onChange={e => setEnrollData({ ...enrollData, startDate: e.target.value })}
-                  />
+                  <div className="relative">
+                    <input
+                      id="enroll-start"
+                      name="startDate"
+                      type="date"
+                      required
+                      className="w-full p-5 bg-white border border-indigo-100 rounded-2xl font-black text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm appearance-none"
+                      value={enrollData.startDate}
+                      onChange={e => setEnrollData({ ...enrollData, startDate: e.target.value })}
+                    />
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400">
+                      <i className="fas fa-chevron-down text-xs"></i>
+                    </div>
+                  </div>
                   <p className="text-[10px] text-slate-400 font-medium">Plan will start from this date</p>
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="enroll-payment" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Method</label>
-                  <select id="enroll-payment" name="paymentMethod" className="w-full p-4 bg-gray-50 border rounded-xl font-bold uppercase text-xs" value={enrollData.paymentMethod} onChange={e => setEnrollData({ ...enrollData, paymentMethod: e.target.value as any })}>
+                  <label htmlFor="enroll-payment" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment Method</label>
+                  <select id="enroll-payment" name="paymentMethod" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-black uppercase text-xs tracking-wider outline-none focus:ring-2 focus:ring-blue-500" value={enrollData.paymentMethod} onChange={e => setEnrollData({ ...enrollData, paymentMethod: e.target.value as any })}>
                     <option value="ONLINE">Online (UPI / Gateway)</option>
                     <option value="CASH">Cash</option>
                     <option value="CARD">Credit / Debit Card</option>
@@ -910,24 +915,24 @@ const Members: React.FC = () => {
                 )}
 
                 <div className="space-y-2">
-                  <label htmlFor="enroll-discount" className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
-                  <input id="enroll-discount" name="discount" type="number" min="0" className="w-full p-4 bg-gray-50 border rounded-xl font-bold" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
+                  <label htmlFor="enroll-discount" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Amount (₹)</label>
+                  <input id="enroll-discount" name="discount" type="number" min="0" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-black outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" value={enrollData.discount} onChange={e => setEnrollData({ ...enrollData, discount: Number(e.target.value) })} />
                 </div>
 
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex justify-between items-center animate-pulse">
+                <div className="p-8 bg-blue-50/80 border border-blue-100/50 rounded-[2.5rem] flex justify-between items-center shadow-inner">
                   <div>
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Final Payable Amount</p>
-                    <p className="text-2xl font-black text-blue-700">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-wider mb-2">Final Payable Amount</p>
+                    <p className="text-3xl font-black text-blue-700 tracking-tighter">
                       {formatCurrency(Math.max(0, (plans.find(p => p.id === enrollData.planId)?.price || 0) - (enrollData.discount || 0)))}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none mb-1">Original: {formatCurrency(plans.find(p => p.id === enrollData.planId)?.price || 0)}</p>
-                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-none">Discount: -{formatCurrency(enrollData.discount || 0)}</p>
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">ORIGINAL: {formatCurrency(plans.find(p => p.id === enrollData.planId)?.price || 0)}</p>
+                    <p className="text-[10px] font-black text-[#FF6B6B] uppercase tracking-widest leading-none">DISCOUNT: -{formatCurrency(enrollData.discount || 0)}</p>
                   </div>
                 </div>
 
-                <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 active:scale-95 transition-all">ACTIVATE MEMBERSHIP</button>
+                <button type="submit" className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black uppercase text-sm tracking-[0.2em] shadow-2xl shadow-blue-200 active:scale-[0.98] transition-all">ACTIVATE MEMBERSHIP</button>
               </form>
             </div>
           </div>
@@ -937,7 +942,7 @@ const Members: React.FC = () => {
       {/* Logs Modal */}
       {
         activeModal === 'logs' && selectedMember && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
               <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -979,7 +984,7 @@ const Members: React.FC = () => {
       {/* Manage Modal */}
       {
         activeModal === 'manage' && selectedMember && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="bg-indigo-600 p-5 md:p-6 text-white flex justify-between items-center sticky top-0 z-10">
                 <h3 className="text-lg md:text-xl font-bold uppercase tracking-tight leading-none">Manage Profile</h3>

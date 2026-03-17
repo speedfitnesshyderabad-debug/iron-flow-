@@ -5,6 +5,7 @@ import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
 import { todayDateStr, addDays, daysBetween, clamp, currentYear, currentTimeStr, isSubscriptionActive } from './utils/dates';
 import { createClient } from '@supabase/supabase-js';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface AppContextType {
   currentUser: User | null;
@@ -140,18 +141,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      // Request browser push notification permission on login
-      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-        const bName = currentUser.branchId ? branches.find(b => b.id === currentUser.branchId)?.name || 'IronFlow' : 'IronFlow';
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            new Notification(`🔔 ${bName} Notifications Enabled`, {
-              body: `Hi ${currentUser.name}! You'll now receive real-time alerts for payments, announcements and more.`,
-              icon: '/favicon.ico',
-            });
-          }
-        });
-      }
+      // Request native push notification permission on login
+      LocalNotifications.checkPermissions().then(status => {
+        if (status.display === 'prompt') {
+          LocalNotifications.requestPermissions().then(result => {
+             if (result.display === 'granted') {
+               const bName = currentUser.branchId ? branches.find(b => b.id === currentUser.branchId)?.name || 'IronFlow' : 'IronFlow';
+                LocalNotifications.schedule({
+                  notifications: [{
+                    id: 1,
+                    title: `🔔 ${bName} Notifications Enabled`,
+                    body: `Hi ${currentUser.name}! You'll now receive real-time alerts for payments, announcements and more.`,
+                  }]
+                });
+             }
+          });
+        }
+      });
     } else {
       localStorage.removeItem('currentUser');
     }

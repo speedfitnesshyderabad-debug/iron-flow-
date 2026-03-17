@@ -359,23 +359,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           {/* Header Right: User Info */}
-          <div className="flex items-center gap-3 md:gap-4 shrink-0 ml-auto pl-2">
-
-
-
-            <div className="hidden sm:flex flex-col text-right min-w-0 max-w-[150px] ml-2">
-              <span className="text-[12px] md:text-sm font-black text-gray-900 truncate">{currentUser.name}</span>
-              <span className="text-[8px] md:text-[9px] text-blue-600 font-black uppercase tracking-widest truncate">
-                {currentUser.role.replace('_', ' ')}
-              </span>
-            </div>
+          <div className="flex items-center gap-2 md:gap-4 shrink-0 ml-auto pl-2">
+            <button className="text-slate-400 hover:text-slate-900 transition-colors p-2 hover:bg-slate-100 rounded-lg shrink-0">
+              <i className="fas fa-search text-lg"></i>
+            </button>
             <NotificationBell />
             <div
-              className="relative group cursor-pointer shrink-0"
+              className="relative group cursor-pointer shrink-0 ml-1"
               onClick={() => setIsAccountModalOpen(true)}
             >
               <img src={currentUser.avatar} alt="User" className="w-9 h-9 md:w-11 md:h-11 rounded-xl md:rounded-2xl border-2 border-white shadow-md object-cover transition-transform group-hover:scale-105" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
           </div>
         </header>
@@ -406,30 +400,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </main>
 
         {/* Bottom Quick-Nav for Mobile */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 py-3 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] rounded-t-[2.5rem] safe-area-pb">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 py-3 z-50 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] rounded-t-[3rem] safe-area-pb">
           {mobileBottomNavItems.map(item => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center gap-1 transition-all flex-1 min-w-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`}
+                className={`flex flex-col items-center gap-0.5 transition-all flex-1 min-w-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}
               >
-                <span className={`text-[1.25rem] ${isActive ? 'scale-110' : ''}`}>{item.icon}</span>
-                <span className={`text-[9px] font-black uppercase tracking-tight truncate w-full text-center px-1 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                <span className={`text-[1.3rem] mb-0.5 ${isActive ? 'scale-110 font-bold' : ''}`}>{item.icon}</span>
+                <span className={`text-[8px] font-black uppercase tracking-widest truncate w-full text-center px-1 ${isActive ? 'opacity-100' : 'opacity-60'}`}>
                   {item.label}
                 </span>
-                {isActive && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-0.5 animate-pulse"></span>}
+                {isActive && <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1 animate-pulse"></span>}
               </Link>
             );
           })}
           {/* "More" Trigger for the Sidebar Drawer */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="flex flex-col items-center gap-1 transition-all flex-1 min-w-0 text-slate-500"
+            className="flex flex-col items-center gap-0.5 transition-all flex-1 min-w-0 text-slate-400"
           >
-            <i className="fas fa-ellipsis-h text-[1.25rem]"></i>
-            <span className="text-[9px] font-black uppercase tracking-tight opacity-70">More</span>
+            <i className="fas fa-ellipsis-h text-[1.3rem] mb-0.5"></i>
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-60">More</span>
           </button>
         </nav>
       </div>

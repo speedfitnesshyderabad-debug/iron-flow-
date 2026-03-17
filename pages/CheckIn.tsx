@@ -4,6 +4,8 @@ import { SubscriptionStatus, PlanType, UserRole } from '../types';
 import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../src/lib/supabase';
 import { todayDateStr, currentTimeStr, isSubscriptionActive } from '../utils/dates';
+import { Geolocation } from '@capacitor/geolocation';
+import { Camera } from '@capacitor/camera';
 
 const CheckIn: React.FC = () => {
   const { users, subscriptions, plans, recordAttendance, updateAttendance, attendance, currentUser, branches, showToast, bookings, updateBooking } = useAppContext();
@@ -97,66 +99,53 @@ const CheckIn: React.FC = () => {
 
   const requestCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      // Permission granted
+      const status = await Camera.checkPermissions();
+      if (status.camera !== 'granted') {
+        const result = await Camera.requestPermissions({ permissions: ['camera'] });
+        if (result.camera !== 'granted') {
+          setHasCameraPermission(false);
+          setPermissionError("Camera access denied. Please allow camera usage to scan QR codes.");
+          return;
+        }
+      }
+      
       setHasCameraPermission(true);
       setPermissionError(null);
-
-      // Stop the stream immediately, we just wanted to check permission
-      stream.getTracks().forEach(track => track.stop());
     } catch (err: any) {
       console.error("Camera permission error:", err);
       setHasCameraPermission(false);
-      setPermissionError("Camera access denied. Please allow camera usage in your browser settings to scan QR codes.");
+      setPermissionError("Camera access denied. Please allow camera usage in settings.");
     }
   };
 
-  const requestLocation = (highAccuracy = true) => {
-    if (!("geolocation" in navigator)) {
-      setLocationError("Geolocation is not supported by this browser.");
-      return;
-    }
-
-    setLocationError(null);
-    setUserLocation(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-        setLocationError(null);
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-
-        // Handle specific errors
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError("Location access denied. Please enable GPS in your browser settings.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError("Location unavailable. Please check your GPS signal.");
-            break;
-          case error.TIMEOUT:
-            if (highAccuracy) {
-              console.log("High accuracy timed out, retrying with low accuracy...");
-              requestLocation(false); // Retry with low accuracy
-            } else {
-              setLocationError("Location request timed out. Please try again.");
-            }
-            break;
-          default:
-            setLocationError("An unknown error occurred while getting location.");
+  const requestLocation = async () => {
+    try {
+      const status = await Geolocation.checkPermissions();
+      if (status.location !== 'granted') {
+        const result = await Geolocation.requestPermissions();
+        if (result.location !== 'granted') {
+          setLocationError("Location access denied. Please enable GPS and allow location access.");
+          return;
         }
-      },
-      {
-        enableHighAccuracy: highAccuracy,
-        timeout: highAccuracy ? 5000 : 10000,
-        maximumAge: 0
       }
-    );
+
+      setLocationError(null);
+      setUserLocation(null);
+
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000
+      });
+
+      setUserLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      });
+      setLocationError(null);
+    } catch (error: any) {
+      console.error("Error getting location:", error);
+      setLocationError("Could not get location. Please ensure GPS is enabled.");
+    }
   };
 
   useEffect(() => {
