@@ -10,6 +10,10 @@ const config: CapacitorConfig = {
       serverClientId: '1000822016456-s9bciv81l47lc2dte63nje2j3cic4keq.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
     },
+    CapacitorUpdater: {
+      autoUpdate: true,
+      statsUrl: 'https://capgo.app/api/stats/',
+    },
   },
 };
 
