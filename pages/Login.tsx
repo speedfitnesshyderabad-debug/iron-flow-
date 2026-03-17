@@ -52,11 +52,30 @@ const Login: React.FC = () => {
     setError('');
     try {
       if (Capacitor.isNativePlatform()) {
+        console.log('🚀 Initializing Google Auth...');
+        try {
+          // Initialize plugin (often required for Android/iOS to prevent crashes)
+          await GoogleAuth.initialize({
+            clientId: '1000822016456-s9bciv81l47lc2dte63nje2j3cic4keq.apps.googleusercontent.com',
+          });
+          console.log('✅ Google Auth Initialized');
+        } catch (initErr) {
+          console.warn('⚠️ Google Auth already initialized or failed:', initErr);
+        }
+
+        console.log('🚀 Triggering Google Sign-In...');
         const user = await GoogleAuth.signIn();
+        
+        if (!user || !user.authentication.idToken) {
+          throw new Error('No ID token received from Google.');
+        }
+
+        console.log('🚀 Signing in to Supabase with ID Token...');
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: user.authentication.idToken,
         });
+        
         if (error) throw error;
         if (data.user) await processAuthUser(data.user);
       } else {
@@ -69,8 +88,10 @@ const Login: React.FC = () => {
         if (error) throw error;
       }
     } catch (err: any) {
-      console.error('Google login error:', err);
-      setError(err.message || 'Failed to authenticate with Google.');
+      console.error('❌ Google login error:', err);
+      // Detailed error for native crashes/failures
+      const errorMsg = err.message || JSON.stringify(err);
+      setError(`Google Auth Error: ${errorMsg}`);
     } finally {
       setIsAuthenticating(false);
     }
