@@ -3,6 +3,7 @@ import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-im
 import 'react-image-crop/dist/ReactCrop.css';
 import { supabase } from '../src/lib/supabase';
 import { useAppContext } from '../AppContext';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -57,20 +58,23 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     setIsCameraOpen(false);
   };
 
-  // Start camera stream
+  // Start camera stream (Native optimized)
   const startCamera = async () => {
     try {
-      setIsCameraOpen(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+
+      if (image.dataUrl) {
+        setImgSrc(image.dataUrl);
+        setCrop(undefined);
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Could not access back camera. Please allow camera permissions.");
-      setIsCameraOpen(false);
+      // It might be better to show a custom toast instead of alert for premium feel
     }
   };
 
@@ -319,36 +323,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           )}
         </div>
       </div>
-      {/* Camera Overlay */}
-      {isCameraOpen && (
-        <div className="fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
-          <div className="relative w-full max-w-md aspect-[3/4] bg-black rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            <canvas ref={canvasRef} className="hidden" />
-
-            <div className="absolute top-4 right-4 z-10">
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/70 transition-all"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent flex justify-center items-end pb-10">
-              <button
-                type="button"
-                onClick={capturePhoto}
-                className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all active:scale-95 shadow-lg shadow-black/50"
-              >
-                <div className="w-16 h-16 bg-white rounded-full"></div>
-              </button>
-            </div>
-          </div>
-          <p className="text-white/50 text-xs mt-6 font-medium uppercase tracking-widest">Make sure your face is clearly visible</p>
-        </div>
-      )}
+      {/* Native Camera handled via plugin overlay */}
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(20px); opacity: 0; }

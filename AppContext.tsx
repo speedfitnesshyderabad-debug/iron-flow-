@@ -6,6 +6,8 @@ import { supabase } from './src/lib/supabase';
 import { todayDateStr, addDays, daysBetween, clamp, currentYear, currentTimeStr, isSubscriptionActive } from './utils/dates';
 import { createClient } from '@supabase/supabase-js';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Geolocation } from '@capacitor/geolocation';
+import { Camera } from '@capacitor/camera';
 
 interface AppContextType {
   currentUser: User | null;
@@ -121,6 +123,7 @@ interface AppContextType {
     typeFilter?: string | 'ALL';
   }) => Promise<{ communications: Communication[]; totalCount: number }>;
   isFetchingCommunications: boolean;
+  requestPermissions: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -138,30 +141,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     currentUserRef.current = user;
   }, []);
 
+  const requestPermissions = useCallback(async () => {
+    try {
+      // 1. Notifications
+      const notifStatus = await LocalNotifications.checkPermissions();
+      if (notifStatus.display === 'prompt') {
+        await LocalNotifications.requestPermissions();
+      }
+
+      // 2. Camera & Geolocation (Only request if in native environment)
+      // Check if we are running in Capacitor
+      const isNative = (window as any).Capacitor?.isNativePlatform();
+
+      if (isNative) {
+        // Geolocation
+        const geoStatus = await Geolocation.checkPermissions();
+        if (geoStatus.location === 'prompt' || geoStatus.location === 'prompt-with-rationale') {
+          await Geolocation.requestPermissions();
+        }
+
+        // Camera
+        const camStatus = await Camera.checkPermissions();
+        if (camStatus.camera === 'prompt' || camStatus.camera === 'prompt-with-rationale') {
+          await Camera.requestPermissions();
+        }
+      }
+    } catch (err) {
+      console.error('Error requesting permissions:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      // Request native push notification permission on login
-      LocalNotifications.checkPermissions().then(status => {
-        if (status.display === 'prompt') {
-          LocalNotifications.requestPermissions().then(result => {
-             if (result.display === 'granted') {
-               const bName = currentUser.branchId ? branches.find(b => b.id === currentUser.branchId)?.name || 'IronFlow' : 'IronFlow';
-                LocalNotifications.schedule({
-                  notifications: [{
-                    id: 1,
-                    title: `🔔 ${bName} Notifications Enabled`,
-                    body: `Hi ${currentUser.name}! You'll now receive real-time alerts for payments, announcements and more.`,
-                  }]
-                });
-             }
-          });
-        }
-      });
+      requestPermissions();
     } else {
       localStorage.removeItem('currentUser');
     }
-  }, [currentUser]);
+  }, [currentUser, requestPermissions]);
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -2479,7 +2496,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     markNotificationAsRead,
     markAllNotificationsAsRead,
     fetchPaginatedCommunications,
-    isFetchingCommunications
+    isFetchingCommunications,
+    requestPermissions
   };
 
   return (

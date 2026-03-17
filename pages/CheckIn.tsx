@@ -8,7 +8,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Camera } from '@capacitor/camera';
 
 const CheckIn: React.FC = () => {
-  const { users, subscriptions, plans, recordAttendance, updateAttendance, attendance, currentUser, branches, showToast, bookings, updateBooking } = useAppContext();
+  const { users, subscriptions, plans, recordAttendance, updateAttendance, attendance, currentUser, branches, showToast, bookings, updateBooking, requestPermissions } = useAppContext();
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string; subType?: string; isCheckOut?: boolean; isCrossBranch?: boolean } | null>(null);
   const [isGateOpen, setIsGateOpen] = useState(false);
   const [isHardwareOnline] = useState(true);
@@ -99,14 +99,12 @@ const CheckIn: React.FC = () => {
 
   const requestCamera = async () => {
     try {
+      await requestPermissions();
       const status = await Camera.checkPermissions();
       if (status.camera !== 'granted') {
-        const result = await Camera.requestPermissions({ permissions: ['camera'] });
-        if (result.camera !== 'granted') {
           setHasCameraPermission(false);
           setPermissionError("Camera access denied. Please allow camera usage to scan QR codes.");
           return;
-        }
       }
       
       setHasCameraPermission(true);
@@ -120,13 +118,11 @@ const CheckIn: React.FC = () => {
 
   const requestLocation = async () => {
     try {
+      await requestPermissions();
       const status = await Geolocation.checkPermissions();
       if (status.location !== 'granted') {
-        const result = await Geolocation.requestPermissions();
-        if (result.location !== 'granted') {
           setLocationError("Location access denied. Please enable GPS and allow location access.");
           return;
-        }
       }
 
       setLocationError(null);
