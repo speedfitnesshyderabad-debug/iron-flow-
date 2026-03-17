@@ -233,7 +233,12 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Welcome, {currentUser.name.split(' ')[0]}</h2>
-            <p className="text-slate-500 font-medium text-sm">Your personal training dashboard</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-slate-500 font-medium text-sm">Your personal training dashboard</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-100 text-blue-600 border border-blue-200 animate-pulse">
+                Live Update Active
+              </span>
+            </div>
           </div>
           {mySub && (
             <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">
