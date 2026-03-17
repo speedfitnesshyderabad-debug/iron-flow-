@@ -124,6 +124,7 @@ interface AppContextType {
   }) => Promise<{ communications: Communication[]; totalCount: number }>;
   isFetchingCommunications: boolean;
   requestPermissions: () => Promise<void>;
+  totalMemberCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -221,6 +222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isFetchingMembers, setIsFetchingMembers] = useState(false);
   const [isFetchingSales, setIsFetchingSales] = useState(false);
   const [isFetchingCommunications, setIsFetchingCommunications] = useState(false);
+  const [totalMemberCount, setTotalMemberCount] = useState(0);
   const [salesChangeTrigger, setSalesChangeTrigger] = useState(0);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -324,6 +326,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .neq('role', UserRole.MEMBER);
 
       if (uData) setUsers(uData);
+
+      // 3.5 Fetch Total Member Count (Scalable counting)
+      const { count: mCount } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', UserRole.MEMBER);
+      setTotalMemberCount(mCount || 0);
 
       // 4. Fetch/Seed Plans (Ensuring plans exist for all branches)
       const { data: pData } = await supabase.from('plans').select('*');
@@ -2497,7 +2506,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     markAllNotificationsAsRead,
     fetchPaginatedCommunications,
     isFetchingCommunications,
-    requestPermissions
+    requestPermissions,
+    totalMemberCount
   };
 
   return (

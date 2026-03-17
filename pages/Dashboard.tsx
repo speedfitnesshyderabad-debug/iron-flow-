@@ -14,7 +14,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const Dashboard: React.FC = () => {
-  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible, bookings } = useAppContext();
+  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible, bookings, totalMemberCount } = useAppContext();
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
   const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -309,14 +309,12 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const uniqueMembers = Array.from(new Set(filteredSubs.map(s => s.memberId)));
   const uniqueActiveMembers = Array.from(new Set(
     filteredSubs
       .filter(s => isSubscriptionActive(s, today))
       .map(s => s.memberId)
   ));
 
-  const totalMembersCount = uniqueMembers.length;
   const activeCount = uniqueActiveMembers.length;
 
   const totalRevenue = filteredSales.reduce((acc, s) => acc + s.amount, 0);
@@ -369,7 +367,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
       {/* Stats Grid - Ultra Responsive */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard title="Members" value={totalMembersCount} icon="fa-users" color="blue" />
+        <StatCard title="Members" value={totalMemberCount} icon="fa-users" color="blue" />
         <StatCard title="Active" value={activeCount} icon="fa-check-circle" color="green" />
         <StatCard title="Total" value={formatCurrency(totalRevenue).replace('₹', '')} icon="fa-indian-rupee-sign" color="amber" />
         <StatCard title="Today" value={formatCurrency(todayRevenue).replace('₹', '')} icon="fa-bolt" color="indigo" />
