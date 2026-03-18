@@ -113,22 +113,27 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Capacitor Deep Link Listener
     const appUrlListener = CapApp.addListener('appUrlOpen', async (data) => {
       console.log('🔗 Deep link received:', data.url);
-      
-      const slug = data.url.split('://')[1];
-      if (slug) {
-        // If the URL contains an auth token/code, Supabase will process it
-        // when we handle the URL via setSession or similar native hooks.
-        const { error } = await supabase.auth.setSession({
-          access_token: '', // Placeholder, will be parsed from URL if present
-          refresh_token: '',
-        });
-        
-        // Nudge the auth state if we detect codes in the URL (PKCE)
-        if (data.url.includes('code=')) {
-          // Supabase JS library handles the code exchange automatically 
-          // if it detects it in the current URL.
-          window.location.href = data.url.replace('com.ironflow.gym://auth', window.location.origin + '/#');
+
+      // We only care about auth/recovery links
+      if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
+        const splitUrl = data.url.split('://auth');
+        const fragment = splitUrl[1] || '';
+
+        // 1. Update the capture state so 'wasRecovery' calculation works on re-run
+        (window as any).__ironflowInitialUrl = {
+          search: fragment.startsWith('?') ? fragment : '',
+          hash: fragment.startsWith('#') ? fragment : (fragment ? '#' + fragment : ''),
+        };
+
+        // 2. Nudge the current location so Supabase Client can see it
+        if (fragment.startsWith('#')) {
+          window.location.hash = fragment;
+        } else if (fragment.startsWith('?')) {
+          window.location.search = fragment;
         }
+
+        // 3. Trigger the gating logic
+        setGating(true);
       }
     });
 
@@ -201,6 +206,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Layout>
       <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={
           currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
         } />

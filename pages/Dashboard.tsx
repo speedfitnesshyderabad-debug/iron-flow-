@@ -3,6 +3,7 @@ import { useAppContext } from '../AppContext';
 import { UserRole, PlanType, SubscriptionStatus } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { QuickRenewModal } from '../components/QuickRenewModal';
+import { PaymentModal } from '../components/PaymentModal';
 import { todayDateStr, addDays, currentMonthIdx, currentYear, currentTimeStr, isSubscriptionActive } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
@@ -14,9 +15,12 @@ const formatCurrency = (amount: number) => {
 };
 
 const Dashboard: React.FC = () => {
-  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible, bookings, totalMemberCount } = useAppContext();
+  const { currentUser, subscriptions, plans, sales, users, attendance, metrics, purchaseSubscription, showToast, isRowVisible, bookings, totalMemberCount, verifyTransactionCode } = useAppContext();
   const [isRenewModalOpen, setRenewModalOpen] = useState(false);
-  const [renewTarget, setRenewTarget] = useState<{ member: any, currentPlan: any } | null>(null);
+  const [renewTarget, setRenewTarget] = useState<any>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [pendingRenewal, setPendingRenewal] = useState<{ planId: string, amount: number, paymentMethod: any, discount: number, startDate?: string } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   React.useEffect(() => {
@@ -65,6 +69,32 @@ const Dashboard: React.FC = () => {
 
   const handleProcessRenew = async (planId: string, amount: number, paymentMethod: any, discount: number, transactionCode?: string, startDate?: string) => {
     if (renewTarget) {
+      // 1. ONLINE / CARD -> Open Payment Modal
+      if (paymentMethod === 'ONLINE' || paymentMethod === 'CARD') {
+        setPendingRenewal({ planId, amount, paymentMethod, discount, startDate });
+        setRenewModalOpen(false);
+        setPaymentModalOpen(true);
+        return;
+      }
+
+      // 2. CASH / POS -> Verify PIN
+      if (paymentMethod === 'CASH' || paymentMethod === 'POS') {
+        if (!transactionCode) {
+          showToast('Staff PIN is required for this transaction', 'error');
+          return;
+        }
+
+        setIsVerifying(true);
+        const isValid = await verifyTransactionCode(transactionCode);
+        setIsVerifying(false);
+
+        if (!isValid) {
+          showToast('Invalid or Expired PIN', 'error');
+          return;
+        }
+      }
+
+      // 3. Process Immediate Renewal (Cash/POS verified)
       try {
         await purchaseSubscription(renewTarget.member.id, planId, paymentMethod, undefined, undefined, 0, discount, startDate);
         showToast('Membership Renewed Successfully!', 'success');
@@ -72,6 +102,21 @@ const Dashboard: React.FC = () => {
         // purchaseSubscription already showed an error toast
       } finally {
         setRenewModalOpen(false);
+        setRenewTarget(null);
+      }
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentId: string) => {
+    if (pendingRenewal && renewTarget) {
+      try {
+        await purchaseSubscription(renewTarget.member.id, pendingRenewal.planId, pendingRenewal.paymentMethod, undefined, undefined, 0, pendingRenewal.discount, pendingRenewal.startDate);
+        showToast('Membership Renewed Successfully!', 'success');
+      } catch {
+        // purchaseSubscription already showed an error toast
+      } finally {
+        setPaymentModalOpen(false);
+        setPendingRenewal(null);
         setRenewTarget(null);
       }
     }
@@ -592,8 +637,27 @@ const Dashboard: React.FC = () => {
             )
           )}
           onRenew={handleProcessRenew}
+          requirePin={true}
         />
       )}
+
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setPendingRenewal(null);
+        }}
+        amount={pendingRenewal?.amount || 0}
+        description={`Membership Renewal: ${plans.find(p => p.id === pendingRenewal?.planId)?.name}`}
+        customerName={renewTarget?.member?.name || 'Athlete'}
+        customerEmail={renewTarget?.member?.email || ''}
+        customerPhone={renewTarget?.member?.phone || ''}
+        onSuccess={handlePaymentSuccess}
+        onError={(error) => {
+          console.error('Payment Error', error);
+          showToast('Payment Failed. Please try again.', 'error');
+        }}
+      />
 
       <style>{`
         @keyframes fadeIn {

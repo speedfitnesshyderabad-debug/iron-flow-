@@ -55,9 +55,9 @@ const Login: React.FC = () => {
       if (Capacitor.isNativePlatform()) {
         console.log('🚀 [Diagnostic] Platform is Native');
         try {
-          console.log('🚀 [Diagnostic] Initializing Google Auth with Client ID:', '816191578392-49u8dl5m58n9l6jl0vht23jtpki6soij.apps.googleusercontent.com');
+          console.log('🚀 [Diagnostic] Initializing Google Auth with Client ID:', '816191578392-9a31askki2oqli8gcnnlt7buq4rjdhcc.apps.googleusercontent.com');
           await GoogleAuth.initialize({
-            clientId: '816191578392-49u8dl5m58n9l6jl0vht23jtpki6soij.apps.googleusercontent.com',
+            clientId: '816191578392-9a31askki2oqli8gcnnlt7buq4rjdhcc.apps.googleusercontent.com',
           });
           console.log('✅ [Diagnostic] Google Auth Initialized');
         } catch (initErr) {
@@ -280,13 +280,15 @@ const Login: React.FC = () => {
     setIsSendingReset(true);
 
     try {
-      const origin = window.location.origin;
-      // IMPORTANT: Do NOT include a hash (#) in redirectTo.
-      // Supabase appends its own #access_token=...&type=recovery to this URL.
-      // Two # in a URL is invalid — Supabase's client can't parse the token.
-      // The App-level PASSWORD_RECOVERY listener will redirect to /reset-password.
+      // On native platforms (Android/iOS), we MUST use a custom scheme to trigger deep linking.
+      // On web, we use the standard origin.
+      const isNative = Capacitor.isNativePlatform();
+      const redirectTo = isNative ? 'com.ironflow.gym://auth' : `${window.location.origin}/`;
+      
+      console.log('🔗 Reset Password redirectTo:', redirectTo);
+
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${origin}/`,
+        redirectTo,
       });
 
       if (error) throw error;

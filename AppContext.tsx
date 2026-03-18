@@ -360,7 +360,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 5. Fetch/Seed Subscriptions (With Member Join for dashboard alerts)
       const { data: subData, error: subError } = await supabase
         .from('subscriptions')
-        .select('*, member:users!memberId(name, avatar, phone, memberId, branchId)');
+        .select('*, member:users!memberId(id, name, avatar, phone, memberId, branchId)');
 
       if (subError) console.warn('⚠️ Subscription join failed:', subError);
       if (subData) setSubscriptions(subData as any);
