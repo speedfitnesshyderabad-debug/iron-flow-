@@ -652,6 +652,7 @@ const Dashboard: React.FC = () => {
         customerName={renewTarget?.member?.name || 'Athlete'}
         customerEmail={renewTarget?.member?.email || ''}
         customerPhone={renewTarget?.member?.phone || ''}
+        branchId={renewTarget?.member?.branchId || currentUser?.branchId}
         onSuccess={handlePaymentSuccess}
         onError={(error) => {
           console.error('Payment Error', error);

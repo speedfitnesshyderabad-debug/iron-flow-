@@ -402,6 +402,7 @@ const MembershipStore: React.FC = () => {
         description={pendingPlan ? `Purchase ${pendingPlan.name} - ${pendingPlan.type.replace('_', ' ')}` : 'Plan Purchase'}
         customerName={currentUser.name}
         customerEmail={currentUser.email}
+        branchId={currentUser.branchId}
         onSuccess={handlePaymentSuccess}
         onError={handlePaymentError}
         showConfirmation={false}

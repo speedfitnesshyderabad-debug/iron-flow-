@@ -553,6 +553,7 @@ const MemberPortal: React.FC = () => {
             customerName={currentUser.name}
             customerEmail={currentUser.email}
             customerPhone={currentUser.phone}
+            branchId={currentUser.branchId}
             onSuccess={handlePaymentSuccess}
             onError={(error) => {
                console.error('Payment Error', error);
