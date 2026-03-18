@@ -79,8 +79,11 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const release = (goToReset = false) => {
       if (released) return;
       released = true;
+      console.log('🔐 AuthGate: releasing. goToReset:', goToReset);
+      if (goToReset) {
+        navigate('/reset-password', { replace: true });
+      }
       setGating(false);
-      if (goToReset) navigate('/reset-password', { replace: true });
     };
 
     const initialUrl = (window as any).__ironflowInitialUrl || {};
@@ -139,7 +142,24 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           window.location.search = fragment;
         }
 
-        // 3. Trigger the gating logic
+        // 3. Trigger Supabase to process the new session or exchange code
+        const params = new URLSearchParams(fragment.replace('#', '?'));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const code = params.get('code');
+
+        if (accessToken && refreshToken) {
+          console.log('🔐 AuthGate: explicitly setting session from deep link');
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+        } else if (code) {
+          console.log('🔐 AuthGate: explicitly exchanging code from deep link');
+          await supabase.auth.exchangeCodeForSession(code);
+        }
+
+        // 4. Trigger the gating logic if not already gating
         setGating(true);
       }
     });
