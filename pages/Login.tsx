@@ -280,10 +280,9 @@ const Login: React.FC = () => {
     setIsSendingReset(true);
 
     try {
-      // On native platforms (Android/iOS), we MUST use a custom scheme to trigger deep linking.
-      // On web, we use the standard origin.
-      const isNative = Capacitor.isNativePlatform();
-      const redirectTo = isNative ? 'https://speedfitness.org/reset-password/' : `${window.location.origin}/`;
+      // We always use the bridge page because it handles both Mobile (custom scheme)
+      // and Web (hash route) redirection reliably.
+      const redirectTo = 'https://speedfitness.org/reset-password/';
       
       console.log('🔗 Reset Password redirectTo:', redirectTo);
       showToast(`Recovery target: ${redirectTo}`);
