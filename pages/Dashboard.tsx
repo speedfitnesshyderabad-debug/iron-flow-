@@ -42,16 +42,38 @@ const Dashboard: React.FC = () => {
   const today = todayDateStr();
   const next7Days = addDays(today, 7);
 
+  // Find members with ANY active subscription to exclude them from "Recently Expired"
+  const activeMemberIds = useMemo(() => {
+    return new Set(filteredSubs
+      .filter(s => isSubscriptionActive(s, today))
+      .map(s => s.memberId)
+    );
+  }, [filteredSubs, today]);
+
   const expiringSubs = filteredSubs.filter(s =>
     s.status === SubscriptionStatus.ACTIVE &&
     s.endDate <= next7Days &&
     s.endDate >= today // Inclusive of today
   );
 
-  const expiredSubs = filteredSubs.filter(s =>
-    s.status === SubscriptionStatus.EXPIRED ||
-    (s.status === SubscriptionStatus.ACTIVE && s.endDate < today) // Strict less than today
-  );
+  const expiredSubs = useMemo(() => {
+    const membersWithExpired = filteredSubs
+      .filter(s => !activeMemberIds.has(s.memberId)) // Exclude members who have ANY active plan
+      .filter(s =>
+        s.status === SubscriptionStatus.EXPIRED ||
+        (s.status === SubscriptionStatus.ACTIVE && s.endDate < today) // Strict less than today
+      )
+      .reduce((acc, s) => {
+        const existing = acc[s.memberId];
+        // Keep the most recently expired record for each member
+        if (!existing || s.endDate > existing.endDate) {
+          acc[s.memberId] = s;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+    return (Object.values(membersWithExpired) as any[]).sort((a, b) => b.endDate.localeCompare(a.endDate));
+  }, [filteredSubs, activeMemberIds, today]);
 
   const handleOpenRenew = (sub: any) => {
     const member = sub.member || users.find((u: any) => u.id === sub.memberId);
