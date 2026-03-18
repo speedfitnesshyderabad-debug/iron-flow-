@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IronFlow Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: white; }
+        .card { text-align: center; padding: 2rem; background: #1e293b; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); max-width: 90%; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-left-color: #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1.5rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        h1 { font-size: 1.25rem; margin-bottom: 0.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+        p { color: #94a3b8; font-size: 0.875rem; margin-bottom: 2rem; }
+        .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 1rem; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; transition: transform 0.2s; }
+        .btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="spinner"></div>
+        <h1>Restoring Access</h1>
+        <p>Connecting to IronFlow Gym App...</p>
+        <a id="manual-link" href="#" class="btn">Open IronFlow App</a>
+        <div style="margin-top: 1rem; font-size: 10px; color: #475569;">
+            If the app does not open automatically, click the button above.
+        </div>
+    </div>
+
+    <script>
+        // Use a small timeout to ensure the OS has a chance to catch it
+        setTimeout(function() {
+            var hash = window.location.hash;
+            var search = window.location.search;
+            var fragment = hash || search;
+            
+            // The custom scheme we want to trigger
+            var appUrl = "com.ironflow.gym://auth" + fragment;
+            
+            // Set the manual link just in case
+            document.getElementById('manual-link').href = appUrl;
+
+            // Attempt to redirect automatically
+            window.location.href = appUrl;
+
+            // Failsafe: if the user is still here after 3 seconds, they might not have the app installed
+            // or the redirect failed. They can click the button.
+        }, 500);
+    </script>
+</body>
+</html>

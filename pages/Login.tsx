@@ -8,7 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 const Login: React.FC = () => {
-  const { users, setCurrentUser, createSession } = useAppContext();
+  const { users, setCurrentUser, createSession, showToast } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -283,9 +283,10 @@ const Login: React.FC = () => {
       // On native platforms (Android/iOS), we MUST use a custom scheme to trigger deep linking.
       // On web, we use the standard origin.
       const isNative = Capacitor.isNativePlatform();
-      const redirectTo = isNative ? 'com.ironflow.gym://auth' : `${window.location.origin}/`;
+      const redirectTo = isNative ? 'https://speedfitness.org/reset-password/' : `${window.location.origin}/`;
       
       console.log('🔗 Reset Password redirectTo:', redirectTo);
+      showToast(`Recovery target: ${redirectTo}`);
 
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
         redirectTo,

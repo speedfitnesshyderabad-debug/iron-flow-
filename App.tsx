@@ -116,13 +116,20 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       // We only care about auth/recovery links
       if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
-        const splitUrl = data.url.split('://auth');
-        const fragment = splitUrl[1] || '';
+        // Extract the fragment (#...) or search (?...) part of the URL
+        let fragment = '';
+        if (data.url.includes('#')) {
+          fragment = '#' + data.url.split('#')[1];
+        } else if (data.url.includes('?')) {
+          fragment = '?' + data.url.split('?')[1];
+        }
+
+        if (!fragment) return;
 
         // 1. Update the capture state so 'wasRecovery' calculation works on re-run
         (window as any).__ironflowInitialUrl = {
           search: fragment.startsWith('?') ? fragment : '',
-          hash: fragment.startsWith('#') ? fragment : (fragment ? '#' + fragment : ''),
+          hash: fragment.startsWith('#') ? fragment : '',
         };
 
         // 2. Nudge the current location so Supabase Client can see it
