@@ -282,7 +282,7 @@ const Login: React.FC = () => {
     try {
       // We always use the bridge page because it handles both Mobile (custom scheme)
       // and Web (hash route) redirection reliably.
-      const redirectTo = `${window.location.origin}/`;
+      const redirectTo = `${window.location.origin}/#/reset-password`;
       
       console.log('🔗 Reset Password redirectTo:', redirectTo);
       showToast(`Recovery target: ${redirectTo}`);
