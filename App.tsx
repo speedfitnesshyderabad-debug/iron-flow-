@@ -168,11 +168,13 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           setWasRecovery(true);
         }
 
-        // 2. Nudge the current location so Supabase Client can see it
+        // 2. Nudge the current location so Supabase Client and HashRouter can see it
         if (fragment.startsWith('#')) {
           window.location.hash = fragment;
         } else if (fragment.startsWith('?')) {
-          window.location.search = fragment;
+          // On mobile with HashRouter, we MUST force the hash to the reset-password route
+          // otherwise it just stays on the current hash route (like /#/)
+          window.location.hash = `#/reset-password${fragment}`;
         }
 
         // 3. Trigger Supabase to process the new session or exchange code
