@@ -114,31 +114,83 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     // Also check immediately in case the event fired before our listener registered
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // 1. Check for a cold-start Deep Link first!
+      try {
+        const launchUrl = await CapApp.getLaunchUrl();
+        if (launchUrl?.url && (launchUrl.url.includes('code=') || launchUrl.url.includes('access_token='))) {
+          console.log('🔗 AuthGate: Cold-start Deep Link detected:', launchUrl.url);
+          // Trigger the same logic as appUrlOpen
+          processDeepLink(launchUrl.url);
+          return; // processDeepLink will handle the release
+        }
+      } catch (err) {
+        console.warn('⚠️ AuthGate: failed to check launch URL:', err);
+      }
+
       if (session) {
         release(isRecovery);
         return;
       }
 
-      // If no session but we HAVE a code, try exchanging it now
+      // If no session but we HAVE a code from the INITIAL window.location
       const searchParams = new URLSearchParams(initialUrl.search);
       const hashParams = new URLSearchParams(initialUrl.hash.split('?')[1] || initialUrl.hash.replace('#', ''));
       const code = searchParams.get('code') || hashParams.get('code');
 
-      if (code) {
+      if (code && !released) {
         console.log('🔐 AuthGate: explicitly exchanging code on initial load');
         try {
           await supabase.auth.exchangeCodeForSession(code);
-          release(true); // Successfully exchanged code, treat as recovery
+          release(true);
           return;
         } catch (err) {
           console.error('❌ AuthGate: code exchange failed:', err);
         }
       }
 
-      if (!isRecovery) {
+      if (!isRecovery && !released) {
         release(false);
       }
     });
+
+    const processDeepLink = async (url: string) => {
+      console.log('🔗 Processing Deep Link:', url);
+      let fragment = '';
+      if (url.includes('#')) {
+        fragment = '#' + url.split('#')[1];
+      } else if (url.includes('?')) {
+        fragment = '?' + url.split('?')[1];
+      }
+      if (!fragment) return;
+
+      (window as any).__ironflowInitialUrl = {
+        search: fragment.startsWith('?') ? fragment : '',
+        hash: fragment.startsWith('#') ? fragment : '',
+      };
+
+      if (fragment.includes('type=recovery') || fragment.includes('code=')) {
+        setWasRecovery(true);
+      }
+
+      if (fragment.startsWith('#')) {
+        window.location.hash = fragment;
+      } else if (fragment.startsWith('?')) {
+        window.location.hash = `#/reset-password${fragment}`;
+      }
+
+      const params = new URLSearchParams(fragment.replace('#', '?'));
+      const code = params.get('code');
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        release(true);
+      } else if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+        release(true);
+      }
+    };
 
     const timer = setTimeout(() => {
       console.warn('🔐 AuthGate: timeout — releasing gate');
