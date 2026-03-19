@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { supabase } from './src/lib/supabase';
 import { UserRole } from './types';
@@ -285,9 +285,12 @@ const AppRoutes: React.FC = () => {
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/reset-password" element={<ResetPassword />} />
+    <Routes>
+      {/* Standalone Route (Even when logged in) */}
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Routes within App Layout */}
+      <Route element={<Layout><Outlet /></Layout>}>
         <Route path="/" element={
           currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
         } />
@@ -342,8 +345,6 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
   );
 };
 
