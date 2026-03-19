@@ -49,13 +49,17 @@ function hasPendingAuthParams(): boolean {
     search: window.location.search,
     hash: window.location.hash,
   };
-  return (
+  const isPending = 
     initial.hash.includes('access_token=') ||
     initial.hash.includes('type=recovery') ||
     initial.hash.includes('code=') ||
     initial.search.includes('code=') ||
-    initial.search.includes('type=recovery')
-  );
+    initial.search.includes('type=recovery');
+
+  if (isPending) {
+    console.log('🔐 AuthGate: pending auth params detected:', initial);
+  }
+  return isPending;
 }
 
 // Module-level capture — evaluated exactly once when this module first loads.
@@ -70,6 +74,7 @@ const INITIAL_AUTH_PENDING = hasPendingAuthParams();
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [gating, setGating] = useState(INITIAL_AUTH_PENDING);
+  const [wasRecovery, setWasRecovery] = useState(false);
 
   useEffect(() => {
     if (!gating) return;
@@ -89,7 +94,8 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const initialUrl = (window as any).__ironflowInitialUrl || {};
     const fullSource = (initialUrl.hash || '') + (initialUrl.search || '');
-    const wasRecovery = fullSource.includes('type=recovery') || fullSource.includes('code=');
+    const isRecovery = fullSource.includes('type=recovery') || fullSource.includes('code=');
+    setWasRecovery(isRecovery);
 
     // Listen FIRST (before async check), so we don't miss the event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -106,7 +112,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Also check immediately in case the event fired before our listener registered
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        release(wasRecovery);
+        release(isRecovery);
         return;
       }
 
@@ -126,7 +132,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }
       }
 
-      if (!wasRecovery) {
+      if (!isRecovery) {
         release(false);
       }
     });
@@ -157,6 +163,10 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           search: fragment.startsWith('?') ? fragment : '',
           hash: fragment.startsWith('#') ? fragment : '',
         };
+
+        if (fragment.includes('type=recovery') || fragment.includes('code=')) {
+          setWasRecovery(true);
+        }
 
         // 2. Nudge the current location so Supabase Client can see it
         if (fragment.startsWith('#')) {
@@ -196,6 +206,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 
   if (gating) {
+    console.log(`🔐 AuthGate: rendering gate (wasRecovery: ${wasRecovery})`);
     return (
       <div style={{
         minHeight: '100vh',
@@ -204,18 +215,38 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '16px'
+        gap: '24px',
+        padding: '2rem',
+        textAlign: 'center'
       }}>
         <div style={{
-          width: 56, height: 56,
-          border: '4px solid #1e40af',
+          width: 64, height: 64,
+          border: '3px solid rgba(59, 130, 246, 0.1)',
           borderTopColor: '#3b82f6',
           borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite'
+          animation: 'spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite'
         }} />
-        <p style={{ color: '#94a3b8', fontFamily: 'sans-serif', fontSize: 14, margin: 0 }}>
-          Verifying reset link...
-        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <h1 style={{ 
+            color: 'white', 
+            fontFamily: 'sans-serif', 
+            fontSize: '1.25rem', 
+            fontWeight: 800, 
+            margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            {wasRecovery ? 'Verifying Reset Link' : 'Authenticating'}
+          </h1>
+          <p style={{ 
+            color: '#64748b', 
+            fontFamily: 'sans-serif', 
+            fontSize: '0.875rem', 
+            margin: 0 
+          }}>
+            {wasRecovery ? 'Please wait while we secure your account...' : 'Connecting to your IronFlow session...'}
+          </p>
+        </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
