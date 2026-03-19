@@ -94,8 +94,11 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const initialUrl = (window as any).__ironflowInitialUrl || {};
     const fullSource = (initialUrl.hash || '') + (initialUrl.search || '');
-    const isRecovery = fullSource.includes('type=recovery') || fullSource.includes('code=');
-    setWasRecovery(isRecovery);
+    const isRecovery = fullSource.includes('type=recovery') || fullSource.includes('code=') || wasRecovery;
+    
+    if (isRecovery && !wasRecovery) {
+      setWasRecovery(true);
+    }
 
     // Listen FIRST (before async check), so we don't miss the event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
