@@ -52,6 +52,7 @@ function hasPendingAuthParams(): boolean {
   return (
     initial.hash.includes('access_token=') ||
     initial.hash.includes('type=recovery') ||
+    initial.hash.includes('code=') ||
     initial.search.includes('code=') ||
     initial.search.includes('type=recovery')
   );
@@ -87,8 +88,8 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     const initialUrl = (window as any).__ironflowInitialUrl || {};
-    const wasRecovery = (initialUrl.hash || '').includes('type=recovery') ||
-      (initialUrl.search || '').includes('type=recovery');
+    const fullSource = (initialUrl.hash || '') + (initialUrl.search || '');
+    const wasRecovery = fullSource.includes('type=recovery') || fullSource.includes('code=');
 
     // Listen FIRST (before async check), so we don't miss the event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -103,9 +104,31 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     });
 
     // Also check immediately in case the event fired before our listener registered
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session && !wasRecovery) return; // Wait for event
-      release(wasRecovery);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        release(wasRecovery);
+        return;
+      }
+
+      // If no session but we HAVE a code, try exchanging it now
+      const searchParams = new URLSearchParams(initialUrl.search);
+      const hashParams = new URLSearchParams(initialUrl.hash.split('?')[1] || initialUrl.hash.replace('#', ''));
+      const code = searchParams.get('code') || hashParams.get('code');
+
+      if (code) {
+        console.log('🔐 AuthGate: explicitly exchanging code on initial load');
+        try {
+          await supabase.auth.exchangeCodeForSession(code);
+          release(true); // Successfully exchanged code, treat as recovery
+          return;
+        } catch (err) {
+          console.error('❌ AuthGate: code exchange failed:', err);
+        }
+      }
+
+      if (!wasRecovery) {
+        release(false);
+      }
     });
 
     const timer = setTimeout(() => {
