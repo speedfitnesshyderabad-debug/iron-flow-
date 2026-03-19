@@ -47,14 +47,13 @@
                 }, 5000);
             } else {
                 // On Desktop: Redirect to the React App's hash route for Reset Password
-                // Use the base URL and append the hash route
-                var webUrl = "/#/reset-password" + (fragment.startsWith('#') ? fragment.substring(1) : fragment);
+                var origin = window.location.origin;
+                var webUrl = origin + "/#/reset-password" + (fragment.startsWith('#') ? fragment.substring(1) : (fragment.startsWith('?') ? fragment : '?' + fragment));
                 
-                // If the fragment already had type=recovery, just ensuring the hash route is there:
-                if (!fragment.includes('/reset-password')) {
-                    webUrl = "/#/reset-password" + fragment;
-                }
+                // Final clean up: ensure ? doesn't precede / if fragment split was weird
+                webUrl = webUrl.replace('/#/?', '/#?');
                 
+                console.log('🔗 Redirecting to Web:', webUrl);
                 window.location.href = webUrl;
             }
         }, 500);
