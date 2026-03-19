@@ -199,58 +199,10 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     // Capacitor Deep Link Listener
     const appUrlListener = CapApp.addListener('appUrlOpen', async (data) => {
-      console.log('🔗 Deep link received:', data.url);
-
-      // We only care about auth/recovery links
+      console.log('🔗 Deep link received (Warm Start):', data.url);
       if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
-        // Extract the fragment (#...) or search (?...) part of the URL
-        let fragment = '';
-        if (data.url.includes('#')) {
-          fragment = '#' + data.url.split('#')[1];
-        } else if (data.url.includes('?')) {
-          fragment = '?' + data.url.split('?')[1];
-        }
-
-        if (!fragment) return;
-
-        // 1. Update the capture state so 'wasRecovery' calculation works on re-run
-        (window as any).__ironflowInitialUrl = {
-          search: fragment.startsWith('?') ? fragment : '',
-          hash: fragment.startsWith('#') ? fragment : '',
-        };
-
-        if (fragment.includes('type=recovery') || fragment.includes('code=')) {
-          setWasRecovery(true);
-        }
-
-        // 2. Nudge the current location so Supabase Client and HashRouter can see it
-        if (fragment.startsWith('#')) {
-          window.location.hash = fragment;
-        } else if (fragment.startsWith('?')) {
-          // On mobile with HashRouter, we MUST force the hash to the reset-password route
-          // otherwise it just stays on the current hash route (like /#/)
-          window.location.hash = `#/reset-password${fragment}`;
-        }
-
-        // 3. Trigger Supabase to process the new session or exchange code
-        const params = new URLSearchParams(fragment.replace('#', '?'));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const code = params.get('code');
-
-        if (accessToken && refreshToken) {
-          console.log('🔐 AuthGate: explicitly setting session from deep link');
-          await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
-        } else if (code) {
-          console.log('🔐 AuthGate: explicitly exchanging code from deep link');
-          await supabase.auth.exchangeCodeForSession(code);
-        }
-
-        // 4. Trigger the gating logic if not already gating
         setGating(true);
+        processDeepLink(data.url);
       }
     });
 
