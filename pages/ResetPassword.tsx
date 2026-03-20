@@ -94,6 +94,8 @@ const ResetPassword: React.FC = () => {
 
             setSuccess(true);
             setIsRecoveryFlow(false);
+            // Sign out so the session is cleared — user must log in with new password
+            await supabase.auth.signOut();
             setTimeout(() => {
                 window.location.hash = '#/login';
             }, 2000);
