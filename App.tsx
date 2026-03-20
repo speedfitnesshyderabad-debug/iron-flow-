@@ -85,8 +85,12 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const release = (goToReset = false) => {
       if (released) return;
       released = true;
-      console.log('🔐 AuthGate: releasing. goToReset:', goToReset);
-      if (goToReset) {
+      
+      // Safety: always check the URL again if goToReset isn't explicitly true
+      const reallyGoToReset = goToReset || hasPendingAuthParams();
+      console.log('🔐 AuthGate: releasing. goToReset requested:', goToReset, 'final:', reallyGoToReset);
+      
+      if (reallyGoToReset) {
         navigate('/reset-password', { replace: true });
       }
       setGating(false);
@@ -101,14 +105,24 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
 
     // Listen FIRST (before async check), so we don't miss the event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      console.log('🔐 AuthGate auth event:', event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 AuthGate auth event:', event, 'isRecovery:', isRecovery);
+      
       if (event === 'PASSWORD_RECOVERY') {
         release(true);
-      } else if (['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED', 'INITIAL_SESSION'].includes(event)) {
-        // Even if we just see SIGNED_IN, if the original URL was a recovery link,
-        // we MUST go to reset-password because Supabase automatically logs them in.
-        release(wasRecovery);
+      } else if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event)) {
+        // If we see a sign-in event, we check if the original landing was a recovery
+        release(isRecovery || hasPendingAuthParams());
+      } else if (event === 'INITIAL_SESSION') {
+        // If we have a pending exchange (code in URL), DO NOT release on INITIAL_SESSION.
+        // We want to wait for the explicit code exchange or the SIGNED_IN event.
+        if (!hasPendingAuthParams()) {
+          release(false);
+        } else {
+          console.log('🔐 AuthGate: INITIAL_SESSION skipped due to pending auth params');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        release(false);
       }
     });
 
