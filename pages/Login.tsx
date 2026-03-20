@@ -8,7 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 const Login: React.FC = () => {
-  const { users, setCurrentUser, createSession, showToast } = useAppContext();
+  const { users, setCurrentUser, createSession, showToast, setIsRecoveryFlow } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -306,20 +306,23 @@ const Login: React.FC = () => {
     setError('');
 
     try {
+      console.log('🔑 Verifying OTP for email:', forgotEmail, 'token:', otpToken);
       const { data, error } = await supabase.auth.verifyOtp({
         email: forgotEmail,
-        token: otpToken,
+        token: otpToken.trim(),
         type: 'recovery',
       });
+
+      console.log('🔑 verifyOtp result:', { data, error });
 
       if (error) throw error;
 
       if (data.session) {
         showToast('Code verified! Set your new password.');
-        const { setIsRecoveryFlow } = useAppContext();
         setIsRecoveryFlow(true);
-        // We use window.location.hash for reliable navigation in Capacitor
         window.location.hash = '#/reset-password';
+      } else {
+        setError('Verification succeeded but no session was created. Please try again.');
       }
     } catch (err: any) {
       console.error('OTP verification error:', err);
