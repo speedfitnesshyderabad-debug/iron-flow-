@@ -163,6 +163,12 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       } else if (url.includes('?')) {
         fragment = '?' + url.split('?')[1];
       }
+      if (!fragment) {
+        // Fallback for full URLs without explicit # or ? (e.g. some deep link formats)
+        if (url.includes('code=') || url.includes('access_token=')) {
+          fragment = url.includes('?') ? '?' + url.split('?')[1] : (url.includes('#') ? '#' + url.split('#')[1] : '');
+        }
+      }
       if (!fragment) return;
 
       (window as any).__ironflowInitialUrl = {
@@ -199,12 +205,23 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       release(false);
     }, 12000);
 
-    // Capacitor Deep Link Listener
+    // Capacitor Deep Link Listener (Warm Start)
     const appUrlListener = CapApp.addListener('appUrlOpen', async (data) => {
       console.log('🔗 Deep link received (Warm Start):', data.url);
       if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
         setGating(true);
         processDeepLink(data.url);
+      }
+    });
+
+    // Capacitor Cold Start Check
+    CapApp.getLaunchUrl().then((data) => {
+      if (data?.url) {
+        console.log('🔗 Deep link received (Cold Start):', data.url);
+        if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
+          setGating(true);
+          processDeepLink(data.url);
+        }
       }
     });
 

@@ -14,9 +14,11 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  // View states: 'login' | 'forgot' | 'success'
-  const [view, setView] = useState<'login' | 'forgot' | 'success'>('login');
+  // View states: 'login' | 'forgot' | 'otp' | 'success'
+  const [view, setView] = useState<'login' | 'forgot' | 'otp' | 'success'>('login');
   const [forgotEmail, setForgotEmail] = useState('');
+  const [otpToken, setOtpToken] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [systemStatus, setSystemStatus] = useState<{ checked: boolean; ok: boolean; message: string }>({ checked: false, ok: false, message: '' });
   const [isCheckingSystem, setIsCheckingSystem] = useState(false);
@@ -295,12 +297,42 @@ const Login: React.FC = () => {
 
       if (error) throw error;
 
-      setView('success');
+      setView('otp');
+      showToast('Recovery code sent to your email.');
     } catch (err: any) {
       console.error('Password reset error:', err);
       setError(err.message || 'Failed to send reset email');
     } finally {
       setIsSendingReset(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsVerifyingOtp(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: forgotEmail,
+        token: otpToken,
+        type: 'recovery',
+      });
+
+      if (error) throw error;
+
+      if (data.session) {
+        showToast('Code verified! Set your new password.');
+        const { setIsRecoveryFlow } = useAppContext();
+        setIsRecoveryFlow(true);
+        // We use window.location.hash for reliable navigation in Capacitor
+        window.location.hash = '#/reset-password';
+      }
+    } catch (err: any) {
+      console.error('OTP verification error:', err);
+      setError(err.message || 'Invalid or expired code');
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -499,6 +531,75 @@ const Login: React.FC = () => {
                   >
                     Return to Login
                   </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {view === 'otp' && (
+            <div className="animate-[fadeIn_0.3s_ease-out]">
+              <div className="mb-10 text-center lg:text-left">
+                <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Verify Code</h2>
+                <p className="text-slate-400 font-medium">Enter the 6-digit code sent to <span className="text-blue-400">{forgotEmail}</span></p>
+              </div>
+
+              <form onSubmit={handleVerifyOtp} className="space-y-6">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">6-Digit Recovery Token</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all text-center tracking-[1em] text-2xl font-black"
+                      placeholder="······"
+                      value={otpToken}
+                      onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ''))}
+                      disabled={isVerifyingOtp}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-3 animate-shake">
+                    <i className="fas fa-exclamation-circle text-red-500"></i>
+                    <p className="text-red-400 text-[11px] font-bold uppercase tracking-widest">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isVerifyingOtp || otpToken.length < 6}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {isVerifyingOtp ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        VERIFYING...
+                      </>
+                    ) : (
+                      'Verify & Continue'
+                    )}
+                  </button>
+                  <div className="flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => setView('forgot')}
+                      className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                    >
+                      Resend Code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setView('login')}
+                      className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
