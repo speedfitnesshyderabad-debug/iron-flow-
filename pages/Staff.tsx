@@ -31,7 +31,9 @@ const Staff: React.FC = () => {
     phone: '',
     avatar: '',
     maxDevices: 1,
-    isActive: true
+    isActive: true,
+    fullDayHours: 8,
+    halfDayHours: 4
   });
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isActiveSessionsModalOpen, setActiveSessionsModalOpen] = useState(false);
@@ -58,7 +60,9 @@ const Staff: React.FC = () => {
       phone: '',
       avatar: '',
       maxDevices: 1,
-      isActive: true
+      isActive: true,
+      fullDayHours: 8,
+      halfDayHours: 4
     });
     setAddModalOpen(true);
   };
@@ -82,7 +86,9 @@ const Staff: React.FC = () => {
       phone: staff.phone || '',
       avatar: staff.avatar || '',
       maxDevices: staff.maxDevices || 1,
-      isActive: staff.isActive !== false // defaults to true if undefined
+      isActive: staff.isActive !== false, // defaults to true if undefined
+      fullDayHours: staff.fullDayHours ?? 8,
+      halfDayHours: staff.halfDayHours ?? 4
     });
     setEditModalOpen(true);
   };
@@ -689,6 +695,62 @@ const Staff: React.FC = () => {
                 <div className="space-y-1 animate-[fadeIn_0.3s_ease-out]">
                   <label htmlFor="staff-salary" className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Monthly Salary (₹)</label>
                   <input id="staff-salary" name="monthlySalary" type="number" className="w-full p-4 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm" value={formData.monthlySalary} onChange={e => setFormData({ ...formData, monthlySalary: Number(e.target.value) })} />
+                </div>
+              )}
+
+              {formData.role !== UserRole.KIOSK && (
+                <div className="p-4 bg-violet-50 rounded-2xl border border-violet-100 space-y-4 animate-[fadeIn_0.3s_ease-out]">
+                  <label className="text-[10px] font-black text-violet-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <i className="fas fa-clock"></i> Work Hour Requirements
+                  </label>
+                  <p className="text-[9px] text-violet-500 font-bold ml-1">
+                    Sets thresholds for salary deductions based on actual hours worked per day.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label htmlFor="staff-fullday-hrs" className="text-[9px] font-black text-violet-500 uppercase tracking-widest ml-1">Full Day (hrs)</label>
+                      <div className="relative">
+                        <input
+                          id="staff-fullday-hrs"
+                          type="number" min="1" max="24" step="0.5"
+                          className="w-full p-3 bg-white border border-violet-100 rounded-xl outline-none focus:ring-2 focus:ring-violet-500 font-black text-sm"
+                          value={formData.fullDayHours}
+                          onChange={e => setFormData({ ...formData, fullDayHours: Number(e.target.value) })}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-violet-300 text-xs">h</span>
+                      </div>
+                      <p className="text-[8px] text-violet-400 ml-1">≥ this = Full Pay</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="staff-halfday-hrs" className="text-[9px] font-black text-violet-500 uppercase tracking-widest ml-1">Half Day (hrs)</label>
+                      <div className="relative">
+                        <input
+                          id="staff-halfday-hrs"
+                          type="number" min="1" max="24" step="0.5"
+                          className="w-full p-3 bg-white border border-violet-100 rounded-xl outline-none focus:ring-2 focus:ring-violet-500 font-black text-sm"
+                          value={formData.halfDayHours}
+                          onChange={e => setFormData({ ...formData, halfDayHours: Number(e.target.value) })}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-violet-300 text-xs">h</span>
+                      </div>
+                      <p className="text-[8px] text-violet-400 ml-1">≥ this = Half Pay</p>
+                    </div>
+                  </div>
+                  {/* Visual guide */}
+                  <div className="bg-white rounded-xl p-3 border border-violet-100 text-[8px] font-bold text-slate-500 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                      <span>&lt; {formData.halfDayHours}h → Absent (full deduction)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+                      <span>{formData.halfDayHours}–{formData.fullDayHours}h → Half Day (0.5 day deduction)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                      <span>≥ {formData.fullDayHours}h → Full Day (no deduction)</span>
+                    </div>
+                  </div>
                 </div>
               )}
 

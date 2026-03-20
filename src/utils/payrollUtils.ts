@@ -151,8 +151,8 @@ export const calculateMonthlySalary = (
 
                 const punchIn = new Date(`2000-01-01 ${firstLog.timeIn}`);
 
-                // SMART MATCHING: Find the closest assigned shift
-                let matchedShift = user.shifts[0];
+                // SMART MATCHING: Find the closest assigned shift (within 2 hour window)
+                let matchedShift: Shift | null = null;
                 let minDiff = Number.MAX_VALUE;
 
                 user.shifts.forEach(shift => {
@@ -160,7 +160,8 @@ export const calculateMonthlySalary = (
                     const shiftStart = new Date(`2000-01-01 ${shift.start}`);
                     const diff = Math.abs(punchIn.getTime() - shiftStart.getTime());
 
-                    if (diff < minDiff) {
+                    // Only match if within 2 hours of shift start
+                    if (diff < minDiff && diff < (2 * 60 * 60 * 1000)) {
                         minDiff = diff;
                         matchedShift = shift;
                     }
@@ -199,10 +200,26 @@ export const calculateMonthlySalary = (
                     }
                 });
 
-                // Only apply half-day penalty if ALL sessions are closed
+                // Configurable thresholds (per-staff, with sensible defaults)
+                // fullDayHours: hours needed to count as a full paid day (default 8)
+                // halfDayHours: hours needed to count as at least a half day (default 4)
+                const fullDayMinutes = (user.fullDayHours ?? 8) * 60;
+                const halfDayMinutes = (user.halfDayHours ?? 4) * 60;
+
+                // Only apply penalties if ALL sessions are closed
                 // (don't penalize someone who is still clocked in)
-                if (!isExcused && !hasOpenSession && totalMinutes < (5 * 60)) {
-                    halfDays++;
+                if (!isExcused && !hasOpenSession) {
+                    if (totalMinutes < halfDayMinutes) {
+                        // Worked less than half-day threshold → counts as ABSENT (full day deduction)
+                        // We remove it from presentDays count and do NOT credit day
+                        daysPresentSet.delete(dateString);
+                        presentDaysCount--;
+                        // Mark as absent — no further penalty needed (absent day already deducted)
+                    } else if (totalMinutes < fullDayMinutes) {
+                        // Worked between half-day and full-day → half day (0.5 day penalty)
+                        halfDays++;
+                    }
+                    // else: worked >= fullDayHours → full day, no penalty
                 }
             }
 

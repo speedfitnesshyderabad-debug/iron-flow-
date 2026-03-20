@@ -17,6 +17,7 @@ interface PayslipModalProps {
     payableDays: number;
     totalDays: number;
     breakdown: string;
+    forgotCheckoutAmount?: number;
   };
   onClose: () => void;
 }
@@ -114,7 +115,19 @@ const PayslipModal: React.FC<PayslipModalProps> = ({ user, branch, month, year, 
                   <td className="py-6 text-center text-xs font-bold text-red-600 bg-red-50/50">
                     {earnings.totalDays - earnings.payableDays} Days Unpaid
                   </td>
-                  <td className="py-6 text-right font-bold text-red-600 bg-red-50/50">-{formatCurrency(earnings.deductions)}</td>
+                  <td className="py-6 text-right font-bold text-red-600 bg-red-50/50">-{formatCurrency(earnings.deductions - (earnings.forgotCheckoutAmount || 0))}</td>
+                </tr>
+              )}
+              {earnings.forgotCheckoutAmount > 0 && (
+                <tr>
+                  <td className="py-6 bg-red-50/50 border-t border-red-100">
+                    <p className="font-black text-sm text-red-600 uppercase">System Penalties</p>
+                    <p className="text-[10px] text-red-400 font-bold mt-1">Includes Forgot-Checkout & Manual Penalties</p>
+                  </td>
+                  <td className="py-6 text-center text-xs font-bold text-red-600 bg-red-50/50 border-t border-red-100">
+                    Misc. Deductions
+                  </td>
+                  <td className="py-6 text-right font-bold text-red-600 bg-red-50/50 border-t border-red-100">-{formatCurrency(earnings.forgotCheckoutAmount)}</td>
                 </tr>
               )}
               {earnings.commissions > 0 && (

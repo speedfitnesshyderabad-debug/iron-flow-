@@ -132,6 +132,8 @@ export interface User {
   salesCommissionPercentage?: number; // Specific commission for Sales (Gym/General)
   ptCommissionPercentage?: number; // Specific commission for PT Sales
   groupCommissionPercentage?: number; // Specific commission for Group Class Sales
+  fullDayHours?: number;  // Hours needed for a full day (default: 8)
+  halfDayHours?: number;  // Hours needed for a half day (default: 4)
   maxDevices?: number; // For multi-device restriction
   referralCode?: string;
   isActive?: boolean;
@@ -352,6 +354,9 @@ export interface Payroll {
     halfDays: number;
     absentDays: number;
     penaltyDays: number;
+    forgotCheckoutPenalties: number;
+    forgotCheckoutAmount: number;
     dailyRate: number;
+    breakdown: string;
   };
 }

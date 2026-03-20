@@ -187,7 +187,8 @@ const Payroll: React.FC = () => {
                     penaltyDays: stats.penaltyDays,
                     forgotCheckoutPenalties: stats.forgotCheckoutPenalties,
                     forgotCheckoutAmount: stats.forgotCheckoutAmount,
-                    dailyRate: stats.dailyRate
+                    dailyRate: stats.dailyRate,
+                    breakdown: stats.breakdown
                 }
             } as any; // Type cast to avoid ID issue if optional
 
@@ -233,7 +234,8 @@ const Payroll: React.FC = () => {
             incentiveType: item.data.commission > 0 ? 'Commission' : 'None',
             payableDays: item.data.payableDays,
             totalDays: item.isLive ? item.stats.totalDays : item.record?.details?.totalDays || 30,
-            breakdown: item.isLive ? item.stats.breakdown : 'Finalized Record'
+            breakdown: item.isLive ? item.stats.breakdown : item.record?.details?.breakdown || 'Finalized Record',
+            forgotCheckoutAmount: item.isLive ? item.stats.forgotCheckoutAmount : item.record?.details?.forgotCheckoutAmount || 0
         };
 
         setSelectedPayslipData({
@@ -287,6 +289,7 @@ const Payroll: React.FC = () => {
                                 <th className="px-6 py-5 text-right">Base Pay</th>
                                 <th className="px-6 py-5 text-center">Days Payable</th>
                                 <th className="px-6 py-5 text-right">Deductions</th>
+                                <th className="px-6 py-5 text-right">Commission</th>
                                 <th className="px-6 py-5 text-right">Net Salary</th>
                                 <th className="px-6 py-5 text-center">Status</th>
                                 <th className="px-6 py-5 text-right">Actions</th>
@@ -321,6 +324,13 @@ const Payroll: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-5 text-right font-bold text-red-500">
                                             {item.data.deductions > 0 ? `-${formatCurrency(item.data.deductions)}` : '-'}
+                                        </td>
+                                        <td className="px-6 py-5 text-right">
+                                            {item.data.commission > 0 ? (
+                                                <span className="text-indigo-600 font-black text-sm">+{formatCurrency(item.data.commission)}</span>
+                                            ) : (
+                                                <span className="text-slate-300 font-bold text-sm">-</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <span className="text-lg font-black text-emerald-600">{formatCurrency(item.data.netSalary)}</span>
@@ -447,6 +457,12 @@ const Payroll: React.FC = () => {
                                     <div className="px-4 py-2 bg-red-50 rounded-xl border border-red-100 flex justify-between items-center text-[9px] font-bold text-red-600 uppercase tracking-widest">
                                         <span>Total Deductions</span>
                                         <span>-{formatCurrency(item.data.deductions)}</span>
+                                    </div>
+                                )}
+                                {item.data.commission > 0 && (
+                                    <div className="px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100 flex justify-between items-center text-[9px] font-bold text-indigo-600 uppercase tracking-widest">
+                                        <span><i className="fas fa-award mr-1"></i>Commission</span>
+                                        <span>+{formatCurrency(item.data.commission)}</span>
                                     </div>
                                 )}
 

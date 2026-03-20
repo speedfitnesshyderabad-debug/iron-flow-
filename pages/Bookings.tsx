@@ -5,6 +5,28 @@ import { UserRole, PlanType, SubscriptionStatus, Booking, ClassSession } from '.
 import { ClassCompletionQR } from '../components/ClassCompletionQR';
 import { todayDateStr, isSubscriptionActive } from '../utils/dates';
 
+const isTimeInShift = (slot12h: string, shifts?: { start: string; end: string }[]) => {
+  if (!shifts || shifts.length === 0) return true; // Default to all if no shifts defined
+
+  // Convert "09:00 AM" to 9.0 (hours)
+  const [time, modifier] = slot12h.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  if (modifier === 'PM' && hours < 12) hours += 12;
+  if (modifier === 'AM' && hours === 12) hours = 0;
+  const slotTime = hours + minutes / 60;
+
+  return shifts.some(shift => {
+    // Convert "09:00" to 9.0
+    const [sH, sM] = shift.start.split(':').map(Number);
+    const [eH, eM] = shift.end.split(':').map(Number);
+    const startTime = sH + sM / 60;
+    const endTime = eH + eM / 60;
+
+    // Slot is 1 hour long. We check if the START of the slot is within the shift.
+    return slotTime >= startTime && slotTime < endTime;
+  });
+};
+
 const Bookings: React.FC = () => {
   const { currentUser, bookings, users, plans, subscriptions, addBooking, showToast, branches, classSchedules, addClassTemplate, deleteClassSession, isRowVisible } = useAppContext();
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -220,10 +242,14 @@ const Bookings: React.FC = () => {
   };
 
   const getAvailableTrainers = () => {
+    const dayName = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
     return trainers.filter(trainer => {
-      // Check if trainer has any availability on selected date
+      // Check for Week Off
+      if (trainer.weekOffs?.includes(dayName)) return false;
+
+      // Check if trainer has any availability on selected date (based on shifts AND bookings)
       return allTimeSlots.some(slot =>
-        isTimeSlotAvailable(trainer.id, selectedDate, slot)
+        isTimeInShift(slot, trainer.shifts) && isTimeSlotAvailable(trainer.id, selectedDate, slot)
       );
     });
   };
@@ -393,8 +419,12 @@ const Bookings: React.FC = () => {
               </h3>
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {allTimeSlots.map(slot => {
-                  const isAvailable = isTimeSlotAvailable(selectedTrainer, selectedDate, slot);
+                  const trainer = users.find(u => u.id === selectedTrainer);
+                  const inShift = isTimeInShift(slot, trainer?.shifts);
+                  const isAvailable = inShift && isTimeSlotAvailable(selectedTrainer, selectedDate, slot);
                   const isSelected = selectedTimeSlot === slot;
+
+                  if (!inShift) return null; // Don't even show slots outside shift
 
                   return (
                     <button
@@ -605,7 +635,10 @@ const Bookings: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Time Slot</label>
                   <select required className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-black text-xs" value={classFormData.timeSlot} onChange={e => setClassFormData({ ...classFormData, timeSlot: e.target.value })}>
                     <option value="">Select Time...</option>
-                    {allTimeSlots.map(slot => <option key={slot} value={slot}>{slot}</option>)}
+                    {allTimeSlots.filter(slot => {
+                      const instructor = users.find(u => u.id === classFormData.trainerId);
+                      return isTimeInShift(slot, instructor?.shifts);
+                    }).map(slot => <option key={slot} value={slot}>{slot}</option>)}
                   </select>
                 </div>
               </div>

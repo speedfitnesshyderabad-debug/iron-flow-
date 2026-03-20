@@ -54,8 +54,9 @@ const MyEarnings: React.FC = () => {
         halfDays: finalizedRecord.details?.halfDays || 0,
         absentDays: finalizedRecord.details?.absentDays || 0,
         penaltyDays: finalizedRecord.details?.penaltyDays || 0,
+        forgotCheckoutAmount: finalizedRecord.details?.forgotCheckoutAmount || 0,
         dailyRate: finalizedRecord.details?.dailyRate || 0,
-        breakdown: finalizedRecord.status === 'PAID' ? 'PAID' : 'GENERATED', // Status indicator
+        breakdown: finalizedRecord.details?.breakdown || (finalizedRecord.status === 'PAID' ? 'PAID' : 'GENERATED'),
         isFinalized: true
       };
     } else {
@@ -186,6 +187,83 @@ const MyEarnings: React.FC = () => {
 
   const formatCurrency = (amt: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
+  };
+
+  // Day-by-day attendance for the calendar
+  const calendarDays = useMemo(() => {
+    if (!currentUser) return [];
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const today = new Date();
+    const lastDay = new Date(selectedYear, selectedMonth, daysInMonth) > today
+      ? today.getDate() : daysInMonth;
+    const branchHolidays = holidays
+      .filter(h => h.branchId === currentUser.branchId)
+      .map(h => h.date);
+    const userWeekOffs = currentUser.weekOffs || [];
+
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const currentDate = new Date(selectedYear, selectedMonth, d);
+      const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const isFuture = d > lastDay;
+      const isWO = userWeekOffs.includes(dayName);
+      const isHol = branchHolidays.includes(dateStr);
+      const dayLogs = attendance.filter(a => a.userId === currentUser.id && a.date === dateStr);
+      const isPresent = dayLogs.length > 0;
+
+      let status: 'present' | 'late' | 'halfday' | 'absent' | 'weekend' | 'holiday' | 'future' = 'future';
+      if (isFuture) {
+        status = 'future';
+      } else if (isPresent) {
+        // Determine late / halfday
+        const hasOpenSession = dayLogs.some(l => !l.timeOut);
+        let totalMinutes = 0;
+        dayLogs.forEach(l => {
+          if (l.timeOut) {
+            totalMinutes += (new Date(`2000-01-01 ${l.timeOut}`).getTime() - new Date(`2000-01-01 ${l.timeIn}`).getTime()) / 60000;
+          }
+        });
+        const firstLog = dayLogs.reduce((a, b) => a.timeIn < b.timeIn ? a : b);
+        const punchIn = new Date(`2000-01-01 ${firstLog.timeIn}`);
+        let isLate = false;
+        if (currentUser.shifts && currentUser.shifts.length > 0) {
+          let matchedShift: {start: string; end: string} | null = null;
+          let minDiff = Number.MAX_VALUE;
+          currentUser.shifts.forEach(s => {
+            const diff = Math.abs(punchIn.getTime() - new Date(`2000-01-01 ${s.start}`).getTime());
+            if (diff < minDiff && diff < 2 * 60 * 60 * 1000) { minDiff = diff; matchedShift = s; }
+          });
+          if (matchedShift) {
+            const shiftStartMs = new Date(`2000-01-01 ${(matchedShift as any).start}`).getTime();
+            const diffMins = (punchIn.getTime() - shiftStartMs) / 60000;
+            isLate = diffMins > 15;
+          }
+        }
+        if (!hasOpenSession && totalMinutes < (currentUser.halfDayHours ?? 4) * 60) status = 'halfday';
+        else if (!hasOpenSession && totalMinutes < (currentUser.fullDayHours ?? 8) * 60) status = 'halfday';
+        else if (isLate) status = 'late';
+        else status = 'present';
+      } else if (isWO) {
+        status = 'weekend';
+      } else if (isHol) {
+        status = 'holiday';
+      } else {
+        status = 'absent';
+      }
+      days.push({ day: d, dateStr, status, dayName: dayName.slice(0, 3) });
+    }
+    return days;
+  }, [currentUser, attendance, selectedMonth, selectedYear, holidays]);
+
+  const dayStatusConfig = {
+    present:  { bg: 'bg-emerald-100', text: 'text-emerald-700', label: '✓' },
+    late:     { bg: 'bg-amber-100',   text: 'text-amber-700',   label: '⏰' },
+    halfday:  { bg: 'bg-orange-100',  text: 'text-orange-700',  label: '½' },
+    absent:   { bg: 'bg-red-100',     text: 'text-red-600',     label: '✕' },
+    weekend:  { bg: 'bg-slate-100',   text: 'text-slate-400',   label: '☽' },
+    holiday:  { bg: 'bg-blue-100',    text: 'text-blue-600',    label: '★' },
+    future:   { bg: 'bg-gray-50',     text: 'text-gray-300',    label: '·' },
   };
 
   const isFutureMonth = new Date(selectedYear, selectedMonth, 1) > new Date();
@@ -338,6 +416,46 @@ const MyEarnings: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Day-by-Day Attendance Calendar */}
+          <div className="bg-white rounded-[3rem] border shadow-sm overflow-hidden">
+            <div className="p-6 border-b bg-slate-50/50 flex flex-wrap justify-between items-center gap-3">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Attendance Calendar</h3>
+              <div className="flex flex-wrap gap-2 text-[8px] font-black uppercase tracking-widest text-slate-500">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-100 inline-block"></span>Present</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 inline-block"></span>Late</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-100 inline-block"></span>Half Day</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block"></span>Absent</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-100 inline-block"></span>Holiday</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-100 inline-block"></span>Week Off</span>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-7 gap-1.5">
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                  <div key={d} className="text-center text-[8px] font-black text-slate-400 uppercase tracking-widest pb-2">{d}</div>
+                ))}
+                {/* Offset start to match correct weekday */}
+                {Array.from({ length: new Date(selectedYear, selectedMonth, 1).getDay() }).map((_, i) => (
+                  <div key={`offset-${i}`} />
+                ))}
+                {calendarDays.map(({ day, status }) => {
+                  const cfg = dayStatusConfig[status];
+                  return (
+                    <div
+                      key={day}
+                      title={status.charAt(0).toUpperCase() + status.slice(1)}
+                      className={`${cfg.bg} ${cfg.text} rounded-xl flex flex-col items-center justify-center aspect-square text-[10px] font-black transition-transform hover:scale-105 cursor-default`}
+                    >
+                      <span className="text-[8px] opacity-50 leading-none">{day}</span>
+                      <span className="leading-tight">{cfg.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
