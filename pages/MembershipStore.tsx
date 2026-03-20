@@ -177,8 +177,12 @@ const MembershipStore: React.FC = () => {
               )}
 
               <div className="mb-8">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-inner ${isGym ? 'bg-slate-100 text-slate-900' : 'bg-blue-50 text-blue-600'}`}>
-                  <i className={`fas ${isGym ? 'fa-dumbbell' : 'fa-bolt'} text-xl`}></i>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-inner ${isGym ? 'bg-slate-100' : 'bg-blue-50 text-blue-600'}`}>
+                  {isGym ? (
+                    <img src="/logo.png" alt="" className="w-8 h-8 object-contain" />
+                  ) : (
+                    <i className="fas fa-bolt text-xl"></i>
+                  )}
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">{plan.name}</h3>
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md">

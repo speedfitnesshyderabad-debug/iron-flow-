@@ -264,10 +264,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {/* Sidebar Header */}
         <div className="p-6 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-lg shrink-0">
-              <i className="fas fa-dumbbell text-xl"></i>
-            </div>
-            {(isSidebarOpen || isMobileMenuOpen) && <span className="font-black text-lg tracking-widest uppercase truncate">IronFlow</span>}
+            <img src="/logo.png" alt="IronFlow Logo" className="w-10 h-10 object-contain" />
+            {(isSidebarOpen || isMobileMenuOpen) && (
+              <div className="flex flex-col">
+                <span className="font-black text-lg tracking-widest uppercase leading-tight truncate">IronFlow</span>
+                <span className="text-[8px] font-bold tracking-[0.2em] text-blue-400 opacity-80 uppercase leading-none">Gym Manager</span>
+              </div>
+            )}
           </div>
           <button onClick={closeMobileMenu} className="md:hidden text-slate-400 hover:text-white">
             <i className="fas fa-times text-xl"></i>
@@ -337,8 +340,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden md:flex text-gray-400 hover:text-gray-900 transition-colors p-2 hover:bg-gray-100 rounded-lg shrink-0">
               <i className={`fas ${isSidebarOpen ? 'fa-indent' : 'fa-outdent'} text-xl`}></i>
             </button>
-            <div className="bg-blue-600 p-1.5 rounded-lg md:hidden shrink-0">
-              <i className="fas fa-dumbbell text-white text-[10px]"></i>
+            <div className="md:hidden shrink-0">
+              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
             </div>
             {currentUser.role === UserRole.SUPER_ADMIN ? (
               <select

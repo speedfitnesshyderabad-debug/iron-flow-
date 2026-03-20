@@ -2546,7 +2546,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {isGlobalLoading && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[10000] flex items-center justify-center">
           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-bounce">
-            <i className="fas fa-dumbbell text-4xl text-blue-600 animate-spin"></i>
+            <img src="/logo.png" alt="Loading" className="w-12 h-12 object-contain animate-pulse" />
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Cloud Data...</p>
           </div>
         </div>

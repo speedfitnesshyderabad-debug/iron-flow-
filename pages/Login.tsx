@@ -349,11 +349,12 @@ const Login: React.FC = () => {
         {/* Branding Side (Hidden on Mobile) */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative">
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl">
-                <i className="fas fa-dumbbell text-2xl"></i>
+            <div className="flex items-center gap-4 mb-10">
+              <img src="/logo.png" alt="IronFlow Logo" className="w-14 h-14 object-contain shadow-2xl shadow-blue-500/20" />
+              <div className="flex flex-col">
+                <span className="font-black text-2xl tracking-tighter uppercase leading-none">IronFlow</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-200 opacity-80 mt-1">Gym Manager</span>
               </div>
-              <span className="font-black text-2xl tracking-tighter uppercase">IronFlow</span>
             </div>
             <h1 className="text-5xl font-black leading-tight mb-6 uppercase">Master Your Fitness Empire.</h1>
             <p className="text-blue-100 font-medium leading-relaxed">Enterprise-grade multi-branch infrastructure for the future of physical wellness.</p>
@@ -379,7 +380,7 @@ const Login: React.FC = () => {
             <div className="animate-[fadeIn_0.3s_ease-out]">
               <div className="mb-10 text-center lg:text-left">
                 <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Sign In</h2>
-                <p className="text-slate-400 font-medium">Welcome back to IronFlow</p>
+                <p className="text-slate-400 font-medium">Welcome back to IronFlow Gym Manager</p>
               </div>
 
               <form onSubmit={handleManualLogin} className="space-y-5">
@@ -464,7 +465,7 @@ const Login: React.FC = () => {
                 </button>
 
                 {/* System Check Utility */}
-                <div className="pt-4 border-t border-white/5">
+                <div className="pt-4 border-t border-white/5 space-y-4">
                   <button
                     type="button"
                     onClick={handleSystemCheck}
@@ -478,6 +479,12 @@ const Login: React.FC = () => {
                     )}
                     {isCheckingSystem ? 'Verifying Cloud Connectivity...' : (systemStatus.checked ? systemStatus.message : 'Diagnostic: Check Cloud Status')}
                   </button>
+
+                  <div className="flex justify-center gap-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">
+                    <a href="/privacy-policy" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="/terms-of-service" className="hover:text-blue-400 transition-colors">Terms of Service</a>
+                  </div>
                 </div>
               </form>
 

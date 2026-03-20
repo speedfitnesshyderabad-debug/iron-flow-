@@ -110,7 +110,11 @@ const ResetPassword: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
             <div className="bg-slate-900 p-8 rounded-2xl max-w-md w-full border border-slate-700">
-                <h1 className="text-2xl font-black text-white mb-6 uppercase text-center">Reset Password</h1>
+                <div className="flex flex-col items-center mb-8">
+                    <img src="/logo.png" alt="IronFlow Logo" className="w-16 h-16 object-contain mb-4 shadow-2xl shadow-blue-500/20" />
+                    <h1 className="text-2xl font-black text-white uppercase tracking-tight">Reset Password</h1>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 opacity-80 mt-1">IronFlow Gym Manager</p>
+                </div>
 
                 {isCheckingSession ? (
                     <div className="text-center py-8">

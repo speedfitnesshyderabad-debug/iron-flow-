@@ -359,8 +359,8 @@ const Bookings: React.FC = () => {
             return (
               <div className={`p-5 rounded-2xl border flex items-center justify-between gap-4 ${isLow ? 'bg-amber-50 border-amber-200' : 'bg-indigo-50 border-indigo-100'}`}>
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isLow ? 'bg-amber-100 text-amber-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                    <i className="fas fa-dumbbell text-lg"></i>
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isLow ? 'bg-amber-100' : 'bg-indigo-100'}`}>
+                    <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
                   </div>
                   <div className="min-w-0">
                     <p className={`text-[10px] font-black uppercase tracking-widest ${isLow ? 'text-amber-600' : 'text-indigo-600'}`}>

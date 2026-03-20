@@ -86,9 +86,7 @@ const Register: React.FC = () => {
           {/* Header */}
           <div className="mb-6 md:mb-10 text-center shrink-0">
             <div className="flex items-center justify-center gap-3 mb-4 md:mb-6">
-              <div className="bg-blue-600 p-2 rounded-xl hidden md:block">
-                <i className="fas fa-dumbbell text-white text-xl"></i>
-              </div>
+              <img src="/logo.png" alt="IronFlow Logo" className="w-10 h-10 object-contain shadow-2xl shadow-blue-500/20" />
               <span className="font-black text-xl text-white tracking-tighter uppercase">IronFlow</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight leading-none">Start Your Journey</h2>

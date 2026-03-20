@@ -375,7 +375,7 @@ const Dashboard: React.FC = () => {
               <span>{progressPercent}% Monthly Goal</span>
             </div>
           </div>
-          <i className="fas fa-dumbbell absolute -bottom-12 -right-12 text-[200px] text-white/5 rotate-12"></i>
+          <img src="/logo.png" alt="" className="absolute -bottom-12 -right-12 w-[200px] h-[200px] object-contain opacity-5 rotate-12 pointer-events-none" />
         </div>
       </div>
     );
