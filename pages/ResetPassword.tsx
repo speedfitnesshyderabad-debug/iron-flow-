@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../src/lib/supabase';
+import { useAppContext } from '../AppContext';
 
 const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
@@ -91,6 +92,8 @@ const ResetPassword: React.FC = () => {
             if (error) throw error;
 
             setSuccess(true);
+            const { setIsRecoveryFlow } = useAppContext();
+            setIsRecoveryFlow(false);
             setTimeout(() => {
                 navigate('/login');
             }, 2000);

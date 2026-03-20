@@ -125,6 +125,8 @@ interface AppContextType {
   isFetchingCommunications: boolean;
   requestPermissions: () => Promise<void>;
   totalMemberCount: number;
+  isRecoveryFlow: boolean;
+  setIsRecoveryFlow: (v: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -224,6 +226,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isFetchingCommunications, setIsFetchingCommunications] = useState(false);
   const [totalMemberCount, setTotalMemberCount] = useState(0);
   const [salesChangeTrigger, setSalesChangeTrigger] = useState(0);
+  const [isRecoveryFlow, setIsRecoveryFlow] = useState(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -2520,7 +2523,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchPaginatedCommunications,
     isFetchingCommunications,
     requestPermissions,
-    totalMemberCount
+    totalMemberCount,
+    isRecoveryFlow,
+    setIsRecoveryFlow
   };
 
   return (

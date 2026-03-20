@@ -111,6 +111,8 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     
     if (isRecovery && !wasRecovery) {
       setWasRecovery(true);
+      const { setIsRecoveryFlow } = useAppContext();
+      setIsRecoveryFlow(true);
     }
 
     // Listen FIRST (before async check), so we don't miss the event
@@ -302,7 +304,9 @@ const AppRoutes: React.FC = () => {
       {/* Routes within App Layout */}
       <Route element={<Layout><Outlet /></Layout>}>
         <Route path="/" element={
-          currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
+          useAppContext().isRecoveryFlow ? <Navigate to="/reset-password" replace /> : (
+            currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
+          )
         } />
         <Route path="/walk-ins" element={<WalkInManagement />} />
         <Route path="/members" element={<Members />} />
