@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
       forceCodeForRefreshToken: true,
     },
     CapacitorUpdater: {
-      autoUpdate: false,
+      autoUpdate: true,
       statsUrl: 'https://capgo.app/api/stats/',
     },
   },
