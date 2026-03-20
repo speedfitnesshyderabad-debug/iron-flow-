@@ -536,20 +536,20 @@ const Login: React.FC = () => {
             <div className="animate-[fadeIn_0.3s_ease-out]">
               <div className="mb-10 text-center lg:text-left">
                 <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Verify Code</h2>
-                <p className="text-slate-400 font-medium">Enter the 6-digit code sent to <span className="text-blue-400">{forgotEmail}</span></p>
+                <p className="text-slate-400 font-medium">Enter the 8-digit code sent to <span className="text-blue-400">{forgotEmail}</span></p>
               </div>
 
               <form onSubmit={handleVerifyOtp} className="space-y-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">6-Digit Recovery Token</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">8-Digit Recovery Token</label>
                   <div className="relative">
                     <input
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      maxLength={6}
-                      className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all text-center tracking-[1em] text-2xl font-black"
-                      placeholder="······"
+                      maxLength={8}
+                      className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-2xl outline-none focus:border-blue-500 transition-all text-center tracking-[0.5em] text-2xl font-black"
+                      placeholder="········"
                       value={otpToken}
                       onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ''))}
                       disabled={isVerifyingOtp}
@@ -568,7 +568,7 @@ const Login: React.FC = () => {
                 <div className="space-y-4 pt-2">
                   <button
                     type="submit"
-                    disabled={isVerifyingOtp || otpToken.length < 6}
+                    disabled={isVerifyingOtp || otpToken.length < 8}
                     className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     {isVerifyingOtp ? (
