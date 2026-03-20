@@ -73,8 +73,10 @@ const INITIAL_AUTH_PENDING = hasPendingAuthParams();
 // -----------------------------------------------------------------------------
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
+  const { currentUser } = useAppContext();
   const [gating, setGating] = useState(INITIAL_AUTH_PENDING);
   const [wasRecovery, setWasRecovery] = useState(false);
+  const [isExchanging, setIsExchanging] = useState(false);
 
   useEffect(() => {
     if (!gating) return;
@@ -84,14 +86,21 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     let released = false;
     const release = (goToReset = false) => {
       if (released) return;
-      released = true;
       
-      // Safety: always check the URL again if goToReset isn't explicitly true
-      const reallyGoToReset = goToReset || hasPendingAuthParams();
+      // If we are performing an exchange, we wait for currentUser to be set 
+      // in AppContext before we finally release the gate.
+      if (goToReset && !currentUser) {
+        console.log('🔐 AuthGate: waiting for currentUser profile sync...');
+        return; 
+      }
+
+      released = true;
+      const reallyGoToReset = goToReset || (window as any).__ironflowInitialUrl?.search?.includes('code=');
       console.log('🔐 AuthGate: releasing. goToReset requested:', goToReset, 'final:', reallyGoToReset);
       
       if (reallyGoToReset) {
-        navigate('/reset-password', { replace: true });
+        // Direct hash assignment is sometimes more reliable during initial app boot
+        window.location.hash = '#/reset-password';
       }
       setGating(false);
     };
@@ -110,64 +119,40 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       
       if (event === 'PASSWORD_RECOVERY') {
         release(true);
-      } else if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event)) {
-        // If we see a sign-in event, we check if the original landing was a recovery
+      } else if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event) && session) {
         release(isRecovery || hasPendingAuthParams());
       } else if (event === 'INITIAL_SESSION') {
-        // If we have a pending exchange (code in URL), DO NOT release on INITIAL_SESSION.
-        // We want to wait for the explicit code exchange or the SIGNED_IN event.
         if (!hasPendingAuthParams()) {
           release(false);
-        } else {
-          console.log('🔐 AuthGate: INITIAL_SESSION skipped due to pending auth params');
         }
       } else if (event === 'SIGNED_OUT') {
         release(false);
       }
     });
 
-    // Also check immediately in case the event fired before our listener registered
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      // 1. Check for a cold-start Deep Link first!
-      try {
-        const launchUrl = await CapApp.getLaunchUrl();
-        if (launchUrl?.url && (launchUrl.url.includes('code=') || launchUrl.url.includes('access_token='))) {
-          console.log('🔗 AuthGate: Cold-start Deep Link detected:', launchUrl.url);
-          // Trigger the same logic as appUrlOpen
-          processDeepLink(launchUrl.url);
-          return; // processDeepLink will handle the release
-        }
-      } catch (err) {
-        console.warn('⚠️ AuthGate: failed to check launch URL:', err);
-      }
+    // Handle explicit exchange if code is in URL
+    const searchParams = new URLSearchParams(initialUrl.search);
+    const hashParams = new URLSearchParams(initialUrl.hash.split('?')[1] || initialUrl.hash.replace('#', ''));
+    const code = searchParams.get('code') || hashParams.get('code');
 
-      if (session) {
-        release(isRecovery);
-        return;
-      }
-
-      // If no session but we HAVE a code from the INITIAL window.location
-      const searchParams = new URLSearchParams(initialUrl.search);
-      const hashParams = new URLSearchParams(initialUrl.hash.split('?')[1] || initialUrl.hash.replace('#', ''));
-      const code = searchParams.get('code') || hashParams.get('code');
-
-      if (code && !released) {
-        console.log('🔐 AuthGate: explicitly exchanging code on initial load. Code:', code.substring(0, 8) + '...');
-        try {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
+    if (code && !released && !isExchanging) {
+      setIsExchanging(true);
+      console.log('🔐 AuthGate: explicitly exchanging code on initial load. Code:', code.substring(0, 8) + '...');
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) {
+          console.error('❌ AuthGate: code exchange failed:', error);
+          release(false);
+        } else {
           console.log('🔐 AuthGate: Code exchange successful for user:', data.user?.email);
-          release(true);
-          return;
-        } catch (err) {
-          console.error('❌ AuthGate: code exchange failed:', err);
+          // Context will pick up SIGNED_IN and call fetchData. 
+          // We'll wait for that currentUser to appear in next effect run.
         }
-      }
+      });
+    }
 
-      if (!isRecovery && !released) {
-        release(false);
-      }
-    });
+    if (!isRecovery && !released && !code) {
+      release(false);
+    }
 
     const processDeepLink = async (url: string) => {
       console.log('🔗 Processing Deep Link:', url);
@@ -201,10 +186,10 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       if (accessToken && refreshToken) {
         await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        release(true);
+        release(isRecovery || true);
       } else if (code) {
         await supabase.auth.exchangeCodeForSession(code);
-        release(true);
+        release(isRecovery || true);
       }
     };
 
@@ -227,7 +212,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       clearTimeout(timer);
       appUrlListener.then(l => l.remove());
     };
-  }, [gating, navigate]);
+  }, [gating, navigate, currentUser]);
 
 
   if (gating) {

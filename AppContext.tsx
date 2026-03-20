@@ -426,6 +426,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     fetchData();
 
+    // 🔄 Auth State Listener: Sync Profile on Sign In
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔔 AppContext Auth Event:', event);
+      if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event) && session) {
+        fetchData();
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+      }
+    });
+
     // Real-time Subscriptions
     const channel = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
@@ -505,7 +515,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); }
+    return () => { 
+      supabase.removeChannel(channel); 
+      authSub.unsubscribe();
+    }
   }, [fetchData]);
 
   // Sync data when user logs in
