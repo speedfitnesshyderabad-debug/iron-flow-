@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const TermsOfService: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#020617] text-[#e2e8f0] font-sans selection:bg-blue-500/30">
+    <div className="h-screen overflow-y-auto bg-[#020617] text-[#e2e8f0] font-sans selection:bg-blue-500/30">
       <div className="max-w-[760px] mx-auto px-6 py-16 md:py-24">
         {/* Header */}
         <div className="flex items-center gap-4 mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
