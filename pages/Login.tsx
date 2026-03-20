@@ -282,18 +282,11 @@ const Login: React.FC = () => {
     setIsSendingReset(true);
 
     try {
-      // Point directly to the app root. Supabase will append ?code=...
-      // and our AuthGate in App.tsx will exchange it and navigate to /#/reset-password
-      // Always use the web origin for recovery links since it's registered for deep linking
-      const webOrigin = 'https://speedfitness.org';
-      const redirectTo = `${webOrigin}/`;
-      
-      console.log('🔗 Reset Password redirectTo:', redirectTo);
-      showToast(`Recovery target: ${redirectTo}`);
-
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo,
-      });
+      // Send OTP-based recovery email WITHOUT a redirectTo.
+      // When redirectTo is specified with PKCE flow, Supabase encodes a long code
+      // into the link URL, NOT a simple 6-digit OTP. The 6-digit token in the email
+      // only works with verifyOtp when the email is sent without redirectTo.
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail);
 
       if (error) throw error;
 
