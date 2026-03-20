@@ -5,6 +5,7 @@ import { useAppContext } from '../AppContext';
 
 const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
+    const { setIsRecoveryFlow } = useAppContext();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -92,10 +93,9 @@ const ResetPassword: React.FC = () => {
             if (error) throw error;
 
             setSuccess(true);
-            const { setIsRecoveryFlow } = useAppContext();
             setIsRecoveryFlow(false);
             setTimeout(() => {
-                navigate('/login');
+                window.location.hash = '#/login';
             }, 2000);
         } catch (err: any) {
             console.error('Password update error:', err);
