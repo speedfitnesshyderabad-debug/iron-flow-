@@ -282,7 +282,9 @@ const Login: React.FC = () => {
     try {
       // Point directly to the app root. Supabase will append ?code=...
       // and our AuthGate in App.tsx will exchange it and navigate to /#/reset-password
-      const redirectTo = `${window.location.origin}/`;
+      // Always use the web origin for recovery links since it's registered for deep linking
+      const webOrigin = 'https://speedfitness.org';
+      const redirectTo = `${webOrigin}/`;
       
       console.log('🔗 Reset Password redirectTo:', redirectTo);
       showToast(`Recovery target: ${redirectTo}`);

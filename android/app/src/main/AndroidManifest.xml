@@ -29,11 +29,11 @@
                 <data android:scheme="com.ironflow.gym" android:host="auth" />
             </intent-filter>
 
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="speedfitness.org" android:pathPrefix="/reset-password" />
+                <data android:scheme="https" android:host="speedfitness.org" />
             </intent-filter>
 
         </activity>
