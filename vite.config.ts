@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       basicSsl(),
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         includeAssets: ['icon.svg'],
         workbox: {
           cleanupOutdatedCaches: true,
