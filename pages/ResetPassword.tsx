@@ -26,11 +26,24 @@ const ResetPassword: React.FC = () => {
 
             // Fallback: listen for the auth event in case we arrived slightly early
             const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-                console.log('ResetPassword auth event:', event);
+                console.log('ResetPassword: Auth Event Received:', event, !!session);
                 if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+                    console.log('✅ ResetPassword: Recovery session verified via event');
                     setHasValidRecoverySession(true);
                     setIsCheckingSession(false);
                     subscription.unsubscribe();
+                } else if (event === 'INITIAL_SESSION' && session) {
+                    console.log('ℹ️ ResetPassword: Initial session detected');
+                    // Check if the URL actually contains recovery indicators
+                    const hasRecoveryTokens = window.location.href.includes('type=recovery') || 
+                                            window.location.href.includes('code=') ||
+                                            window.location.hash.includes('code=');
+                    
+                    if (hasRecoveryTokens) {
+                        setHasValidRecoverySession(true);
+                        setIsCheckingSession(false);
+                        subscription.unsubscribe();
+                    }
                 }
             });
 

@@ -138,9 +138,11 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       const code = searchParams.get('code') || hashParams.get('code');
 
       if (code && !released) {
-        console.log('🔐 AuthGate: explicitly exchanging code on initial load');
+        console.log('🔐 AuthGate: explicitly exchanging code on initial load. Code:', code.substring(0, 8) + '...');
         try {
-          await supabase.auth.exchangeCodeForSession(code);
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          console.log('🔐 AuthGate: Code exchange successful for user:', data.user?.email);
           release(true);
           return;
         } catch (err) {

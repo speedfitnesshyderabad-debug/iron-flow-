@@ -280,9 +280,9 @@ const Login: React.FC = () => {
     setIsSendingReset(true);
 
     try {
-      // We always use the bridge page because it handles both Mobile (custom scheme)
-      // and Web (hash route) redirection reliably.
-      const redirectTo = `${window.location.origin}/reset-password`;
+      // Point directly to the app root. Supabase will append ?code=...
+      // and our AuthGate in App.tsx will exchange it and navigate to /#/reset-password
+      const redirectTo = `${window.location.origin}/`;
       
       console.log('🔗 Reset Password redirectTo:', redirectTo);
       showToast(`Recovery target: ${redirectTo}`);
