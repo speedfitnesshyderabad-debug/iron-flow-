@@ -430,9 +430,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchData();
 
     // 🔄 Auth State Listener: Sync Profile on Sign In
+    // IMPORTANT: We do NOT call fetchData() on TOKEN_REFRESHED because Supabase
+    // broadcasts this event across ALL open browser tabs, which would cause every
+    // tab to fully reload its data whenever any tab refreshes the JWT token.
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔔 AppContext Auth Event:', event);
-      if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event) && session) {
+      if (event === 'SIGNED_IN' && session && !currentUserRef.current) {
+        // Only fetch on a genuine new login (no existing user in memory)
         fetchData();
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
