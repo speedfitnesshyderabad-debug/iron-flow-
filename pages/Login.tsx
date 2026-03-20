@@ -481,9 +481,9 @@ const Login: React.FC = () => {
                   </button>
 
                   <div className="flex justify-center gap-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">
-                    <a href="/privacy-policy" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
+                    <Link to="/privacy-policy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link>
                     <span>•</span>
-                    <a href="/terms-of-service" className="hover:text-blue-400 transition-colors">Terms of Service</a>
+                    <Link to="/terms-of-service" className="hover:text-blue-400 transition-colors">Terms of Service</Link>
                   </div>
                 </div>
               </form>

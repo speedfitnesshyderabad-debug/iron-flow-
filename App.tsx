@@ -33,6 +33,8 @@ import GateQR from './pages/GateQR';
 import Payroll from './pages/Payroll';
 import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import ReloadPrompt from './components/ReloadPrompt';
 
 
@@ -315,6 +317,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -377,6 +381,8 @@ const AppRoutes: React.FC = () => {
             <Payroll />
           </ProtectedRoute>
         } />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/gate-qr" element={
           <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.KIOSK]}>
             <GateQR />
