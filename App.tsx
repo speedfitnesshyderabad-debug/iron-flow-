@@ -95,11 +95,13 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       }
 
       released = true;
-      const reallyGoToReset = goToReset || (window as any).__ironflowInitialUrl?.search?.includes('code=');
+      // Only redirect to reset-password if it's a genuine recovery flow
+      // (type=recovery in URL). Google OAuth also uses code= but must NOT
+      // be treated as a recovery flow.
+      const reallyGoToReset = goToReset;
       console.log('🔐 AuthGate: releasing. goToReset requested:', goToReset, 'final:', reallyGoToReset);
       
       if (reallyGoToReset) {
-        // Direct hash assignment is sometimes more reliable during initial app boot
         window.location.hash = '#/reset-password';
       }
       setGating(false);
@@ -107,7 +109,10 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const initialUrl = (window as any).__ironflowInitialUrl || {};
     const fullSource = (initialUrl.hash || '') + (initialUrl.search || '');
-    const isRecovery = fullSource.includes('type=recovery') || fullSource.includes('code=') || wasRecovery;
+    // IMPORTANT: Only treat as recovery if type=recovery is explicitly in the URL.
+    // Google OAuth also uses code= in its callback, so checking for code= alone
+    // would incorrectly redirect every Google login to the Reset Password page.
+    const isRecovery = fullSource.includes('type=recovery') || wasRecovery;
     
     if (isRecovery && !wasRecovery) {
       setWasRecovery(true);
@@ -208,7 +213,9 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Capacitor Deep Link Listener (Warm Start)
     const appUrlListener = CapApp.addListener('appUrlOpen', async (data) => {
       console.log('🔗 Deep link received (Warm Start):', data.url);
-      if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
+      // Only treat as recovery if type=recovery is present. access_token= also indicates
+      // recovery. Do NOT trigger on code= alone, as Google OAuth also uses it.
+      if (data.url.includes('type=recovery') || data.url.includes('access_token=')) {
         setGating(true);
         processDeepLink(data.url);
       }
@@ -218,7 +225,8 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     CapApp.getLaunchUrl().then((data) => {
       if (data?.url) {
         console.log('🔗 Deep link received (Cold Start):', data.url);
-        if (data.url.includes('type=recovery') || data.url.includes('access_token=') || data.url.includes('code=')) {
+        // Same fix: only treat as recovery if type=recovery or access_token= is present
+        if (data.url.includes('type=recovery') || data.url.includes('access_token=')) {
           setGating(true);
           processDeepLink(data.url);
         }
