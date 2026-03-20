@@ -73,7 +73,7 @@ const INITIAL_AUTH_PENDING = hasPendingAuthParams();
 // -----------------------------------------------------------------------------
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
-  const { currentUser } = useAppContext();
+  const { currentUser, setIsRecoveryFlow } = useAppContext();
   const [gating, setGating] = useState(INITIAL_AUTH_PENDING);
   const [wasRecovery, setWasRecovery] = useState(false);
   const [isExchanging, setIsExchanging] = useState(false);
@@ -111,7 +111,6 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     
     if (isRecovery && !wasRecovery) {
       setWasRecovery(true);
-      const { setIsRecoveryFlow } = useAppContext();
       setIsRecoveryFlow(true);
     }
 
