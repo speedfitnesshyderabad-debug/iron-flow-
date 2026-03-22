@@ -2064,24 +2064,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- Session Management ---
 
   const generateDeviceFingerprint = async (): Promise<string> => {
-    // Simple browser-based fingerprint
-    const fingerprint = {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-      screenResolution: `${window.screen.width}x${window.screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
-
-    // Create a hash of the fingerprint data
-    const str = JSON.stringify(fingerprint);
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+    // Use a persistent UUID stored in localStorage.
+    // This is stable for the lifetime of that browser profile, survives
+    // page refreshes, and is different per browser (Chrome vs Firefox).
+    // NOTE: MAC address is inaccessible from browser JS (security sandbox).
+    const STORAGE_KEY = 'ironflow_device_id';
+    let deviceId = localStorage.getItem(STORAGE_KEY);
+    if (!deviceId) {
+      deviceId = crypto.randomUUID(); // Generate once per browser install
+      localStorage.setItem(STORAGE_KEY, deviceId);
     }
-    return Math.abs(hash).toString(16);
+    return deviceId;
   };
 
   const getSessions = async (userId: string): Promise<ActiveSession[]> => {
@@ -2171,7 +2164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `sess-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         user_id: userId,
         device_fingerprint: fingerprint,
-        device_name: `${osName} Device`,
+        device_name: `${osName} Device (${browserName})`,
         browser_info: browserName,
         login_time: new Date().toISOString(),
         last_activity: new Date().toISOString()
@@ -2195,14 +2188,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const revokeSession = async (userId: string, fingerprint?: string) => {
+    // When fingerprint is provided → revoke that specific device only.
+    // When fingerprint is omitted ("Logout All") → delete ALL sessions for the user.
     let query = supabase.from('active_sessions').delete().eq('user_id', userId);
 
     if (fingerprint) {
       query = query.eq('device_fingerprint', fingerprint);
-    } else {
-      const currentFingerprint = await generateDeviceFingerprint();
-      query = query.eq('device_fingerprint', currentFingerprint);
     }
+    // else: no additional filter → deletes every row for this userId
 
     await query;
   };
