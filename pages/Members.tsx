@@ -532,22 +532,6 @@ const Members: React.FC = () => {
       </div>
 
       <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full">
-          <div className="flex-1 relative w-full">
-            <input
-              id="member-search-secondary"
-              name="memberSearchSecondary"
-              type="text"
-              placeholder="Search by name or ID..."
-              aria-label="Search members by name or ID"
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          </div>
-        </div>
-
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { id: 'ALL', label: 'All Members', icon: 'fa-users' },

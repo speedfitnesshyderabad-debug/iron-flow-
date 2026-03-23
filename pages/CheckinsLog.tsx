@@ -224,7 +224,7 @@ const CheckinsLog: React.FC = () => {
                 </div>
 
                 {/* Mobile & Tablet Cards View */}
-                <div className="block lg:hidden flex flex-col p-4 gap-4 bg-slate-50/50">
+                <div className="flex lg:hidden flex-col p-4 gap-4 bg-slate-50/50">
                     {filteredAttendance.length > 0 ? (
                         filteredAttendance.map(record => {
                             const userName = record.user?.name || 'Unknown User';
