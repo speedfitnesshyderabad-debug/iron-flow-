@@ -147,26 +147,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const requestPermissions = useCallback(async () => {
     try {
       // 1. Notifications
-      const notifStatus = await LocalNotifications.checkPermissions();
-      if (notifStatus.display === 'prompt') {
-        await LocalNotifications.requestPermissions();
+      try {
+        const notifStatus = await LocalNotifications.checkPermissions();
+        if (notifStatus.display === 'prompt') {
+          await LocalNotifications.requestPermissions();
+        }
+      } catch (e) {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+           Notification.requestPermission();
+        }
       }
 
-      // 2. Camera & Geolocation (Only request if in native environment)
-      // Check if we are running in Capacitor
-      const isNative = (window as any).Capacitor?.isNativePlatform();
-
-      if (isNative) {
-        // Geolocation
+      // 2. Geolocation
+      try {
         const geoStatus = await Geolocation.checkPermissions();
         if (geoStatus.location === 'prompt' || geoStatus.location === 'prompt-with-rationale') {
           await Geolocation.requestPermissions();
         }
+      } catch (e) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 10000 });
+        }
+      }
 
-        // Camera
+      // 3. Camera
+      try {
         const camStatus = await Camera.checkPermissions();
         if (camStatus.camera === 'prompt' || camStatus.camera === 'prompt-with-rationale') {
           await Camera.requestPermissions();
+        }
+      } catch (e) {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream.getTracks().forEach(track => track.stop());
+          } catch (err) {
+            console.warn('Web camera prompt blocked or denied:', err);
+          }
         }
       }
     } catch (err) {

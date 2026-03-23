@@ -656,10 +656,10 @@ const Members: React.FC = () => {
                         )}
                         <div className="mt-4 pt-4">
                           <button
-                            onClick={() => openManage(member)}
-                            className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-black hover:bg-blue-100 transition-colors uppercase tracking-widest"
+                            onClick={() => handleOpenRenew(member)}
+                            className="w-full py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-black hover:bg-amber-200 transition-colors uppercase tracking-widest"
                           >
-                            Renew / Manage
+                            CHANGE / RENEW PLAN
                           </button>
                         </div>
                       </div>
