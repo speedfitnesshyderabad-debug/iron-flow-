@@ -50,7 +50,7 @@ const Members: React.FC = () => {
   const initialPlanId = (branchSpecificPlans.length > 0 ? branchSpecificPlans[0].id : plans.find(p => p.isMultiBranch)?.id) || '';
 
   const [enrollData, setEnrollData] = useState({ name: '', email: '', mobile: '', password: '', planId: initialPlanId, emergencyContact: '', address: '', avatar: '', startDate: new Date().toISOString().split('T')[0], discount: 0, paymentMethod: 'ONLINE' as 'CASH' | 'CARD' | 'ONLINE' | 'POS', transactionCode: '', branchId: initialBranchId, assignedStaffId: '', referralCode: '', pauseAllowance: 0, trainerId: '' });
-  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED' | 'NO_PLAN'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'EXPIRING_SOON' | 'PAUSED' | 'NO_PLAN'>('ALL');
 
   const handleExport = () => {
     const headers = ['Name', 'Email', 'Phone', 'Address', 'BranchID', 'MemberID', 'Role', 'Status'];
@@ -501,6 +501,7 @@ const Members: React.FC = () => {
           >
             <option value="ALL">All Status</option>
             <option value="ACTIVE">Active Only</option>
+            <option value="INACTIVE">Inactive Only</option>
             <option value="EXPIRED">Expired Only</option>
             <option value="EXPIRING_SOON">Expiring Soon</option>
             <option value="PAUSED">Paused</option>
@@ -536,6 +537,7 @@ const Members: React.FC = () => {
           {[
             { id: 'ALL', label: 'All Members', icon: 'fa-users' },
             { id: 'ACTIVE', label: 'Active', icon: 'fa-check-circle', color: 'text-green-600 bg-green-50 border-green-100 ring-2 ring-green-100' },
+            { id: 'INACTIVE', label: 'Inactive', icon: 'fa-user-slash', color: 'text-slate-600 bg-slate-50 border-slate-200 ring-2 ring-slate-200' },
             { id: 'EXPIRING_SOON', label: 'Expiring Soon (7 Days)', icon: 'fa-clock', color: 'text-amber-600 bg-amber-50 border-amber-100 ring-2 ring-amber-100' },
             { id: 'EXPIRED', label: 'Expired', icon: 'fa-times-circle', color: 'text-red-600 bg-red-50 border-red-100 ring-2 ring-red-100' },
             { id: 'PAUSED', label: 'Paused', icon: 'fa-pause-circle', color: 'text-slate-600 bg-slate-50 border-slate-100 ring-2 ring-slate-100' },
@@ -589,12 +591,19 @@ const Members: React.FC = () => {
             {filteredMembers.map(member => {
               const now = todayDateStr();
               const memberSubs = subscriptions.filter(s => s.memberId === member.id);
+              
+              const hasActiveGym = memberSubs.some(s => {
+                const p = plans.find(plan => plan.id === s.planId);
+                return p?.type === 'GYM' && isSubscriptionActive(s, now);
+              });
+
               const activeSub = memberSubs.find(s => isSubscriptionActive(s, now));
               const latestSub = memberSubs.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
 
               const sub = activeSub || latestSub;
               const plan = plans.find(p => p.id === sub?.planId);
-              const isActive = !!activeSub;
+              const isActive = hasActiveGym;
+              const isExpiredFilter = filter === 'EXPIRED' || filter === 'EXPIRING_SOON';
 
               return (
                 <div key={member.id} className="bg-white rounded-2xl border p-6 hover:shadow-xl transition-all group relative overflow-hidden">
@@ -615,98 +624,138 @@ const Members: React.FC = () => {
                         latestSub?.status === SubscriptionStatus.PAUSED ? 'bg-slate-100 text-slate-700' :
                           'bg-red-100 text-red-700'
                       }`}>
-                      {isActive ? 'Active' : memberSubs.length === 0 ? 'No Plan' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Expired'}
+                      {isActive ? 'Active' : memberSubs.length === 0 ? 'No Plan' : latestSub?.status === SubscriptionStatus.PAUSED ? 'Paused' : 'Inactive'}
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-4 border-t border-gray-50">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400 uppercase font-bold">Subscription</span>
-                      <span className="font-bold text-gray-700">{plan?.name || 'No Plan'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-red-500 uppercase font-black text-[9px] tracking-widest">Emergency</span>
-                      <span className="font-black text-slate-700">{member.emergencyContact || 'MISSING'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400 uppercase font-bold">Address</span>
-                      <span className="font-medium text-gray-700 truncate max-w-[150px]" title={member.address}>{member.address || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400 uppercase font-bold">Valid Until</span>
-                      <span className="font-medium text-gray-700">{sub?.endDate || 'N/A'}</span>
-                    </div>
-                    {sub?.pauseAllowanceDays !== undefined && (
-                      <div className="flex justify-between text-xs pt-1">
-                        <span className="text-blue-400 uppercase font-bold text-[9px]">Pause Allowance</span>
-                        <span className="font-black text-blue-700">{(sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0)} Days left</span>
+                  {isExpiredFilter ? (() => {
+                    const targetSubs = memberSubs.filter(s => {
+                      if (filter === 'EXPIRED') {
+                        return s.status === SubscriptionStatus.EXPIRED || (s.status === SubscriptionStatus.ACTIVE && s.endDate < now);
+                      } else {
+                        const sevenDaysFromNow = addDays(now, 7);
+                        return s.status === SubscriptionStatus.ACTIVE && s.endDate > now && s.endDate <= sevenDaysFromNow;
+                      }
+                    });
+
+                    return (
+                      <div className="space-y-3 pt-4 border-t border-gray-50 flex-1">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                          {filter === 'EXPIRED' ? 'Expired Plans' : 'Expiring Soon Plans'}
+                        </h4>
+                        {targetSubs.length > 0 ? targetSubs.map(s => {
+                          const p = plans.find(plan => plan.id === s.planId);
+                          return (
+                            <div key={s.id} className="flex justify-between items-center text-xs p-2 bg-red-50/50 rounded-lg border border-red-50">
+                              <span className="font-bold text-gray-700">{p?.name || 'Unknown Plan'}</span>
+                              <span className="text-red-500 font-black ml-2">{s.endDate}</span>
+                            </div>
+                          );
+                        }) : (
+                          <p className="text-xs text-slate-400 italic font-medium">No target plans found.</p>
+                        )}
+                        <div className="mt-4 pt-4">
+                          <button
+                            onClick={() => openManage(member)}
+                            className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-black hover:bg-blue-100 transition-colors uppercase tracking-widest"
+                          >
+                            Renew / Manage
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })() : (
+                    <>
+                      <div className="space-y-3 pt-4 border-t border-gray-50">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-400 uppercase font-bold">Subscription</span>
+                          <span className="font-bold text-gray-700">{plan?.name || 'No Plan'}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-red-500 uppercase font-black text-[9px] tracking-widest">Emergency</span>
+                          <span className="font-black text-slate-700">{member.emergencyContact || 'MISSING'}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-400 uppercase font-bold">Address</span>
+                          <span className="font-medium text-gray-700 truncate max-w-[150px]" title={member.address}>{member.address || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-400 uppercase font-bold">Valid Until</span>
+                          <span className="font-medium text-gray-700">{sub?.endDate || 'N/A'}</span>
+                        </div>
+                        {sub?.pauseAllowanceDays !== undefined && (
+                          <div className="flex justify-between text-xs pt-1">
+                            <span className="text-blue-400 uppercase font-bold text-[9px]">Pause Allowance</span>
+                            <span className="font-black text-blue-700">{(sub.pauseAllowanceDays || 0) - (sub.pausedDaysUsed || 0)} Days left</span>
+                          </div>
+                        )}
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-6">
-                    <button
-                      onClick={() => openLogs(member)}
-                      className="py-2 bg-gray-50 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors"
-                    >
-                      VIEW LOGS
-                    </button>
-                    {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
-                      <button
-                        onClick={() => openManage(member)}
-                        className="py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
-                      >
-                        MANAGE
-                      </button>
-                    )}
-                    {currentUser?.role === UserRole.SUPER_ADMIN && (
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone.`)) {
-                            deleteUser(member.id);
-                          }
-                        }}
-                        className="py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
-                      >
-                        DELETE
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setSelectedMember(member);
-                        setProfileModalOpen(true);
-                      }}
-                      className="py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider shadow-md"
-                    >
-                      PROFILE
-                    </button>
-                    <button
-                      onClick={() => handleOpenRenew(member)}
-                      className="py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
-                    >
-                      CHANGE / RENEW PLAN
-                    </button>
-                    {activeSub && (
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to pause ${member.name}'s membership? They will not be able to check in until resumed.`)) {
-                            pauseMembership(activeSub.id);
-                          }
-                        }}
-                        className="col-span-2 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors uppercase tracking-wider"
-                      >
-                        PAUSE MEMBERSHIP
-                      </button>
-                    )}
-                    {latestSub?.status === SubscriptionStatus.PAUSED && (
-                      <button
-                        onClick={() => resumeMembership(latestSub.id)}
-                        className="col-span-2 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors uppercase tracking-wider"
-                      >
-                        RESUME MEMBERSHIP
-                      </button>
-                    )}
-                  </div>
+                      <div className="grid grid-cols-2 gap-3 mt-6">
+                        <button
+                          onClick={() => openLogs(member)}
+                          className="py-2 bg-gray-50 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors"
+                        >
+                          VIEW LOGS
+                        </button>
+                        {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.BRANCH_ADMIN) && (
+                          <button
+                            onClick={() => openManage(member)}
+                            className="py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
+                          >
+                            MANAGE
+                          </button>
+                        )}
+                        {currentUser?.role === UserRole.SUPER_ADMIN && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone.`)) {
+                                deleteUser(member.id);
+                              }
+                            }}
+                            className="py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                          >
+                            DELETE
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedMember(member);
+                            setProfileModalOpen(true);
+                          }}
+                          className="py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider shadow-md"
+                        >
+                          PROFILE
+                        </button>
+                        <button
+                          onClick={() => handleOpenRenew(member)}
+                          className="py-2 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors uppercase tracking-wider"
+                        >
+                          CHANGE / RENEW PLAN
+                        </button>
+                        {activeSub && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to pause ${member.name}'s membership? They will not be able to check in until resumed.`)) {
+                                pauseMembership(activeSub.id);
+                              }
+                            }}
+                            className="col-span-2 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors uppercase tracking-wider"
+                          >
+                            PAUSE MEMBERSHIP
+                          </button>
+                        )}
+                        {latestSub?.status === SubscriptionStatus.PAUSED && (
+                          <button
+                            onClick={() => resumeMembership(latestSub.id)}
+                            className="col-span-2 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors uppercase tracking-wider"
+                          >
+                            RESUME MEMBERSHIP
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}

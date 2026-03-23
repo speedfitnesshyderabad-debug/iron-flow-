@@ -611,6 +611,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   validMemberIds.add(memberId);
                 }
               });
+            } else if (statusFilter === 'INACTIVE') {
+              Object.entries(subsByMember).forEach(([memberId, subs]) => {
+                const hasActiveGym = subs.some(s => {
+                  const pType = (s as any).plans?.type;
+                  return pType === 'GYM' && isSubscriptionActive(s, nowStr);
+                });
+                if (!hasActiveGym) {
+                  validMemberIds.add(memberId);
+                }
+              });
             } else if (statusFilter === 'PAUSED') {
               Object.entries(subsByMember).forEach(([memberId, subs]) => {
                 if (subs.some(s => s.status === SubscriptionStatus.PAUSED)) {
@@ -619,9 +629,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               });
             } else if (statusFilter === 'EXPIRED') {
               Object.entries(subsByMember).forEach(([memberId, subs]) => {
-                const hasActiveOrPaused = subs.some(s => isSubscriptionActive(s, nowStr) || s.status === SubscriptionStatus.PAUSED);
                 const hasExpired = subs.some(s => s.status === SubscriptionStatus.EXPIRED || (s.status === SubscriptionStatus.ACTIVE && s.endDate < nowStr));
-                if (hasExpired && !hasActiveOrPaused) {
+                if (hasExpired) {
                   validMemberIds.add(memberId);
                 }
               });
