@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { PlanType, SubscriptionStatus, Plan, UserRole } from '../types';
 import { PaymentModal } from '../components/PaymentModal';
+import { formatDuration } from '../utils/dates';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -165,7 +166,7 @@ const MembershipStore: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredPlans.map((plan) => {
           const isGym = plan.type === PlanType.GYM;
-          const isPopular = plan.durationDays >= 90;
+          const isPopular = (plan.durationMonths || 0) * 30 + plan.durationDays >= 90;
 
           return (
             <div key={plan.id} className={`bg-white rounded-[2.5rem] border-2 shadow-sm p-8 relative overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2 group ${isPopular ? 'border-blue-500/20 ring-4 ring-blue-500/5' : 'border-transparent'}`}>
@@ -192,7 +193,7 @@ const MembershipStore: React.FC = () => {
 
               <div className="mb-10 flex items-baseline gap-1">
                 <span className="text-4xl font-black text-slate-900">{formatCurrency(plan.price).replace('₹', '')}</span>
-                <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">/ {plan.durationDays} Days</span>
+                <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">/ {formatDuration(plan.durationMonths, plan.durationDays)}</span>
               </div>
 
               <ul className="space-y-4 mb-10">

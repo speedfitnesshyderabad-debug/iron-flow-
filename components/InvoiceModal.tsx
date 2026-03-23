@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Sale, Branch, User, Plan, InventoryItem } from '../types';
+import { formatDuration } from '../utils/dates';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -141,7 +142,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item,
                 <td className="py-6">
                   <p className="font-black text-sm text-slate-900 uppercase">{item.name}</p>
                   {'durationDays' in item && (
-                    <p className="text-[10px] text-slate-400 font-bold mt-1">Validity: {item.durationDays} Days</p>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1">Validity: {formatDuration(item.durationMonths, item.durationDays)}</p>
                   )}
                   {'category' in item && (
                     <p className="text-[10px] text-slate-400 font-bold mt-1">Category: {item.category}</p>

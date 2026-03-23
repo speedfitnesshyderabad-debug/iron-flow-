@@ -145,6 +145,7 @@ export interface Plan {
   type: PlanType;
   price: number;
   durationDays: number;
+  durationMonths?: number;
   branchId: string;
   isActive: boolean;
   isHidden?: boolean;

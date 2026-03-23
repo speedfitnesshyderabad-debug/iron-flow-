@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { PlanType, Plan } from '../types';
+import { formatDuration } from '../utils/dates';
 
 const Plans: React.FC = () => {
   const { plans, branches, addPlan, updatePlan, currentUser, isRowVisible } = useAppContext();
@@ -11,6 +12,7 @@ const Plans: React.FC = () => {
     name: '',
     type: PlanType.GYM,
     price: 0,
+    durationMonths: 0,
     durationDays: 30,
     branchId: branches[0]?.id || '',
     isMultiBranch: false,
@@ -32,6 +34,7 @@ const Plans: React.FC = () => {
       name: '',
       type: PlanType.GYM,
       price: 0,
+      durationMonths: 0,
       durationDays: 30,
       branchId: currentUser?.branchId || branches[0]?.id || '',
       isMultiBranch: false,
@@ -49,7 +52,8 @@ const Plans: React.FC = () => {
       name: plan.name,
       type: plan.type,
       price: plan.price,
-      durationDays: plan.durationDays,
+      durationMonths: plan.durationMonths || 0,
+      durationDays: plan.durationDays || 0,
       branchId: plan.branchId,
       isMultiBranch: plan.isMultiBranch || false,
       isHidden: plan.isHidden || false,
@@ -137,7 +141,7 @@ const Plans: React.FC = () => {
               <div className="flex flex-col gap-1 mb-8">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black text-gray-900">{formatCurrency(plan.price)}</span>
-                  <span className="text-gray-400 text-sm font-bold uppercase tracking-tighter">/ {plan.durationDays} Days</span>
+                  <span className="text-gray-400 text-sm font-bold uppercase tracking-tighter">/ {formatDuration(plan.durationMonths, plan.durationDays)}</span>
                 </div>
                 {plan.type !== PlanType.GYM && (
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
@@ -201,7 +205,7 @@ const Plans: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label htmlFor="plan-price" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (INR)</label>
                   <input
@@ -213,10 +217,20 @@ const Plans: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="plan-validity" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Validity (Days)</label>
+                  <label htmlFor="plan-validity-months" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Validity (Months)</label>
+                  <input
+                    id="plan-validity-months"
+                    type="number" placeholder="Months" min="0"
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                    value={formData.durationMonths || ''}
+                    onChange={e => setFormData({ ...formData, durationMonths: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="plan-validity" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Extra Days</label>
                   <input
                     id="plan-validity" name="durationDays"
-                    type="number" required placeholder="Days"
+                    type="number" placeholder="Days" min="0" max="365"
                     className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
                     value={formData.durationDays || ''}
                     onChange={e => setFormData({ ...formData, durationDays: Number(e.target.value) })}

@@ -3,7 +3,7 @@ import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, 
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
-import { todayDateStr, addDays, daysBetween, clamp, currentYear, currentTimeStr, isSubscriptionActive } from './utils/dates';
+import { todayDateStr, addDays, addMonths, daysBetween, clamp, currentYear, currentTimeStr, isSubscriptionActive } from './utils/dates';
 import { createClient } from '@supabase/supabase-js';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
@@ -1714,7 +1714,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           memberId: newUserId,
           planId: plan.id,
           startDate: membershipStartDate,
-          endDate: addDays(membershipStartDate, plan.durationDays - 1),
+          endDate: addDays(addMonths(membershipStartDate, plan.durationMonths || 0), plan.durationDays - 1),
           status: SubscriptionStatus.ACTIVE,
           branchId,
           trainerId,
@@ -1940,7 +1940,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       memberId: userId,
       planId: planId,
       startDate: effectiveStartDate,
-      endDate: addDays(effectiveStartDate, plan.durationDays - 1),
+      endDate: addDays(addMonths(effectiveStartDate, plan.durationMonths || 0), plan.durationDays - 1),
       status: SubscriptionStatus.ACTIVE,
       branchId,
       trainerId,

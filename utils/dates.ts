@@ -88,6 +88,31 @@ export const addDays = (dateStr: string, days: number): string => {
 };
 
 /**
+ * Adds a number of calendar months to a date string and returns a new "YYYY-MM-DD" string.
+ * It automatically handles day overflow (e.g., adding 1 month to Jan 31 -> Feb 28).
+ */
+export const addMonths = (dateStr: string, months: number): string => {
+    if (months === 0) return dateStr;
+    const [yearStr, monthStr, dayStr] = dateStr.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10) - 1; // 0-indexed
+    const day = parseInt(dayStr, 10);
+
+    const d = new Date(year, month + months, day);
+    const expectedMonthDate = new Date(year, month + months, 1);
+
+    if (d.getMonth() !== expectedMonthDate.getMonth()) {
+        d.setFullYear(expectedMonthDate.getFullYear(), expectedMonthDate.getMonth() + 1, 0); // Last day of target month
+    }
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dayFinal = String(d.getDate()).padStart(2, '0');
+
+    return `${y}-${m}-${dayFinal}`;
+};
+
+/**
  * Checks if a subscription is effectively active based on its status and date.
  */
 export const isSubscriptionActive = (sub: { status: string; endDate: string }, today: string): boolean => {
@@ -100,4 +125,13 @@ export const isSubscriptionActive = (sub: { status: string; endDate: string }, t
  */
 export const clamp = (value: number, min: number, max: number): number => {
     return Math.max(min, Math.min(max, value));
+};
+
+/** Formats a plan's duration consistently */
+export const formatDuration = (months: number | undefined | null, days: number): string => {
+    const parts = [];
+    if (months && months > 0) parts.push(`${months} Month${months !== 1 ? 's' : ''}`);
+    if (days > 0) parts.push(`${days} Day${days !== 1 ? 's' : ''}`);
+    if (parts.length === 0) return '0 Days';
+    return parts.join(', ');
 };

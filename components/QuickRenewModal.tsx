@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Plan, Branch } from '../types';
-import { todayDateStr } from '../utils/dates';
+import { todayDateStr, formatDuration } from '../utils/dates';
 
 interface QuickRenewModalProps {
     isOpen: boolean;
@@ -109,7 +109,7 @@ export const QuickRenewModal: React.FC<QuickRenewModalProps> = ({
                             >
                                 {plans.map(plan => (
                                     <option key={plan.id} value={plan.id}>
-                                        {plan.name} - ₹{plan.price} ({plan.durationDays} Days)
+                                        {plan.name} - ₹{plan.price} ({formatDuration(plan.durationMonths, plan.durationDays)})
                                     </option>
                                 ))}
                             </select>
