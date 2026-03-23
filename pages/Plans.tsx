@@ -207,7 +207,7 @@ const Plans: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label htmlFor="plan-price" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (INR)</label>
+                  <label htmlFor="plan-price" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 whitespace-nowrap">Price (INR)</label>
                   <input
                     id="plan-price" name="price"
                     type="number" required placeholder="Price"
@@ -217,7 +217,7 @@ const Plans: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="plan-validity-months" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Validity (Months)</label>
+                  <label htmlFor="plan-validity-months" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 whitespace-nowrap">Validity (Months)</label>
                   <input
                     id="plan-validity-months"
                     type="number" placeholder="Months" min="0"
@@ -227,7 +227,7 @@ const Plans: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="plan-validity" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Extra Days</label>
+                  <label htmlFor="plan-validity" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 whitespace-nowrap">Extra Days</label>
                   <input
                     id="plan-validity" name="durationDays"
                     type="number" placeholder="Days" min="0" max="365"
