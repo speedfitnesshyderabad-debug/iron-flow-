@@ -290,9 +290,15 @@ const Branches: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-5 md:p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] overflow-y-auto max-h-[90vh] scrollbar-hide">
-            <h3 className="text-lg md:text-2xl font-bold mb-6 tracking-tight uppercase sticky top-0 bg-white py-2 z-10">{selectedBranch ? 'Update Branch' : 'Register New Branch'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-[slideUp_0.3s_ease-out] flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="bg-white p-5 md:p-8 pb-4 border-b border-slate-100 flex justify-between items-center z-10 shrink-0">
+              <h3 className="text-lg md:text-2xl font-bold tracking-tight uppercase text-slate-900 leading-none">{selectedBranch ? 'Update Branch' : 'Register New Branch'}</h3>
+              <button type="button" onClick={() => setModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors shrink-0">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="p-5 md:p-8 overflow-y-auto scrollbar-hide flex-1">
+              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6 flex flex-col">
 
               <section className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -477,7 +483,8 @@ const Branches: React.FC = () => {
               </div>
             </form>
           </div>
-        </div >
+        </div>
+      </div>
       )}
       <style>{`
         @keyframes slideUp {
