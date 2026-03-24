@@ -336,7 +336,7 @@ const Bookings: React.FC = () => {
               {getAvailableTrainers().map(trainer => {
                 const isSelected = selectedTrainer === trainer.id;
                 const availableSlots = allTimeSlots.filter(slot =>
-                  isTimeSlotAvailable(trainer.id, selectedDate, slot)
+                  isTimeInShift(slot, trainer.shifts) && isTimeSlotAvailable(trainer.id, selectedDate, slot)
                 ).length;
 
                 return (
