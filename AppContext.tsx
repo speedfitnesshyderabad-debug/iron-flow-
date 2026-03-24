@@ -250,6 +250,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  const updateMemberCount = useCallback(async () => {
+    try {
+      let query = supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', UserRole.MEMBER);
+
+      if (selectedBranchId && selectedBranchId !== 'all') {
+        query = query.eq('branchId', selectedBranchId);
+      } else if (currentUser?.role !== UserRole.SUPER_ADMIN && currentUser?.branchId) {
+        query = query.eq('branchId', currentUser.branchId);
+      }
+
+      const { count, error } = await query;
+      if (!error) setTotalMemberCount(count || 0);
+    } catch (err) {
+      console.error('Error updating member count:', err);
+    }
+  }, [selectedBranchId, currentUser?.id, currentUser?.branchId, currentUser?.role]);
+
   const fetchData = useCallback(async () => {
     setGlobalLoading(true);
     try {
@@ -347,12 +367,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (uData) setUsers(uData);
 
-      // 3.5 Fetch Total Member Count (Scalable counting)
-      const { count: mCount } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', UserRole.MEMBER);
-      setTotalMemberCount(mCount || 0);
+      // 3.5 Fetch Total Member Count (Branch-specific)
+      await updateMemberCount();
 
       // 4. Fetch/Seed Plans (Ensuring plans exist for all branches)
       const { data: pData } = await supabase.from('plans').select('*');
@@ -552,6 +568,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fetchData();
     }
   }, [currentUser?.id, fetchData]);
+
+  // Update member count when branch selection changes (Super Admin)
+  useEffect(() => {
+    if (currentUser) {
+      updateMemberCount();
+    }
+  }, [selectedBranchId, updateMemberCount, currentUser?.id]);
 
   const fetchPaginatedMembers = useCallback(async (config: {
     page: number;
