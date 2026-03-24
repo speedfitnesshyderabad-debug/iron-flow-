@@ -96,7 +96,7 @@ const Campaigns: React.FC = () => {
             ) : (
                filteredOffers.map(offer => (
                   <div key={offer.id} className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden flex flex-col group hover:shadow-2xl transition-all">
-                     <div className="aspect-[16/9] relative overflow-hidden bg-slate-100">
+                     <div className="aspect-[21/9] relative overflow-hidden bg-slate-100">
                         <img src={offer.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="" />
                         <div className="absolute top-4 right-4 flex gap-2">
                            <span className={`text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${offer.branchId === 'GLOBAL' ? 'bg-indigo-600 text-white' : 'bg-blue-600 text-white'}`}>
