@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '../AppContext';
-import { InventoryItem, UserRole } from '../types';
+import { InventoryItem, UserRole, User } from '../types';
 import PaymentModal from '../components/PaymentModal';
 
 const Inventory: React.FC = () => {
-  const { inventory, branches, addInventory, updateInventory, deleteInventory, sellInventoryItem, users, currentUser, isRowVisible } = useAppContext();
+  const { inventory, branches, addInventory, updateInventory, deleteInventory, sellInventoryItem, users, currentUser, isRowVisible, fetchPaginatedMembers, selectedBranchId } = useAppContext();
   const [deleteConfirm, setDeleteConfirm] = useState<InventoryItem | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [isSellModalOpen, setSellModalOpen] = useState(false);
@@ -24,6 +24,42 @@ const Inventory: React.FC = () => {
     paymentMethod: 'CASH' as 'CASH' | 'POS' | 'CARD' | 'ONLINE',
     transactionCode: ''
   });
+  const [members, setMembers] = useState<User[]>([]);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
+  // Fetch members specifically for POS dropdown (since global users state excludes members)
+  useEffect(() => {
+    const fetchMembersForPos = async () => {
+      setIsLoadingMembers(true);
+      try {
+        const { members: memberList } = await fetchPaginatedMembers({
+          page: 1,
+          pageSize: 1000, // Fetch top 1000 for POS
+          branchId: selectedBranchId
+        });
+        setMembers(memberList);
+      } catch (err) {
+        console.error('Error fetching members for POS:', err);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+
+    if (isSellModalOpen) {
+      fetchMembersForPos();
+    }
+  }, [isSellModalOpen, fetchPaginatedMembers, selectedBranchId]);
+
+  const filteredMembers = useMemo(() => {
+    if (!memberSearch) return members;
+    const search = memberSearch.toLowerCase();
+    return members.filter(m => 
+      m.name.toLowerCase().includes(search) || 
+      m.memberId?.toLowerCase().includes(search) ||
+      m.phone?.includes(search)
+    );
+  }, [members, memberSearch]);
 
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
@@ -216,11 +252,39 @@ const Inventory: React.FC = () => {
             <p className="text-slate-400 text-sm mb-6">Selling: {selectedItem.name}</p>
             <form onSubmit={handleSell} className="space-y-4">
               <div>
-                <label htmlFor="sell-member" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Member (Bill To)</label>
-                <select id="sell-member" name="memberId" required className="w-full p-3 bg-gray-50 border rounded-xl" value={sellData.memberId} onChange={e => setSellData({ ...sellData, memberId: e.target.value })}>
-                  <option value="">Select Member...</option>
-                  {users.filter(u => u.role === 'MEMBER' && isRowVisible(u.branchId)).map(m => <option key={m.id} value={m.id}>{m.name} ({m.memberId})</option>)}
-                </select>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Member (Bill To)</label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                    <input
+                      type="text"
+                      placeholder="Search member name or ID..."
+                      className="w-full p-2 pl-9 bg-slate-50 border rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                      value={memberSearch}
+                      onChange={e => setMemberSearch(e.target.value)}
+                    />
+                  </div>
+                  <select 
+                    id="sell-member" 
+                    name="memberId" 
+                    required 
+                    className="w-full p-3 bg-gray-50 border rounded-xl text-sm" 
+                    value={sellData.memberId} 
+                    onChange={e => setSellData({ ...sellData, memberId: e.target.value })}
+                  >
+                    <option value="">{isLoadingMembers ? 'Loading members...' : 'Select Member...'}</option>
+                    {filteredMembers.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} {m.memberId ? `(${m.memberId})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {members.length === 0 && !isLoadingMembers && (
+                    <p className="text-[10px] text-amber-600 font-bold ml-1">
+                      <i className="fas fa-exclamation-triangle mr-1"></i> No members found in this branch
+                    </p>
+                  )}
+                </div>
               </div>
               <div>
                 <label htmlFor="sell-quantity" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantity</label>
@@ -279,9 +343,9 @@ const Inventory: React.FC = () => {
           onClose={() => setPaymentModalOpen(false)}
           amount={selectedItem.price * sellData.quantity}
           description={`Purchase: ${selectedItem.name} x ${sellData.quantity}`}
-          customerName={users.find(u => u.id === sellData.memberId)?.name}
-          customerEmail={users.find(u => u.id === sellData.memberId)?.email}
-          customerPhone={users.find(u => u.id === sellData.memberId)?.phone}
+          customerName={members.find(u => u.id === sellData.memberId)?.name}
+          customerEmail={members.find(u => u.id === sellData.memberId)?.email}
+          customerPhone={members.find(u => u.id === sellData.memberId)?.phone}
           branchId={selectedItem.branchId}
           onSuccess={handlePaymentSuccess}
           onError={(err) => {
