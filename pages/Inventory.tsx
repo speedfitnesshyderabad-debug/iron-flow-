@@ -28,14 +28,17 @@ const Inventory: React.FC = () => {
   const [memberSearch, setMemberSearch] = useState('');
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
-  // Fetch members specifically for POS dropdown (since global users state excludes members)
+  // Fetch members specifically for POS dropdown (Debounced Search)
   useEffect(() => {
-    const fetchMembersForPos = async () => {
+    if (!isSellModalOpen) return;
+
+    const timer = setTimeout(async () => {
       setIsLoadingMembers(true);
       try {
         const { members: memberList } = await fetchPaginatedMembers({
           page: 1,
-          pageSize: 1000, // Fetch top 1000 for POS
+          pageSize: 100, // Reasonable limit for search results
+          searchTerm: memberSearch,
           branchId: selectedBranchId
         });
         setMembers(memberList);
@@ -44,22 +47,10 @@ const Inventory: React.FC = () => {
       } finally {
         setIsLoadingMembers(false);
       }
-    };
+    }, 400); // 400ms debounce
 
-    if (isSellModalOpen) {
-      fetchMembersForPos();
-    }
-  }, [isSellModalOpen, fetchPaginatedMembers, selectedBranchId]);
-
-  const filteredMembers = useMemo(() => {
-    if (!memberSearch) return members;
-    const search = memberSearch.toLowerCase();
-    return members.filter(m => 
-      m.name.toLowerCase().includes(search) || 
-      m.memberId?.toLowerCase().includes(search) ||
-      m.phone?.includes(search)
-    );
-  }, [members, memberSearch]);
+    return () => clearTimeout(timer);
+  }, [isSellModalOpen, memberSearch, fetchPaginatedMembers, selectedBranchId]);
 
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
 
@@ -272,16 +263,22 @@ const Inventory: React.FC = () => {
                     value={sellData.memberId} 
                     onChange={e => setSellData({ ...sellData, memberId: e.target.value })}
                   >
-                    <option value="">{isLoadingMembers ? 'Loading members...' : 'Select Member...'}</option>
-                    {filteredMembers.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {m.memberId ? `(${m.memberId})` : ''}
-                      </option>
-                    ))}
+                    {isLoadingMembers ? (
+                      <option value="">Searching...</option>
+                    ) : (
+                      <>
+                        <option value="">{members.length === 0 ? 'No members found' : 'Select Member...'}</option>
+                        {members.map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} {m.memberId ? `(${m.memberId})` : ''}
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
-                  {members.length === 0 && !isLoadingMembers && (
+                  {members.length === 0 && !isLoadingMembers && memberSearch && (
                     <p className="text-[10px] text-amber-600 font-bold ml-1">
-                      <i className="fas fa-exclamation-triangle mr-1"></i> No members found in this branch
+                      <i className="fas fa-search-minus mr-1"></i> No matches for "{memberSearch}"
                     </p>
                   )}
                 </div>
