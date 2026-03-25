@@ -35,7 +35,7 @@ import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
-import ReloadPrompt from './components/ReloadPrompt';
+// import ReloadPrompt from './components/ReloadPrompt';
 
 
 // -----------------------------------------------------------------------------
@@ -130,7 +130,9 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       } else if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event) && session) {
         release(isRecovery || hasPendingAuthParams());
       } else if (event === 'INITIAL_SESSION') {
-        if (!hasPendingAuthParams()) {
+        const hasParams = hasPendingAuthParams();
+        console.log('🔐 AuthGate: INITIAL_SESSION, hasParams:', hasParams);
+        if (!hasParams) {
           release(false);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -422,7 +424,7 @@ const App: React.FC = () => {
         <AuthGate>
           <AppRoutes />
         </AuthGate>
-        <ReloadPrompt />
+        {/* <ReloadPrompt /> */}
       </Router>
     </AppProvider>
 

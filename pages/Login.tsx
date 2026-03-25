@@ -35,15 +35,33 @@ const Login: React.FC = () => {
     }
 
     try {
+      // Test 1: General Internet check
+      const appTime = new Date().toISOString();
+      console.log(`🌐 Diagnostic: App Time is ${appTime}`);
+      console.log('🌐 Diagnostic: Testing raw fetch to google.com...');
+      
+      const netTest = await fetch('https://www.google.com', { mode: 'no-cors' }).catch(e => {
+        console.error('🌐 Diagnostic: Google Fetch Failed:', e);
+        return e;
+      });
+
+      if (netTest instanceof Error) {
+        setSystemStatus({ checked: true, ok: false, message: `NETWORK OFFLINE: ${netTest.message} (Time: ${appTime})` });
+        return;
+      }
+
       const start = Date.now();
       const { data, error } = await supabase.from('branches').select('count', { count: 'exact', head: true });
       const latency = Date.now() - start;
 
-      if (error) throw error;
+      if (error) {
+        console.error('🌐 Diagnostic: Supabase Error:', error);
+        throw error;
+      }
       setSystemStatus({ checked: true, ok: true, message: `Cloud Connected (${latency}ms)` });
     } catch (err: any) {
-      console.error('System Check Error:', err);
-      setSystemStatus({ checked: true, ok: false, message: `Connection Failed: ${err.message || 'Network unreachable'}` });
+      console.error('🌐 Diagnostic: Global Catch Error:', err);
+      setSystemStatus({ checked: true, ok: false, message: `Connection Failed: ${err.message || 'Check Console'}` });
     } finally {
       setIsCheckingSystem(false);
     }

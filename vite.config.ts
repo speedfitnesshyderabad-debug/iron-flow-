@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       basicSsl(),
       react(),
-      VitePWA({
+      process.env.VITE_MOBILE_BUILD !== 'true' && VitePWA({
         registerType: 'prompt',
         includeAssets: ['icon.svg'],
         workbox: {
@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
           enabled: false
         }
       })
-    ],
+    ].filter(Boolean),
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
