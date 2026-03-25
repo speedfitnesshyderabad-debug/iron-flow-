@@ -111,12 +111,23 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       console.error('❌ [Diagnostic] CRITICAL LOGIN ERROR:', err);
-      // Detailed error for native crashes/failures
-      const errorMsg = err.message || JSON.stringify(err);
+      
+      let errorMsg = err.message || JSON.stringify(err);
+      
+      // If the error is an object with a message, use that.
+      if (err.error && err.error_description) {
+        errorMsg = `${err.error}: ${err.error_description}`;
+      } else if (typeof err === 'object' && !err.message) {
+        errorMsg = JSON.stringify(err);
+      }
+
       setError(`Google Login Error: ${errorMsg}`);
       
-      // If it's a native crash, this UI update might not even render before the app closes.
-      // That's why Logcat is essential.
+      // Check if it's potentially a CORS/Network issue
+      if (errorMsg.includes('Failed to fetch')) {
+        console.warn('⚠️ [Diagnostic] "Failed to fetch" detected. This usually means the server is unreachable or CORS is blocking the request.');
+        console.warn('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      }
     } finally {
       setIsAuthenticating(false);
     }
