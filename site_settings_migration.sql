@@ -32,10 +32,14 @@ DROP POLICY IF EXISTS "Public Read Site Settings" ON public.site_settings;
 CREATE POLICY "Public Read Site Settings" ON public.site_settings 
     FOR SELECT USING (true);
 
--- Only Authenticated Users (Admins) can update site settings
+-- Allow authenticated users to INSERT and UPDATE site settings
+DROP POLICY IF EXISTS "Admin Insert Site Settings" ON public.site_settings;
+CREATE POLICY "Admin Insert Site Settings" ON public.site_settings 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Admin Update Site Settings" ON public.site_settings;
 CREATE POLICY "Admin Update Site Settings" ON public.site_settings 
-    FOR UPDATE TO authenticated USING (true);
+    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
 
 -- Ensure anon/authenticated can read site settings
 GRANT SELECT ON public.site_settings TO anon, authenticated;
