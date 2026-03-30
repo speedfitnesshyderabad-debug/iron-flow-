@@ -350,7 +350,7 @@ const LandingSettings: React.FC = () => {
                     }))}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 transition"
                   />
-                  <p className="text-[10px] text-slate-400 italic">This URL will be used for the "EXPLORE" button on the card.</p>
+                  <p className="text-[10px] text-slate-400 italic">This URL will be used for the "EXPLORE" button on the card. <b>If left blank, it will automatically link to the branch-specific registration page.</b></p>
                 </div>
 
                 <button

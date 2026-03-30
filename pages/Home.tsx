@@ -7,6 +7,7 @@ import { loadHomeSettings } from './LandingSettings';
 
 const BranchCard: React.FC<{ branch: any; idx: number }> = ({ branch, idx }) => {
     const [videoActive, setVideoActive] = useState(false);
+    const navigate = useNavigate();
     const cardBg = branch.imageUrl || `https://images.unsplash.com/photo-${1571902943202 + idx % 10}?auto=format&fit=crop&q=80&w=800`;
     
     return (
@@ -54,10 +55,17 @@ const BranchCard: React.FC<{ branch: any; idx: number }> = ({ branch, idx }) => 
                             </div>
                         </div>
                         <button 
-                            onClick={() => branch.url && window.open(branch.url, '_blank')}
-                            className={`bg-white text-slate-950 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all ${!branch.url ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-50 cursor-pointer'}`}
+                            onClick={() => {
+                                const finalUrl = branch.url || `/register?branchId=${branch.id}`;
+                                if (branch.url) {
+                                    window.open(finalUrl, '_blank');
+                                } else {
+                                    navigate(finalUrl);
+                                }
+                            }}
+                            className="bg-white text-slate-950 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 active:scale-95 transition-all cursor-pointer"
                         >
-                            {branch.url ? 'EXPLORE' : 'COMING SOON'}
+                            EXPLORE
                         </button>
                     </div>
                 </div>

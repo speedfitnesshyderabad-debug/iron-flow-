@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 
 const Register: React.FC = () => {
@@ -25,6 +25,15 @@ const Register: React.FC = () => {
     confirmPassword: '',
     referralCode: ''
   });
+  const [searchParams] = useSearchParams();
+
+  React.useEffect(() => {
+    const bId = searchParams.get('branchId');
+    if (bId && branches.some(b => b.id === bId)) {
+      setFormData(prev => ({ ...prev, branchId: bId }));
+      setStep(2);
+    }
+  }, [searchParams, branches]);
 
   const selectedBranchPlans = plans.filter(p => p.branchId === formData.branchId && p.isActive);
 

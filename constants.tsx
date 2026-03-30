@@ -14,7 +14,9 @@ export const BRANCHES = [
     equipment: 'Cardio: 5 Treadmills, 2 Spin Bikes. Strength: Full Smith Machine, Dumbbells up to 40kg, Bench Press, Squat Rack, Cable Crossover. Plate Loaded: Leg Press, Lat Pulldown.',
     latitude: 19.0760,
     longitude: 72.8777,
-    geofenceRadius: 100
+    geofenceRadius: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-gym-exercises-9418-large.mp4'
   },
   {
     id: 'b2',
@@ -27,7 +29,9 @@ export const BRANCHES = [
     equipment: 'Functional Training Zone: Kettlebells, Battle Ropes, TRX, Medicine Balls. Machines: Leg Extension, Chest Press, Seated Row. Cardio: 3 Treadmills, 1 Rower.',
     latitude: 12.9716,
     longitude: 77.5946,
-    geofenceRadius: 100
+    geofenceRadius: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=1600&auto=format&fit=crop',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-gym-exercises-9418-large.mp4'
   },
 ];
 
