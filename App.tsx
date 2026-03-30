@@ -36,6 +36,7 @@ import Coupons from './pages/Coupons';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Home from './pages/Home';
+import LandingSettings from './pages/LandingSettings';
 // import ReloadPrompt from './components/ReloadPrompt';
 
 
@@ -360,6 +361,11 @@ const AppRoutes: React.FC = () => {
         } />
 
         <Route path="/campaigns" element={<Campaigns />} />
+        <Route path="/landing-settings" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN]}>
+            <LandingSettings />
+          </ProtectedRoute>
+        } />
         <Route path="/staff" element={
           <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
             <Staff />

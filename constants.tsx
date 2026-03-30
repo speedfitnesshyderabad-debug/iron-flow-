@@ -104,6 +104,7 @@ export const NAV_ITEMS = [
   { label: 'Tax Center', path: '/tax', icon: <i className="fas fa-file-contract"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Holidays', path: '/holidays', icon: <i className="fas fa-calendar-alt"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Gate QR', path: '/gate-qr', icon: <i className="fas fa-expand"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.KIOSK] },
+  { label: 'Landing Settings', path: '/landing-settings', icon: <i className="fas fa-paint-brush"></i>, roles: [UserRole.SUPER_ADMIN] },
   { label: 'Store', path: '/store', icon: <i className="fas fa-shopping-cart"></i>, roles: [UserRole.MEMBER] },
   { label: 'Check-In', path: '/check-in', icon: <i className="fas fa-qrcode"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST, UserRole.MEMBER, UserRole.STAFF, UserRole.TRAINER] },
   { label: 'Bookings', path: '/bookings', icon: <i className="fas fa-calendar-check"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.TRAINER, UserRole.MEMBER] },

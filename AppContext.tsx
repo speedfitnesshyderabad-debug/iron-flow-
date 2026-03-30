@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral, Holiday, Coupon, WalkIn } from './types';
+import { User, Branch, Plan, Subscription, Sale, Attendance, Booking, Feedback, UserRole, SubscriptionStatus, Communication, CommType, InventoryItem, BodyMetric, Offer, ClassSession, Expense, ActiveSession, Payroll, Referral, Holiday, Coupon, WalkIn, SiteSettings, HomePageSettings } from './types';
 import { MOCK_USERS, BRANCHES, MOCK_PLANS, MOCK_SUBSCRIPTIONS, MOCK_OFFERS, MOCK_ATTENDANCE, MOCK_SALES, MOCK_BOOKINGS } from './constants';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from './src/lib/supabase';
@@ -30,6 +30,7 @@ interface AppContextType {
   holidays: Holiday[];
   coupons: Coupon[];
   walkIns: WalkIn[];
+  siteSettings: Record<string, any>;
 
   isGlobalLoading: boolean;
   setGlobalLoading: (loading: boolean) => void;
@@ -57,6 +58,7 @@ interface AppContextType {
   addOffer: (offer: Offer) => Promise<void>;
   updateOffer: (id: string, updates: Partial<Offer>) => Promise<void>;
   deleteOffer: (id: string) => Promise<void>;
+  updateSiteSetting: (key: string, value: any) => Promise<void>;
   addClassTemplate: (template: any) => Promise<void>;
   deleteClassTemplate: (id: string) => Promise<void>;
   addHoliday: (holiday: Omit<Holiday, 'id' | 'createdAt'>, notify?: boolean) => Promise<void>;
@@ -218,6 +220,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [walkIns, setWalkIns] = useState<WalkIn[]>([]);
+  const [siteSettings, setSiteSettings] = useState<Record<string, any>>({
+    home_hero: {
+      heroType: 'image',
+      heroImageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=2070',
+      heroVideoUrl: '',
+      heroTitle: 'Elite Workout Experience',
+      heroSubtitle: 'Access premium facilities, expert trainers, and a community dedicated to your transformation. Find your nearest IronFlow branch today.',
+      heroTagline: 'The Future of Fitness is Here',
+    }
+  });
   const [selectedBranchId, setSelectedBranchId] = useState<string | 'all'>(() => {
     return localStorage.getItem('selectedBranchId') || 'all';
   });
@@ -451,6 +463,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { data: wiData } = await supabase.from('walk_ins').select('*');
       if (wiData) setWalkIns(wiData);
 
+      const { data: ssData } = await supabase.from('site_settings').select('*');
+      if (ssData) {
+        const settingsMap: Record<string, any> = {};
+        ssData.forEach((s: any) => { settingsMap[s.key] = s.value; });
+        setSiteSettings(prev => ({ ...prev, ...settingsMap }));
+      }
+
     } catch (error) {
       console.error('Error fetching data:', error);
       showToast('Error connecting to database', 'error');
@@ -550,6 +569,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (data) {
             const mapped = data.map((c: any) => ({ ...c, isRead: !!c.is_read }));
             setCommunications(mapped as any);
+          }
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
+        supabase.from('site_settings').select('*').then(({ data }) => {
+          if (data) {
+            const settingsMap: Record<string, any> = {};
+            data.forEach((s: any) => { settingsMap[s.key] = s.value; });
+            setSiteSettings(prev => ({ ...prev, ...settingsMap }));
           }
         });
       })
@@ -2370,6 +2398,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateSiteSetting = async (key: string, value: any) => {
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({ key, value, updated_at: new Date().toISOString() })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setSiteSettings(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    } catch (err) {
+      console.error('Error updating site settings:', err);
+      showToast('Error saving settings', 'error');
+    }
+  };
+
   const deleteHoliday = async (id: string) => {
     try {
       const { error } = await supabase.from('holidays').delete().eq('id', id);
@@ -2495,6 +2543,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     holidays,
     coupons,
     walkIns,
+    siteSettings,
     isGlobalLoading,
     setGlobalLoading,
     addBranch,
@@ -2521,6 +2570,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addOffer,
     updateOffer,
     deleteOffer,
+    updateSiteSetting,
     addClassTemplate,
     deleteClassTemplate,
     addHoliday,
