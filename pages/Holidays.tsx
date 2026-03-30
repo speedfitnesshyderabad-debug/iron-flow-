@@ -120,8 +120,8 @@ const Holidays: React.FC = () => {
             </div>
 
             {isAddModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[1000] flex items-center justify-center p-6 animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-[slideUp_0.3s_ease-out]">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-[fadeIn_0.2s_ease-out]">
+                    <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-y-auto animate-[slideUp_0.3s_ease-out] max-h-[90dvh]">
                         <div className="p-10">
                             <div className="flex justify-between items-center mb-10">
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">New Announcement</h3>

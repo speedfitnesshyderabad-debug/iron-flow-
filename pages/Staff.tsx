@@ -546,8 +546,8 @@ const Staff: React.FC = () => {
 
       {/* Logs Modal */}
       {isLogsModalOpen && selectedStaff && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden flex flex-col shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh]">
             <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <img src={selectedStaff.avatar} className="w-12 h-12 rounded-2xl border-2 border-white/20 shadow-xl" alt="" />
@@ -560,7 +560,7 @@ const Staff: React.FC = () => {
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            <div className="p-8 max-h-[60vh] overflow-y-auto space-y-4 bg-slate-50/50">
+            <div className="p-8 flex-1 overflow-y-auto space-y-4 bg-slate-50/50">
               {attendance.filter(a => a.userId === selectedStaff.id).length === 0 ? (
                 <div className="text-center py-20 flex flex-col items-center gap-4">
                   <i className="fas fa-calendar-xmark text-4xl text-slate-200"></i>
@@ -600,8 +600,8 @@ const Staff: React.FC = () => {
       )}
 
       {(isAddModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3rem] w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] w-full max-w-md overflow-hidden flex flex-col shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh]">
             <div className={`p-8 text-white flex justify-between items-center ${isEditModalOpen ? 'bg-indigo-600 shadow-indigo-100 shadow-xl' : 'bg-blue-600 shadow-blue-100 shadow-xl'}`}>
               <div>
                 <h3 className="text-2xl font-black uppercase tracking-tight leading-none mb-1">{isEditModalOpen ? 'Update Profile' : 'Staff Onboarding'}</h3>
@@ -612,7 +612,7 @@ const Staff: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={isEditModalOpen ? handleUpdateStaff : handleAddStaff} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-hide">
+            <form onSubmit={isEditModalOpen ? handleUpdateStaff : handleAddStaff} className="p-10 flex-1 space-y-6 overflow-y-auto scrollbar-hide">
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
                   <img

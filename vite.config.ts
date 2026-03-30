@@ -15,39 +15,9 @@ export default defineConfig(({ mode }) => {
     plugins: [
       basicSsl(),
       react(),
-      process.env.VITE_MOBILE_BUILD !== 'true' && VitePWA({
-        registerType: 'prompt',
-        includeAssets: ['icon.svg'],
-        workbox: {
-          cleanupOutdatedCaches: true,
-          skipWaiting: true,
-          clientsClaim: true,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // Increase to 5MB
-        },
-        manifest: {
-          name: 'IronFlow Gym Manager',
-          short_name: 'IronFlow',
-          description: 'Multi-Branch Gym Management System',
-          theme_color: '#0f172a',
-          background_color: '#ffffff',
-          display: 'standalone',
-          scope: '/',
-          start_url: '/',
-          orientation: 'portrait',
-          icons: [
-            {
-              src: 'icon.svg',
-              sizes: '512x512',
-              type: 'image/svg+xml',
-              purpose: 'any maskable'
-            }
-          ]
-        },
-        devOptions: {
-          enabled: false
-        }
-      })
+      /* VitePWA({
+        ...
+      }) */
     ].filter(Boolean),
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),

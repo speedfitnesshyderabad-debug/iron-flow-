@@ -309,8 +309,8 @@ const WalkInManagement: React.FC = () => {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-6 tracking-tight uppercase">
               {selectedWalkIn ? 'Update Walk-In' : 'Register Walk-In'}
             </h3>

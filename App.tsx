@@ -35,6 +35,7 @@ import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import Home from './pages/Home';
 // import ReloadPrompt from './components/ReloadPrompt';
 
 
@@ -315,13 +316,14 @@ const AppRoutes: React.FC = () => {
   if (!currentUser) {
     return (
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/debug" element={<Debug />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
@@ -333,7 +335,8 @@ const AppRoutes: React.FC = () => {
 
       {/* Routes within App Layout */}
       <Route element={<Layout><Outlet /></Layout>}>
-        <Route path="/" element={
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={
           useAppContext().isRecoveryFlow ? <Navigate to="/reset-password" replace /> : (
             currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
           )

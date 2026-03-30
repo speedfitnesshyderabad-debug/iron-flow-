@@ -35,33 +35,73 @@ const Login: React.FC = () => {
     }
 
     try {
-      // Test 1: General Internet check
       const appTime = new Date().toISOString();
       console.log(`🌐 Diagnostic: App Time is ${appTime}`);
-      console.log('🌐 Diagnostic: Testing raw fetch to google.com...');
       
-      const netTest = await fetch('https://www.google.com', { mode: 'no-cors' }).catch(e => {
+      // Test 1: General Internet check
+      console.log('🌐 Diagnostic: Testing raw fetch to google.com...');
+      try {
+        const netTest = await fetch('https://www.google.com', { mode: 'no-cors' });
+        console.log('✅ Diagnostic: Internet access confirmed.');
+      } catch (e: any) {
         console.error('🌐 Diagnostic: Google Fetch Failed:', e);
-        return e;
-      });
-
-      if (netTest instanceof Error) {
-        setSystemStatus({ checked: true, ok: false, message: `NETWORK OFFLINE: ${netTest.message} (Time: ${appTime})` });
+        setSystemStatus({ checked: true, ok: false, message: `NETWORK OFFLINE: ${e.message || 'DNS/Firewall?'} (Time: ${appTime})` });
+        setIsCheckingSystem(false);
         return;
       }
 
       const start = Date.now();
+      const urlPreview = url.substring(0, 20) + '...';
+      console.log(`🌐 Diagnostic: Target URL: ${url}`);
+      
+      // Test 2: Native Fetch via CapacitorHttp (Bypasses some WebView issues)
+      try {
+        const { CapacitorHttp } = await import('@capacitor/core');
+        console.log('🌐 Diagnostic: Testing NATIVE fetch via CapacitorHttp...');
+        const nativeResp = await CapacitorHttp.get({
+          url: `${url}/rest/v1/branches?select=count`,
+          headers: {
+            'apikey': key,
+            'Authorization': `Bearer ${key}`
+          },
+          connectTimeout: 5000,
+          readTimeout: 5000
+        });
+        
+        console.log('🌐 Diagnostic: Native Response Status:', nativeResp.status);
+        if (nativeResp.status === 200) {
+          console.log('✅ Diagnostic: NATIVE FETCH SUCCESS!');
+        } else {
+          console.warn('⚠️ Diagnostic: NATIVE FETCH FAILED:', nativeResp.status, nativeResp.data);
+          // If native fails but we have internet, it might be a specific URL/Firewall issue
+          if (nativeResp.status === 0 || nativeResp.status >= 500) {
+             setSystemStatus({ checked: true, ok: false, message: `NATIVE FETCH ERROR ${nativeResp.status}: ${urlPreview}` });
+             setIsCheckingSystem(false);
+             return;
+          }
+        }
+      } catch (nativeErr: any) {
+        console.error('🌐 Diagnostic: Native Fetch Exception:', nativeErr);
+      }
+
+      // Test 3: Supabase JS Client check
+      console.log('🌐 Diagnostic: Re-initializing Supabase check...');
       const { data, error } = await supabase.from('branches').select('count', { count: 'exact', head: true });
       const latency = Date.now() - start;
 
       if (error) {
-        console.error('🌐 Diagnostic: Supabase Error:', error);
-        throw error;
+        console.error('🌐 Diagnostic: Supabase Error FULL:', error);
+        setSystemStatus({ 
+          checked: true, 
+          ok: false, 
+          message: `SUPABASE ERROR: ${error.message || 'Fetch Failed'} (${latency}ms)` 
+        });
+        return;
       }
-      setSystemStatus({ checked: true, ok: true, message: `Cloud Connected (${latency}ms)` });
+      setSystemStatus({ checked: true, ok: true, message: `Cloud Connected! Latency: ${latency}ms` });
     } catch (err: any) {
       console.error('🌐 Diagnostic: Global Catch Error:', err);
-      setSystemStatus({ checked: true, ok: false, message: `Connection Failed: ${err.message || 'Check Console'}` });
+      setSystemStatus({ checked: true, ok: false, message: `Exception: ${err.message || 'Unknown Error'}` });
     } finally {
       setIsCheckingSystem(false);
     }
@@ -366,14 +406,14 @@ const Login: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-slate-950 flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600 rounded-full blur-[120px]"></div>
       </div>
 
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 relative z-10">
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 bg-slate-900 rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden border border-white/5 relative z-10 max-h-[calc(100dvh-2rem)] overflow-y-auto">
 
         {/* Branding Side (Hidden on Mobile) */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative">

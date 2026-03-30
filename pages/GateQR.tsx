@@ -212,7 +212,7 @@ const GateQR: React.FC = () => {
     // ✅ Full-screen Feedback Overlay
     if (scanFeedback) {
         return (
-            <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-all duration-300 ${scanFeedback.success ? 'bg-green-600' : 'bg-red-600'}`}>
+            <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-300 ${scanFeedback.success ? 'bg-green-600' : 'bg-red-600'}`}>
                 {/* Radial glow */}
                 <div className={`absolute inset-0 ${scanFeedback.success ? 'bg-green-400/20' : 'bg-red-400/20'} blur-[120px] rounded-full`}></div>
 
@@ -376,7 +376,7 @@ const GateQR: React.FC = () => {
             {/* Sound Picker Modal */}
             {showSoundPicker && (
                 <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex justify-center items-center p-4">
-                    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-lg w-full shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+                    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-lg w-full shadow-2xl animate-[fadeIn_0.2s_ease-out] max-h-[90dvh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-8">
                             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Sound Settings</h2>
                             <button onClick={() => setShowSoundPicker(false)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors">

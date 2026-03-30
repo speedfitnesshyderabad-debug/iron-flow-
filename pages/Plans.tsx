@@ -167,8 +167,8 @@ const Plans: React.FC = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto scrollbar-hide">
             <h3 className="text-2xl font-black mb-6 tracking-tight uppercase text-slate-900">{selectedPlan ? 'Edit Plan' : 'New Membership Plan'}</h3>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1">

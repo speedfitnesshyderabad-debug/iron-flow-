@@ -86,7 +86,8 @@ export const MOCK_OFFERS: Offer[] = [
 ];
 
 export const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', icon: <i className="fas fa-chart-line"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
+  { label: 'Home', path: '/', icon: <i className="fas fa-home"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST, UserRole.MEMBER, UserRole.STAFF, UserRole.TRAINER] },
+  { label: 'Dashboard', path: '/dashboard', icon: <i className="fas fa-chart-line"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Branches', path: '/branches', icon: <i className="fas fa-building"></i>, roles: [UserRole.SUPER_ADMIN] },
   { label: 'Walk-Ins', path: '/walk-ins', icon: <i className="fas fa-walking"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
   { label: 'Members', path: '/members', icon: <i className="fas fa-users"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
