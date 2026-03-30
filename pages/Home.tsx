@@ -32,7 +32,8 @@ const Home: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white font-['Outfit'] selection:bg-blue-500/30 overflow-x-hidden">
-            {/* 1. STICKY NAVBAR */}
+            {/* 1. STICKY NAVBAR — only shown to guests (logged-in users have the Layout header) */}
+            {!currentUser && (
             <nav className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-500 px-6 md:px-12 py-4 flex items-center justify-between ${isScrolled ? 'bg-slate-950/80 backdrop-blur-2xl border-b border-white/5 py-3' : 'bg-transparent'}`}>
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -48,26 +49,17 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {currentUser ? (
-                        <Link 
-                            to="/" 
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            Dashboard <i className="fas fa-arrow-right text-[10px]"></i>
-                        </Link>
-                    ) : (
-                        <>
-                            <Link to="/login" className="text-[11px] font-black uppercase tracking-widest hover:text-blue-400 transition-colors px-4">Login</Link>
-                            <Link 
-                                to="/register" 
-                                className="bg-white text-slate-950 hover:bg-blue-50 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
-                            >
-                                Join Now
-                            </Link>
-                        </>
-                    )}
+                    <Link to="/login" className="text-[11px] font-black uppercase tracking-widest hover:text-blue-400 transition-colors px-4">Login</Link>
+                    <Link 
+                        to="/register" 
+                        className="bg-white text-slate-950 hover:bg-blue-50 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                    >
+                        Join Now
+                    </Link>
                 </div>
             </nav>
+            )}
+
 
             {/* 2. HERO SECTION */}
             <section id="hero" className="relative h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
