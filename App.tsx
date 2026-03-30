@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { supabase } from './src/lib/supabase';
 import { UserRole } from './types';
 import { AppProvider, useAppContext } from './AppContext';
@@ -410,6 +411,21 @@ const AppRoutes: React.FC = () => {
 // -----------------------------------------------------------------------------
 const App: React.FC = () => {
   useEffect(() => {
+    const initCapgo = async () => {
+      try {
+        // Log current version and channel for diagnostics
+        const current = await CapacitorUpdater.current();
+        console.log('🚀 Capgo: current state:', JSON.stringify(current));
+        
+        // Ensure we are listening on the production channel
+        await CapacitorUpdater.setChannel({ channel: 'production' });
+        console.log('🚀 Capgo: channel set to production');
+      } catch (err) {
+        console.warn('⚠️ Capgo: diagnostic failed:', err);
+      }
+    };
+    initCapgo();
+
     const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) {
         // Show a confirmation dialog (using your UI framework or browser confirm)

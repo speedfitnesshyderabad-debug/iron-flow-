@@ -11,6 +11,7 @@ const config: CapacitorConfig = {
       forceCodeForRefreshToken: true,
     },
     CapacitorUpdater: {
+      appId: '71d794dd-0a40-4197-a5a8-c233b1c1d1d3',
       autoUpdate: true,
       statsUrl: 'https://capgo.app/api/stats/',
     },
