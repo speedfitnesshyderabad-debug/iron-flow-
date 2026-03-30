@@ -329,7 +329,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="bg-white border-b h-auto min-h-[4rem] md:min-h-[5rem] flex items-center justify-between px-4 md:px-8 z-20 shadow-sm shrink-0 safe-area-pt">
+        <header className="bg-white border-b h-auto min-h-[4rem] md:min-h-[5rem] flex items-center justify-between px-4 md:px-8 z-20 shadow-sm shrink-0 safe-top">
           {/* Header Left: Navigation & Title */}
           <div className="flex items-center gap-3 md:gap-4 overflow-hidden min-w-0 flex-1">
             {/* Hamburger for Mobile */}
