@@ -343,9 +343,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden md:flex text-gray-400 hover:text-gray-900 transition-colors p-2 hover:bg-gray-100 rounded-lg shrink-0">
               <i className={`fas ${isSidebarOpen ? 'fa-indent' : 'fa-outdent'} text-xl`}></i>
             </button>
-            <div className="md:hidden shrink-0">
-              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-            </div>
             {currentUser.role === UserRole.SUPER_ADMIN ? (
               <select
                 className="bg-transparent border-none text-sm md:text-lg font-black text-gray-800 tracking-tight focus:ring-0 cursor-pointer outline-none max-w-[150px] md:max-w-none"
