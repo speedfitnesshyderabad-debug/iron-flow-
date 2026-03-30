@@ -121,6 +121,7 @@ export interface Branch {
   settlementRate?: number;
   imageUrl?: string;  // Hero image for this branch card on landing page
   videoUrl?: string;  // Optional video URL for this branch card
+  url?: string;       // External website or link for this branch
 }
 
 export interface Shift {

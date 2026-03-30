@@ -53,8 +53,11 @@ const BranchCard: React.FC<{ branch: any; idx: number }> = ({ branch, idx }) => 
                                 <p className="text-sm font-bold text-white">45+</p>
                             </div>
                         </div>
-                        <button className="bg-white text-slate-950 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">
-                            EXPLORE
+                        <button 
+                            onClick={() => branch.url && window.open(branch.url, '_blank')}
+                            className={`bg-white text-slate-950 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all ${!branch.url ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-50 cursor-pointer'}`}
+                        >
+                            {branch.url ? 'EXPLORE' : 'COMING SOON'}
                         </button>
                     </div>
                 </div>
@@ -112,9 +115,9 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="hidden md:flex items-center gap-10">
-                    <a href="#branches" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-blue-400 transition-colors">Branches</a>
-                    <a href="#offers" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-blue-400 transition-colors">Offers</a>
-                    <a href="#elite" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-blue-400 transition-colors">Elite Experience</a>
+                    <button onClick={() => document.getElementById('branches')?.scrollIntoView({ behavior: 'smooth' })} className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-blue-400 transition-colors">Branches</button>
+                    <button onClick={() => document.getElementById('offers')?.scrollIntoView({ behavior: 'smooth' })} className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-blue-400 transition-colors">Offers</button>
+                    <button onClick={() => document.getElementById('elite')?.scrollIntoView({ behavior: 'smooth' })} className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-blue-400 transition-colors">Elite Experience</button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -178,9 +181,13 @@ const Home: React.FC = () => {
                                 placeholder="Search by Branch Name or Location..." 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && document.getElementById('branches')?.scrollIntoView({ behavior: 'smooth' })}
                                 className="bg-transparent border-none focus:ring-0 flex-1 px-4 py-3 font-bold text-lg placeholder:text-slate-600 outline-none"
                             />
-                            <button className="bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 transition-all active:scale-90">
+                            <button 
+                                onClick={() => document.getElementById('branches')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 transition-all active:scale-90"
+                            >
                                 <i className="fas fa-search"></i>
                             </button>
                         </div>
@@ -225,7 +232,10 @@ const Home: React.FC = () => {
                                         <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest leading-none mb-1">Code</p>
                                         <p className="text-xl font-bold font-mono tracking-widest text-blue-400">{offer.id.split('-')[0].toUpperCase()}</p>
                                     </div>
-                                    <button className="bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center transition-all group-hover:scale-110">
+                                    <button 
+                                        onClick={() => navigate('/register')}
+                                        className="bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
+                                    >
                                         <i className="fas fa-plus"></i>
                                     </button>
                                 </div>
@@ -281,7 +291,10 @@ const Home: React.FC = () => {
                                 </li>
                             ))}
                         </ul>
-                        <button className="bg-blue-600 hover:bg-blue-500 px-10 py-5 rounded-3xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/20 active:scale-95 transition-all">
+                        <button 
+                            onClick={() => navigate('/register')}
+                            className="bg-blue-600 hover:bg-blue-500 px-10 py-5 rounded-3xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/20 active:scale-95 transition-all"
+                        >
                             Start My Transformation
                         </button>
                     </div>
@@ -326,9 +339,9 @@ const Home: React.FC = () => {
                     <div>
                         <h5 className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-8">Navigation</h5>
                         <ul className="space-y-4">
-                            <li><a href="#hero" className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">Home</a></li>
-                            <li><a href="#branches" className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">Branches</a></li>
-                            <li><a href="#offers" className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">Offers</a></li>
+                            <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">Home</button></li>
+                            <li><button onClick={() => document.getElementById('branches')?.scrollIntoView({ behavior: 'smooth' })} className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">Branches</button></li>
+                            <li><button onClick={() => document.getElementById('offers')?.scrollIntoView({ behavior: 'smooth' })} className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">Offers</button></li>
                             <li><Link to="/login" className="text-slate-500 hover:text-blue-400 transition-colors font-bold text-sm uppercase tracking-widest">IronFlow Login</Link></li>
                         </ul>
                     </div>

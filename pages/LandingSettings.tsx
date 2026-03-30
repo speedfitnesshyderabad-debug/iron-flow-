@@ -38,7 +38,7 @@ const LandingSettings: React.FC = () => {
   const [settings, setSettings] = useState<HomePageSettings>(siteSettings.home_hero);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'hero' | 'branches'>('hero');
-  const [branchImages, setBranchImages] = useState<Record<string, { imageUrl: string; videoUrl: string }>>({});
+  const [branchImages, setBranchImages] = useState<Record<string, { imageUrl: string; videoUrl: string; url: string }>>({});
 
   // Sync settings if they change in context
   useEffect(() => {
@@ -58,9 +58,9 @@ const LandingSettings: React.FC = () => {
 
   // Load branch image overrides from local state
   useEffect(() => {
-    const init: Record<string, { imageUrl: string; videoUrl: string }> = {};
+    const init: Record<string, { imageUrl: string; videoUrl: string; url: string }> = {};
     branches.forEach(b => {
-      init[b.id] = { imageUrl: b.imageUrl || '', videoUrl: b.videoUrl || '' };
+      init[b.id] = { imageUrl: b.imageUrl || '', videoUrl: b.videoUrl || '', url: b.url || '' };
     });
     setBranchImages(init);
   }, [branches]);
@@ -80,10 +80,14 @@ const LandingSettings: React.FC = () => {
     const data = branchImages[branchId];
     if (!data) return;
     try {
-      await updateBranch(branchId, { imageUrl: data.imageUrl, videoUrl: data.videoUrl });
-      showToast?.('Branch media updated!', 'success');
+      await updateBranch(branchId, { 
+        imageUrl: data.imageUrl, 
+        videoUrl: data.videoUrl,
+        url: data.url
+      });
+      showToast?.('Branch details updated!', 'success');
     } catch {
-      showToast?.('Failed to save branch media.', 'error');
+      showToast?.('Failed to save branch details.', 'error');
     }
   };
 
@@ -334,11 +338,26 @@ const LandingSettings: React.FC = () => {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">External Website / URL <span className="text-blue-500">(Custom Link)</span></label>
+                  <input
+                    type="url"
+                    placeholder="https://ironflow.fit/mumbai-central"
+                    value={branchImages[branch.id]?.url || ''}
+                    onChange={e => setBranchImages(prev => ({
+                      ...prev,
+                      [branch.id]: { ...prev[branch.id], url: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  />
+                  <p className="text-[10px] text-slate-400 italic">This URL will be used for the "EXPLORE" button on the card.</p>
+                </div>
+
                 <button
                   onClick={() => handleSaveBranchMedia(branch.id)}
                   className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
                 >
-                  <i className="fas fa-save mr-2"></i>Save {branch.name.split(' ').pop()} Media
+                  <i className="fas fa-save mr-2"></i>Save {branch.name.split(' ').pop()} Settings
                 </button>
               </div>
             </div>
@@ -355,13 +374,14 @@ const LandingSettings: React.FC = () => {
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-3">
             <i className="fas fa-database text-amber-500 mt-0.5"></i>
             <div>
-              <p className="text-xs font-black text-amber-700 uppercase tracking-widest mb-1">SQL Required for Branch Images</p>
+              <p className="text-xs font-black text-amber-700 uppercase tracking-widest mb-1">SQL Required for Card URLs</p>
               <p className="text-xs text-amber-600 font-medium leading-relaxed">
-                Run this in Supabase SQL Editor to persist branch media:
+                If the "EXPLORE" button doesn't save, run this in the Supabase SQL Editor:
               </p>
               <pre className="text-[11px] bg-amber-100 text-amber-800 p-3 rounded-xl mt-2 font-mono overflow-x-auto">{`ALTER TABLE public.branches
   ADD COLUMN IF NOT EXISTS "imageUrl" TEXT,
-  ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;`}</pre>
+  ADD COLUMN IF NOT EXISTS "videoUrl" TEXT,
+  ADD COLUMN IF NOT EXISTS "url" TEXT;`}</pre>
             </div>
           </div>
         </div>

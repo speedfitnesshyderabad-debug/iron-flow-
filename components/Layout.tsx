@@ -329,7 +329,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="bg-white border-b h-auto min-h-[4rem] md:min-h-[5rem] flex items-center justify-between px-4 md:px-8 z-20 shadow-sm shrink-0 safe-top">
+        <header className="bg-white border-b h-auto min-h-[4rem] md:min-h-[5rem] flex items-center justify-between px-4 md:px-8 z-20 shadow-sm shrink-0">
           {/* Header Left: Navigation & Title */}
           <div className="flex items-center gap-3 md:gap-4 overflow-hidden min-w-0 flex-1">
             {/* Hamburger for Mobile */}
@@ -403,7 +403,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </main>
 
         {/* Bottom Quick-Nav for Mobile */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 z-50 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] rounded-t-[3rem] safe-area-pb" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)', paddingTop: '12px' }}>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 z-50 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] rounded-t-[2rem] safe-area-pb" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4px)', paddingTop: '10px' }}>
           {mobileBottomNavItems.map(item => {
             const isActive = location.pathname === item.path;
             return (
