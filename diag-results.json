@@ -1,0 +1,106 @@
+{
+  "source_branch_fetch": {
+    "data": [
+      {
+        "id": "b-1771726419524",
+        "name": "Titan Strength(Dammaiguda)",
+        "address": "Narsaiah Colony, Sai Baba Nagar Colony, P S Rao Nagar, Ambedkar Nagar, Hyderabad, Secunderabad, Telangana 500083",
+        "phone": "9515209011",
+        "email": "SPEEDFITNESSHYDERABAD@GMAIL.COM",
+        "gstin": "36AHWPT0499H1ZG",
+        "gstPercentage": 5,
+        "gateWebhookUrl": "",
+        "paymentProvider": "RAZORPAY",
+        "paymentApiKey": "rzp_live_S65UctjEFkhPfH",
+        "paymentMerchantId": "***********************",
+        "emailProvider": "SENDGRID",
+        "emailApiKey": "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",
+        "emailFromAddress": "support@speedfitness.org",
+        "smsProvider": "TWILIO",
+        "smsApiKey": "",
+        "smsSenderId": "",
+        "equipment": "",
+        "latitude": 17.5022285,
+        "longitude": 78.5882928,
+        "geofenceRadius": 100,
+        "isHidden": false,
+        "termsAndConditions": "",
+        "settlementRate": 100,
+        "imageUrl": "https://images.pexels.com/photos/36819254/pexels-photo-36819254.jpeg",
+        "videoUrl": "",
+        "url": ""
+      }
+    ],
+    "error": null
+  },
+  "dest_branch_insert": {
+    "data": null,
+    "error": {
+      "code": "PGRST204",
+      "details": null,
+      "hint": null,
+      "message": "Could not find the 'settlementRate' column of 'branches' in the schema cache"
+    }
+  },
+  "source_plan_fetch": {
+    "data": [
+      {
+        "id": "p-1773478535510",
+        "name": "3+1 offer",
+        "type": "GYM",
+        "price": 7000,
+        "durationDays": 0,
+        "branchId": "b-1771726419524",
+        "isActive": true,
+        "isMultiBranch": false,
+        "maxSessions": null,
+        "sessionDurationMinutes": null,
+        "groupCapacity": null,
+        "isHidden": true,
+        "durationMonths": 4
+      }
+    ],
+    "error": null
+  },
+  "dest_plan_insert": {
+    "data": null,
+    "error": {
+      "code": "PGRST204",
+      "details": null,
+      "hint": null,
+      "message": "Could not find the 'durationMonths' column of 'plans' in the schema cache"
+    }
+  },
+  "dest_branches_current": {
+    "data": [],
+    "error": null
+  },
+  "source_subscription": {
+    "data": [
+      {
+        "id": "s-1773029302986",
+        "memberId": "fa7c405e-8ee1-47fa-bf98-6e84412b4d74",
+        "planId": "p4",
+        "startDate": "2025-11-17",
+        "endDate": "2026-11-17",
+        "status": "ACTIVE",
+        "branchId": "b-1771726419524",
+        "trainerId": null,
+        "pauseStartDate": null,
+        "pauseAllowanceDays": 0,
+        "pausedDaysUsed": 0,
+        "saleId": null
+      }
+    ],
+    "error": null
+  },
+  "dest_subscription_insert": {
+    "data": null,
+    "error": {
+      "code": "23503",
+      "details": "Key (planId)=(p4) is not present in table \"plans\".",
+      "hint": null,
+      "message": "insert or update on table \"subscriptions\" violates foreign key constraint \"subscriptions_planId_fkey\""
+    }
+  }
+}

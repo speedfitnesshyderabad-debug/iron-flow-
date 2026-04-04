@@ -1,0 +1,200 @@
+{
+  "migratedAt": "2026-04-04T03:09:25.787Z",
+  "source": "https://qnjpjknhobauyfqjyjcr.supabase.co",
+  "destination": "https://pndiqjfpmgprdirphifb.supabase.co",
+  "totalRows": 542,
+  "tables": [
+    {
+      "table": "organizations",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "branches",
+      "rows": 5,
+      "inserted": 5,
+      "skipped": 0
+    },
+    {
+      "table": "users",
+      "rows": 169,
+      "inserted": 169,
+      "skipped": 0
+    },
+    {
+      "table": "admins",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "members",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "staff",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "plans",
+      "rows": 24,
+      "inserted": 24,
+      "skipped": 0
+    },
+    {
+      "table": "member_plans",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "sales",
+      "rows": 141,
+      "inserted": 141,
+      "skipped": 0
+    },
+    {
+      "table": "payments",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "subscriptions",
+      "rows": 147,
+      "inserted": 147,
+      "skipped": 0
+    },
+    {
+      "table": "attendance",
+      "rows": 54,
+      "inserted": 54,
+      "skipped": 0
+    },
+    {
+      "table": "announcements",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "notifications",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "equipment",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "inventory",
+      "rows": 1,
+      "inserted": 1,
+      "skipped": 0
+    },
+    {
+      "table": "classes",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "class_bookings",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "leads",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "expenses",
+      "rows": 1,
+      "inserted": 1,
+      "skipped": 0
+    },
+    {
+      "table": "hero_sections",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "branch_offers",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "branch_gallery",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "profiles",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "roles",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "settings",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "workout_logs",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "body_measurements",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "diet_plans",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "trainer_assignments",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "feedback",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    },
+    {
+      "table": "referrals",
+      "rows": 0,
+      "inserted": 0,
+      "skipped": 0
+    }
+  ]
+}

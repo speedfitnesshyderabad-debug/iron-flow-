@@ -1,0 +1,337 @@
+{
+  "schemaDiff": {
+    "branches": {
+      "status": "missing",
+      "missing": [
+        "id",
+        "name",
+        "address",
+        "phone",
+        "email",
+        "gstin",
+        "gstPercentage",
+        "gateWebhookUrl",
+        "paymentProvider",
+        "paymentApiKey",
+        "paymentMerchantId",
+        "emailProvider",
+        "emailApiKey",
+        "emailFromAddress",
+        "smsProvider",
+        "smsApiKey",
+        "smsSenderId",
+        "equipment",
+        "latitude",
+        "longitude",
+        "geofenceRadius",
+        "isHidden",
+        "termsAndConditions",
+        "settlementRate",
+        "imageUrl",
+        "videoUrl",
+        "url"
+      ],
+      "srcCols": [
+        "id",
+        "name",
+        "address",
+        "phone",
+        "email",
+        "gstin",
+        "gstPercentage",
+        "gateWebhookUrl",
+        "paymentProvider",
+        "paymentApiKey",
+        "paymentMerchantId",
+        "emailProvider",
+        "emailApiKey",
+        "emailFromAddress",
+        "smsProvider",
+        "smsApiKey",
+        "smsSenderId",
+        "equipment",
+        "latitude",
+        "longitude",
+        "geofenceRadius",
+        "isHidden",
+        "termsAndConditions",
+        "settlementRate",
+        "imageUrl",
+        "videoUrl",
+        "url"
+      ],
+      "dstCols": []
+    },
+    "plans": {
+      "status": "missing",
+      "missing": [
+        "id",
+        "name",
+        "type",
+        "price",
+        "durationDays",
+        "branchId",
+        "isActive",
+        "isMultiBranch",
+        "maxSessions",
+        "sessionDurationMinutes",
+        "groupCapacity",
+        "isHidden",
+        "durationMonths"
+      ],
+      "srcCols": [
+        "id",
+        "name",
+        "type",
+        "price",
+        "durationDays",
+        "branchId",
+        "isActive",
+        "isMultiBranch",
+        "maxSessions",
+        "sessionDurationMinutes",
+        "groupCapacity",
+        "isHidden",
+        "durationMonths"
+      ],
+      "dstCols": []
+    },
+    "members": {
+      "status": "ok",
+      "count": 0
+    },
+    "admins": {
+      "status": "ok",
+      "count": 0
+    },
+    "staff": {
+      "status": "ok",
+      "count": 0
+    },
+    "subscriptions": {
+      "status": "missing",
+      "missing": [
+        "id",
+        "memberId",
+        "planId",
+        "startDate",
+        "endDate",
+        "status",
+        "branchId",
+        "trainerId",
+        "pauseStartDate",
+        "pauseAllowanceDays",
+        "pausedDaysUsed",
+        "saleId"
+      ],
+      "srcCols": [
+        "id",
+        "memberId",
+        "planId",
+        "startDate",
+        "endDate",
+        "status",
+        "branchId",
+        "trainerId",
+        "pauseStartDate",
+        "pauseAllowanceDays",
+        "pausedDaysUsed",
+        "saleId"
+      ],
+      "dstCols": []
+    },
+    "attendance": {
+      "status": "missing",
+      "missing": [
+        "id",
+        "userId",
+        "date",
+        "timeIn",
+        "timeOut",
+        "branchId",
+        "type",
+        "notes"
+      ],
+      "srcCols": [
+        "id",
+        "userId",
+        "date",
+        "timeIn",
+        "timeOut",
+        "branchId",
+        "type",
+        "notes"
+      ],
+      "dstCols": []
+    },
+    "payments": {
+      "status": "ok",
+      "count": 0
+    },
+    "member_plans": {
+      "status": "ok",
+      "count": 0
+    },
+    "inventory": {
+      "status": "missing",
+      "missing": [
+        "id",
+        "name",
+        "category",
+        "price",
+        "stock",
+        "branchId"
+      ],
+      "srcCols": [
+        "id",
+        "name",
+        "category",
+        "price",
+        "stock",
+        "branchId"
+      ],
+      "dstCols": []
+    },
+    "expenses": {
+      "status": "missing",
+      "missing": [
+        "id",
+        "branchId",
+        "category",
+        "amount",
+        "date",
+        "description",
+        "recordedBy"
+      ],
+      "srcCols": [
+        "id",
+        "branchId",
+        "category",
+        "amount",
+        "date",
+        "description",
+        "recordedBy"
+      ],
+      "dstCols": []
+    },
+    "announcements": {
+      "status": "ok",
+      "count": 0
+    },
+    "notifications": {
+      "status": "ok",
+      "count": 0
+    },
+    "equipment": {
+      "status": "ok",
+      "count": 0
+    },
+    "hero_sections": {
+      "status": "ok",
+      "count": 0
+    },
+    "branch_offers": {
+      "status": "ok",
+      "count": 0
+    },
+    "branch_gallery": {
+      "status": "ok",
+      "count": 0
+    },
+    "leads": {
+      "status": "ok",
+      "count": 0
+    },
+    "classes": {
+      "status": "ok",
+      "count": 0
+    },
+    "class_bookings": {
+      "status": "ok",
+      "count": 0
+    },
+    "feedback": {
+      "status": "ok",
+      "count": 0
+    },
+    "referrals": {
+      "status": "ok",
+      "count": 0
+    }
+  },
+  "sqlToApply": [
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS id TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS name TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS address TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS phone TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS email TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS gstin TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"gstPercentage\" INTEGER;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"gateWebhookUrl\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"paymentProvider\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"paymentApiKey\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"paymentMerchantId\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"emailProvider\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"emailApiKey\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"emailFromAddress\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"smsProvider\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"smsApiKey\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"smsSenderId\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS equipment TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS latitude NUMERIC;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS longitude NUMERIC;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"geofenceRadius\" INTEGER;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"isHidden\" BOOLEAN;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"termsAndConditions\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"settlementRate\" INTEGER;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"imageUrl\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS \"videoUrl\" TEXT;",
+    "ALTER TABLE public.branches ADD COLUMN IF NOT EXISTS url TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS id TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS name TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS type TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS price INTEGER;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"durationDays\" INTEGER;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"branchId\" TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"isActive\" BOOLEAN;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"isMultiBranch\" BOOLEAN;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"maxSessions\" TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"sessionDurationMinutes\" TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"groupCapacity\" TEXT;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"isHidden\" BOOLEAN;",
+    "ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS \"durationMonths\" INTEGER;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS id TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"memberId\" TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"planId\" TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"startDate\" DATE;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"endDate\" DATE;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS status TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"branchId\" TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"trainerId\" TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"pauseStartDate\" TEXT;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"pauseAllowanceDays\" INTEGER;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"pausedDaysUsed\" INTEGER;",
+    "ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS \"saleId\" TEXT;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS id TEXT;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS \"userId\" TEXT;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS date DATE;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS \"timeIn\" TIME;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS \"timeOut\" TIME;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS \"branchId\" TEXT;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS type TEXT;",
+    "ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS notes TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS id TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS name TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS category TEXT;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS price INTEGER;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS stock INTEGER;",
+    "ALTER TABLE public.inventory ADD COLUMN IF NOT EXISTS \"branchId\" TEXT;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS id TEXT;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS \"branchId\" TEXT;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS category TEXT;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS amount INTEGER;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS date DATE;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS description TEXT;",
+    "ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS \"recordedBy\" TEXT;"
+  ]
+}
