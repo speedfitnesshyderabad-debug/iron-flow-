@@ -14,7 +14,9 @@ export const BRANCHES = [
     equipment: 'Cardio: 5 Treadmills, 2 Spin Bikes. Strength: Full Smith Machine, Dumbbells up to 40kg, Bench Press, Squat Rack, Cable Crossover. Plate Loaded: Leg Press, Lat Pulldown.',
     latitude: 19.0760,
     longitude: 72.8777,
-    geofenceRadius: 100
+    geofenceRadius: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-gym-exercises-9418-large.mp4'
   },
   {
     id: 'b2',
@@ -27,7 +29,9 @@ export const BRANCHES = [
     equipment: 'Functional Training Zone: Kettlebells, Battle Ropes, TRX, Medicine Balls. Machines: Leg Extension, Chest Press, Seated Row. Cardio: 3 Treadmills, 1 Rower.',
     latitude: 12.9716,
     longitude: 77.5946,
-    geofenceRadius: 100
+    geofenceRadius: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=1600&auto=format&fit=crop',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-gym-exercises-9418-large.mp4'
   },
 ];
 
@@ -86,7 +90,8 @@ export const MOCK_OFFERS: Offer[] = [
 ];
 
 export const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', icon: <i className="fas fa-chart-line"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
+  { label: 'Home', path: '/', icon: <i className="fas fa-home"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST, UserRole.MEMBER, UserRole.STAFF, UserRole.TRAINER] },
+  { label: 'Dashboard', path: '/dashboard', icon: <i className="fas fa-chart-line"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Branches', path: '/branches', icon: <i className="fas fa-building"></i>, roles: [UserRole.SUPER_ADMIN] },
   { label: 'Walk-Ins', path: '/walk-ins', icon: <i className="fas fa-walking"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
   { label: 'Members', path: '/members', icon: <i className="fas fa-users"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST] },
@@ -103,6 +108,7 @@ export const NAV_ITEMS = [
   { label: 'Tax Center', path: '/tax', icon: <i className="fas fa-file-contract"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN] },
   { label: 'Holidays', path: '/holidays', icon: <i className="fas fa-calendar-alt"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.MANAGER] },
   { label: 'Gate QR', path: '/gate-qr', icon: <i className="fas fa-expand"></i>, roles: [UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN, UserRole.KIOSK] },
+  { label: 'Landing Settings', path: '/landing-settings', icon: <i className="fas fa-paint-brush"></i>, roles: [UserRole.SUPER_ADMIN] },
   { label: 'Store', path: '/store', icon: <i className="fas fa-shopping-cart"></i>, roles: [UserRole.MEMBER] },
   { label: 'Check-In', path: '/check-in', icon: <i className="fas fa-qrcode"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.RECEPTIONIST, UserRole.MEMBER, UserRole.STAFF, UserRole.TRAINER] },
   { label: 'Bookings', path: '/bookings', icon: <i className="fas fa-calendar-check"></i>, roles: [UserRole.BRANCH_ADMIN, UserRole.MANAGER, UserRole.TRAINER, UserRole.MEMBER] },

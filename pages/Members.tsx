@@ -767,7 +767,7 @@ const Members: React.FC = () => {
       {
         isAddModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto">
               <div className="bg-blue-600 p-5 md:p-6 text-white flex justify-between items-center sticky top-0 z-10">
                 <h3 className="text-lg md:text-xl font-bold uppercase tracking-tight leading-none">Athlete Enrollment</h3>
                 <button onClick={() => setAddModalOpen(false)} className="p-2 hover:bg-blue-700 rounded-lg transition-colors"><i className="fas fa-times"></i></button>
@@ -976,7 +976,7 @@ const Members: React.FC = () => {
       {
         activeModal === 'logs' && selectedMember && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh]">
               <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <img src={selectedMember.avatar} className="w-10 h-10 rounded-full border border-slate-700" alt="" />
@@ -987,7 +987,7 @@ const Members: React.FC = () => {
                 </div>
                 <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white"><i className="fas fa-times"></i></button>
               </div>
-              <div className="p-8 max-h-[60vh] overflow-y-auto">
+              <div className="p-8 flex-1 overflow-y-auto">
                 {attendance.filter(a => a.userId === selectedMember.id).length === 0 ? (
                   <div className="text-center py-10 text-gray-400 italic">No attendance records found for this member.</div>
                 ) : (
@@ -1018,7 +1018,7 @@ const Members: React.FC = () => {
       {
         activeModal === 'manage' && selectedMember && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto scrollbar-hide">
               <div className="bg-indigo-600 p-5 md:p-6 text-white flex justify-between items-center sticky top-0 z-10">
                 <h3 className="text-lg md:text-xl font-bold uppercase tracking-tight leading-none">Manage Profile</h3>
                 <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-indigo-700 rounded-lg transition-colors"><i className="fas fa-times"></i></button>

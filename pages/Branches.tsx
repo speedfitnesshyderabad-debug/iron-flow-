@@ -254,7 +254,7 @@ const Branches: React.FC = () => {
       </div>
 
       {qrModalOpen && currentActiveBranch && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] w-full max-w-md p-10 shadow-2xl animate-[slideUp_0.3s_ease-out] text-center">
             <div className="bg-slate-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <i className="fas fa-qrcode text-3xl text-slate-900"></i>
@@ -289,8 +289,8 @@ const Branches: React.FC = () => {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-[slideUp_0.3s_ease-out] flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-[slideUp_0.3s_ease-out] flex flex-col max-h-[90dvh] overflow-hidden">
             <div className="bg-white p-5 md:p-8 pb-4 border-b border-slate-100 flex justify-between items-center z-10 shrink-0">
               <h3 className="text-lg md:text-2xl font-bold tracking-tight uppercase text-slate-900 leading-none">{selectedBranch ? 'Update Branch' : 'Register New Branch'}</h3>
               <button type="button" onClick={() => setModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors shrink-0">

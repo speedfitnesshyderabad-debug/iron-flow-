@@ -437,8 +437,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 md:space-y-8 animate-[fadeIn_0.5s_ease-out]">
-      {/* Stats Grid - Ultra Responsive */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      {/* Stats Grid - 2 columns on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <StatCard title="Members" value={totalMemberCount} icon="fa-users" color="blue" />
         <StatCard title="Active" value={activeCount} icon="fa-check-circle" color="green" />
         <StatCard title="Total" value={formatCurrency(totalRevenue).replace('₹', '')} icon="fa-indian-rupee-sign" color="amber" />
@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
           <h3 className="text-sm md:text-base font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
             <i className="fas fa-chart-line text-blue-500"></i> Performance Trends
           </h3>
-          <div className="h-64 md:h-80 w-full relative overflow-hidden">
+          <div className="h-48 md:h-64 lg:h-80 w-full relative overflow-hidden">
             {isMounted && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                 <LineChart data={revenueData}>
@@ -554,7 +554,7 @@ const Dashboard: React.FC = () => {
           <h3 className="text-sm md:text-base font-black mb-6 flex items-center gap-2 uppercase tracking-tight">
             <i className="fas fa-chart-pie text-indigo-500"></i> Subscription Mix
           </h3>
-          <div className="h-64 md:h-80 w-full relative overflow-hidden">
+          <div className="h-48 md:h-64 lg:h-80 w-full relative overflow-hidden">
             {isMounted && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                 <PieChart>
@@ -701,7 +701,7 @@ const StatCard = ({ title, value, icon, color }: any) => {
     indigo: 'bg-indigo-50 text-indigo-600',
   };
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-xl transition-all group flex items-center justify-between min-w-0">
+    <div className="bg-white p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-xl transition-all group flex items-center justify-between min-w-0">
       <div className="min-w-0">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{title}</p>
         <p className="text-3xl font-black text-gray-900 tracking-tighter">{value}</p>

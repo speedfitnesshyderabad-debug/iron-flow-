@@ -801,8 +801,8 @@ const TaxCenter: React.FC = () => {
          </div>
 
          {isExpenseModalOpen && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-               <div className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+               <div className="bg-white rounded-[2.5rem] w-full max-w-md overflow-y-auto shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh]">
                   <div className="bg-red-600 p-8 text-white flex justify-between items-center">
                      <div>
                         <h3 className="text-xl font-black uppercase tracking-tight leading-none mb-1">Record Expense</h3>

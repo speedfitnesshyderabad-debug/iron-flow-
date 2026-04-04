@@ -23,6 +23,20 @@ export enum SubscriptionStatus {
   PAUSED = 'PAUSED'
 }
 
+export interface HomePageSettings {
+  heroType: 'image' | 'video';
+  heroImageUrl: string;
+  heroVideoUrl: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroTagline: string;
+}
+
+export interface SiteSettings {
+  key: string;
+  value: any;
+}
+
 export enum CommType {
   EMAIL = 'EMAIL',
   SMS = 'SMS'
@@ -104,7 +118,10 @@ export interface Branch {
   holidays?: string[]; // Array of ISO date strings 'YYYY-MM-DD' (Deprecated: use dedicated Holiday table)
   termsAndConditions?: string;
   isHidden?: boolean;
-  settlementRate?: number; // Rate owed per cross-branch visit (₹ per session)
+  settlementRate?: number;
+  imageUrl?: string;  // Hero image for this branch card on landing page
+  videoUrl?: string;  // Optional video URL for this branch card
+  url?: string;       // External website or link for this branch
 }
 
 export interface Shift {

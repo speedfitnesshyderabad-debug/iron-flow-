@@ -8,7 +8,11 @@ export default {
         "./*.{js,ts,jsx,tsx}",
     ],
     theme: {
-        extend: {},
+        extend: {
+            screens: {
+                'xs': '375px',
+            },
+        },
     },
     plugins: [],
 }

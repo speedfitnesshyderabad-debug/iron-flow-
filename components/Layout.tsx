@@ -244,15 +244,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-gray-50 font-sans">
+    <div className="flex h-full w-full overflow-hidden bg-gray-50 font-sans flex-col">
+      {/* Status Bar Spacer — fills behind Android status bar / iOS notch */}
+      <div className="safe-area-top bg-white shrink-0 md:hidden" />
 
-      {/* Mobile Sidebar Backdrop */}
-      {isMobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] transition-opacity animate-[fadeIn_0.2s_ease-out]"
-          onClick={closeMobileMenu}
-        />
-      )}
+      <div className="flex flex-1 overflow-hidden relative">
+        {isMobileMenuOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] transition-opacity animate-[fadeIn_0.2s_ease-out]"
+            onClick={closeMobileMenu}
+          />
+        )}
 
       {/* Sidebar - Desktop (Permanent) & Mobile (Drawer) */}
       <aside className={`
@@ -261,7 +263,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         md:relative md:translate-x-0 flex flex-col shadow-2xl shrink-0
         ${isSidebarOpen ? 'w-72' : 'w-20'}
       `}>
-        {/* Sidebar Header */}
+        {/* Sidebar Header — safe area for notch/status bar on mobile */}
+        <div className="safe-area-top-h md:hidden bg-slate-900 shrink-0" />
         <div className="p-6 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="IronFlow Logo" className="w-10 h-10 object-contain" />
@@ -326,7 +329,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="bg-white border-b h-16 md:h-20 flex items-center justify-between px-4 md:px-8 z-20 shadow-sm shrink-0">
+        <header className="bg-white border-b h-auto min-h-[4rem] md:min-h-[5rem] flex items-center justify-between px-4 md:px-8 z-20 shadow-sm shrink-0">
           {/* Header Left: Navigation & Title */}
           <div className="flex items-center gap-3 md:gap-4 overflow-hidden min-w-0 flex-1">
             {/* Hamburger for Mobile */}
@@ -340,9 +343,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="hidden md:flex text-gray-400 hover:text-gray-900 transition-colors p-2 hover:bg-gray-100 rounded-lg shrink-0">
               <i className={`fas ${isSidebarOpen ? 'fa-indent' : 'fa-outdent'} text-xl`}></i>
             </button>
-            <div className="md:hidden shrink-0">
-              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-            </div>
             {currentUser.role === UserRole.SUPER_ADMIN ? (
               <select
                 className="bg-transparent border-none text-sm md:text-lg font-black text-gray-800 tracking-tight focus:ring-0 cursor-pointer outline-none max-w-[150px] md:max-w-none"
@@ -382,7 +382,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50 pb-24 md:pb-8 relative"
+          className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50 pb-32 md:pb-8 relative"
         >
           {/* Pull to Refresh Indicator */}
           {pullDistance > 0 && (
@@ -403,7 +403,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </main>
 
         {/* Bottom Quick-Nav for Mobile */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 py-3 z-50 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] rounded-t-[3rem] safe-area-pb">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-gray-100 flex items-center justify-around px-1 z-50 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] rounded-t-[2rem] safe-area-pb" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4px)', paddingTop: '10px' }}>
           {mobileBottomNavItems.map(item => {
             const isActive = location.pathname === item.path;
             return (
@@ -653,8 +653,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           background: #475569; /* slate-600 */
         }
         
-        .safe-area-pb { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
+        /* Safe area for Android gesture nav bar AND iOS home indicator */
+        .safe-area-pb {
+          padding-bottom: calc(12px + env(safe-area-inset-bottom, 16px));
+        }
       `}</style>
+      </div>{/* END flex-1 inner container */}
     </div >
   );
 };

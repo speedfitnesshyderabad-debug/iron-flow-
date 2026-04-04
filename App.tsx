@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { supabase } from './src/lib/supabase';
 import { UserRole } from './types';
 import { AppProvider, useAppContext } from './AppContext';
@@ -35,7 +36,9 @@ import Holidays from './pages/Holidays';
 import Coupons from './pages/Coupons';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
-import ReloadPrompt from './components/ReloadPrompt';
+import Home from './pages/Home';
+import LandingSettings from './pages/LandingSettings';
+// import ReloadPrompt from './components/ReloadPrompt';
 
 
 // -----------------------------------------------------------------------------
@@ -130,7 +133,9 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       } else if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event) && session) {
         release(isRecovery || hasPendingAuthParams());
       } else if (event === 'INITIAL_SESSION') {
-        if (!hasPendingAuthParams()) {
+        const hasParams = hasPendingAuthParams();
+        console.log('🔐 AuthGate: INITIAL_SESSION, hasParams:', hasParams);
+        if (!hasParams) {
           release(false);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -313,13 +318,14 @@ const AppRoutes: React.FC = () => {
   if (!currentUser) {
     return (
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/debug" element={<Debug />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
@@ -331,7 +337,8 @@ const AppRoutes: React.FC = () => {
 
       {/* Routes within App Layout */}
       <Route element={<Layout><Outlet /></Layout>}>
-        <Route path="/" element={
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={
           useAppContext().isRecoveryFlow ? <Navigate to="/reset-password" replace /> : (
             currentUser.role === UserRole.KIOSK ? <Navigate to="/gate-qr" replace /> : <Dashboard />
           )
@@ -355,6 +362,11 @@ const AppRoutes: React.FC = () => {
         } />
 
         <Route path="/campaigns" element={<Campaigns />} />
+        <Route path="/landing-settings" element={
+          <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN]}>
+            <LandingSettings />
+          </ProtectedRoute>
+        } />
         <Route path="/staff" element={
           <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.BRANCH_ADMIN]}>
             <Staff />
@@ -399,6 +411,21 @@ const AppRoutes: React.FC = () => {
 // -----------------------------------------------------------------------------
 const App: React.FC = () => {
   useEffect(() => {
+    const initCapgo = async () => {
+      try {
+        // Log current version and channel for diagnostics
+        const current = await CapacitorUpdater.current();
+        console.log('🚀 Capgo: current state:', JSON.stringify(current));
+        
+        // Ensure we are listening on the production channel
+        await CapacitorUpdater.setChannel({ channel: 'production' });
+        console.log('🚀 Capgo: channel set to production');
+      } catch (err) {
+        console.warn('⚠️ Capgo: diagnostic failed:', err);
+      }
+    };
+    initCapgo();
+
     const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) {
         // Show a confirmation dialog (using your UI framework or browser confirm)
@@ -422,7 +449,7 @@ const App: React.FC = () => {
         <AuthGate>
           <AppRoutes />
         </AuthGate>
-        <ReloadPrompt />
+        {/* <ReloadPrompt /> */}
       </Router>
     </AppProvider>
 

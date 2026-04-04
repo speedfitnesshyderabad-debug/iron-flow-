@@ -187,8 +187,8 @@ const Inventory: React.FC = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto">
             <h3 className="text-2xl font-bold mb-6">{selectedItem ? 'Edit Item' : 'Add New Item'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
@@ -237,8 +237,8 @@ const Inventory: React.FC = () => {
       )}
 
       {isSellModalOpen && selectedItem && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto">
             <h3 className="text-2xl font-bold mb-2 uppercase tracking-tight">Point of Sale</h3>
             <p className="text-slate-400 text-sm mb-6">Selling: {selectedItem.name}</p>
             <form onSubmit={handleSell} className="space-y-4">
@@ -354,8 +354,8 @@ const Inventory: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] text-center">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl animate-[slideUp_0.3s_ease-out] text-center max-h-[90dvh] overflow-y-auto">
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <i className="fas fa-trash-alt text-2xl text-red-500"></i>
             </div>

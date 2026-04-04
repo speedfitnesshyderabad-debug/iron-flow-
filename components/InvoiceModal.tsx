@@ -75,7 +75,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ sale, branch, member, item,
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print-container">
-      <div className="bg-white w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] flex flex-col max-h-[90vh] modal-content relative">
+      <div className="bg-white w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out] flex flex-col max-h-[90dvh] modal-content relative">
         {/* Actions Header - Hidden on Print */}
         <div className="bg-slate-900 px-8 py-4 text-white flex justify-between items-center shrink-0 no-print">
           <div className="flex items-center gap-2">
